@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Job Applica Tracker Extension",
+  "version": "1.0",
+  "description": "JobApplica Browser Extension to detect and track jobs",
+  "icons": {
+    "24": "icon.svg",
+    "48": "icon-48.svg",
+    "64": "icon-64.svg",
+    "128": "icon-128.svg"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.svg"
+  },
+  "permissions": ["tabs"]
+}
