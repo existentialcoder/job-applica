@@ -27,7 +27,7 @@ def get_db():
         db.close()
 
 # --- Job Endpoints ---
-@app.post('/jobs/', response_model=schemas.Job)
+@app.post('/jobs', response_model=schemas.Job)
 def create_job(job: schemas.JobBase, db: Session = Depends(get_db)):
     return controller.create_job(db, job)
 
@@ -38,9 +38,9 @@ def get_job(job_id: UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail='Job not found')
     return db_job
 
-@app.get('/jobs/', response_model=list[schemas.Job])
-def get_jobs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return controller.get_jobs(db, skip, limit)
+@app.get('/jobs', response_model=list[schemas.Job])
+def get_jobs(skip: int = 0, limit: int = 100, job_title: str | None = None, db: Session = Depends(get_db)):
+    return controller.get_jobs(db, skip, limit, job_title)
 
 @app.put('/jobs/{job_id}', response_model=schemas.Job)
 def update_job(job_id: UUID, job_update: schemas.JobBase, db: Session = Depends(get_db)):

@@ -7,7 +7,7 @@
 </script>
 
 <template>
-  <div>
-    Hello World
+ <div class="flex align-middle justify-center h-full p-10">
+    Ability to edit Job profile, add application wise CV, identify gaps and much more! Coming soon :)
   </div>
 </template>

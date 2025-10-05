@@ -10,6 +10,7 @@ const jobLocation = ref<string | null>(null); // New field for job location
 const jobTitle = ref(''); // placeholder, could be fetched
 const company = ref(''); // placeholder, could be fetched
 const jobStatus = ref('Saved');
+const alreadyExists = ref(false);
 const isSaveBtnLoading = ref(false);
 
 const addMessageListener = (callback: any) => {
@@ -28,6 +29,7 @@ async function setupData() {
 
   if (isLinkedInJob.value) {
     jobId.value = new URL(currentLocation).searchParams.get('currentJobId');
+    alreadyExists.value = await dataservice.checkJobExists(jobId.value || '');
     jobLink.value = currentLocation;
 
     addMessageListener((msg: any) => {
@@ -44,7 +46,7 @@ onMounted(async () => {
   await setupData();
 });
 
-const addJob = async () => {
+const addOrUpdateJob = async () => {
   isSaveBtnLoading.value = true;
   const success = await dataservice.createJob({
     job_title: `${jobId.value}:${jobTitle.value}`,
@@ -71,7 +73,7 @@ const addJob = async () => {
     <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 text-center">Job Applica</h2>
 
     <div v-if="isLinkedInJob">
-      <form @submit.prevent="addJob" class="flex flex-col gap-3 w-full">
+      <form @submit.prevent="addOrUpdateJob" class="flex flex-col gap-3 w-full">
         <!-- Job Title -->
         <div class="flex flex-col w-full">
           <label for="jobTitle" class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Job Title</label>
@@ -111,7 +113,7 @@ const addJob = async () => {
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
           </svg>
-          <span>{{ isSaveBtnLoading ? 'Saving...' : 'Add Job' }}</span>
+          <span>{{ isSaveBtnLoading ? 'Saving...' : alreadyExists ? 'Update Job' : 'Add Job' }}</span>
         </button>
       </form>
     </div>
@@ -121,7 +123,7 @@ const addJob = async () => {
     </div>
 
     <!-- Dashboard Button -->
-    <a href="http://localhost:5173" target="_blank"
+    <a href="http://localhost:5173/applications" target="_blank"
       class="w-full block text-center px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition mt-2">
       Go to Dashboard
     </a>

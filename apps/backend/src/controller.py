@@ -33,8 +33,11 @@ def create_job(db: Session, job: JobBase) -> Job:
 def get_job(db: Session, job_id: UUID) -> Job | None:
     return db.query(Job).filter(Job.job_id == job_id).first()
 
-def get_jobs(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Job).offset(skip).limit(limit).all()
+def get_jobs(db: Session, skip: int, limit: int, job_title: str | None = None):
+    query = db.query(Job)
+    if job_title:
+        query = query.filter(Job.job_title.ilike(f"%{job_title}%"))
+    return query.offset(skip).limit(limit).all()
 
 def update_job(db: Session, job_id: UUID, job_update: JobBase) -> Job | None:
     db_job = db.query(Job).filter(Job.job_id == job_id).first()

@@ -7,7 +7,7 @@
 </script>
 
 <template>
-  <div>
-    Hello World
+  <div class="flex align-middle justify-center h-full p-10">
+    Ability to add workflows and plugins like gmail application syncs, calendars for interviews! Coming soon :)
   </div>
 </template>

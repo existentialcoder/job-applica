@@ -81,6 +81,21 @@ export default {
         });
     },
 
+    async checkJobExists(jobTitle: string): Promise<boolean> {
+        const url = `${API_BASE}/jobs?job_title=${encodeURIComponent(jobTitle)}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            console.error('Job check failed:', err);
+        }
+
+        return response.json().length > 0; // returns true if 2xx status
+    },
+
     async createJob(jobData: JobData) {
         const url = `${API_BASE}/jobs`;
         const response = await fetch(url, {

@@ -17,14 +17,14 @@ const router = createRouter({
       name: 'login',
       component: () => import('@/views/Login.vue'),
       meta: {
-        title: 'Login',
+        title: 'JobApplica | Login',
       } as RouteMeta & IRouteMeta,
     },
     {
       path: '/home',
       component: AppLayoutVue,
       meta: {
-        title: 'Dashboard',
+        title: 'JobApplica | Dashboard',
       },
       children: [
         {
@@ -32,35 +32,35 @@ const router = createRouter({
           name: 'home',
           component: () => import('@/views/Home.vue'),
           meta: {
-            title: 'Home',
+            title: 'JobApplica | DashBoard',
           } as RouteMeta & IRouteMeta
         },
         {
           path: '/applications',
           component: () => import('@/views/Applications.vue'),
           meta: {
-            title: 'Applications',
+            title: 'JobApplica | Applications',
           } as RouteMeta & IRouteMeta,
         },
         {
           path: '/profile',
           component: () => import('@/views/Profile.vue'),
           meta: {
-            title: 'Profile',
+            title: 'JobApplica | Profile',
           } as RouteMeta & IRouteMeta,
         },
         {
           path: '/plugins',
           component: () => import('@/views/Plugins.vue'),
           meta: {
-            title: 'Plugins',
+            title: 'JobApplica | Plugins',
           } as RouteMeta & IRouteMeta,
         },
         {
           path: '/settings',
           component: () => import('@/views/Settings.vue'),
           meta: {
-            title: 'Settings',
+            title: 'JobApplica | Settings',
           } as RouteMeta & IRouteMeta,
         },
       ],

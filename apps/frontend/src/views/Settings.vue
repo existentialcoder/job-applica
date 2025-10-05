@@ -7,7 +7,7 @@
 </script>
 
 <template>
-  <div>
-    Hello World
+  <div class="flex align-middle justify-center h-full p-10">
+    General settings for the entire application! Coming soon :)
   </div>
 </template>

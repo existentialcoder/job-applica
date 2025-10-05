@@ -7,7 +7,7 @@
 </script>
 
 <template>
-  <div>
-    Hello World
+  <div class="flex align-middle justify-center h-full p-10">
+    Quick actions, key analytics driving your career! Coming soon :)
   </div>
 </template>
