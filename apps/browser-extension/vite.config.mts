@@ -1,34 +1,22 @@
-import { defineConfig, loadEnv } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import tailwind from 'tailwindcss';
-import autoprefixer from 'autoprefixer';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { fileURLToPath } from 'url';
-import path from 'path';
+import { defineConfig, loadEnv } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/postcss'
+import autoprefixer from 'autoprefixer'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-// emulate __dirname in ESM
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, __dirname, '')
-  const production = env.NODE_ENV === 'production'
+  const env = loadEnv(mode, process.cwd())
+  const isProd = env.NODE_ENV === 'production'
 
   return {
-    root: __dirname,
-    base: './', // relative for extension
-    appType: 'spa',
-    plugins: [
-      vue(),
-      viteStaticCopy({
-        targets: [
-          { src: 'src/manifest.json', dest: '.' },
-          { src: 'src/assets/*', dest: 'assets' }
-        ],
-      }),
-    ],
+    base: './',
+    plugins: [vue()],
     css: {
       postcss: {
-        plugins: [tailwind(), autoprefixer()],
+        plugins: [tailwindcss(), autoprefixer()],
       },
     },
     resolve: {
@@ -37,22 +25,19 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      minify: production,
-      sourcemap: !production,
-      outDir: 'dist',
+      outDir: path.resolve(__dirname, 'dist'),
+      emptyOutDir: true,
+      sourcemap: !isProd,
       rollupOptions: {
-        input: {
-          popup: path.resolve(__dirname, 'src/popup.html'),
-          background: path.resolve(__dirname, 'src/background.ts'),
-          content: path.resolve(__dirname, 'src/content.ts'),
-          options: path.resolve(__dirname, 'src/options.html'),
-        },
+        // 👇 set your actual entry file (source)
+        input: path.resolve(__dirname, 'src/main.ts'),
         output: {
-          entryFileNames: 'assets/[name].js',
-          chunkFileNames: 'assets/[name].js',
-          assetFileNames: 'assets/[name].[ext]',
+          entryFileNames: 'popup.js',
+          assetFileNames: '[name][extname]',
         },
       },
+      target: 'esnext',
+      minify: isProd,
     },
   }
 })

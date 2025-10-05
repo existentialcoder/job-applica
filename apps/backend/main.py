@@ -1,4 +1,6 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -7,8 +9,14 @@ from src import models, schemas, controller, database
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="Job Applica API")
+app = FastAPI(title='Job Applica API')
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 
 # --- Dependencies ---
 def get_db():
@@ -18,48 +26,32 @@ def get_db():
     finally:
         db.close()
 
-
-# --- User Endpoints ---
-@app.post("/users/", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    return controller.create_user(db, user)
-
-@app.get("/users/{user_id}", response_model=schemas.User)
-def get_user(user_id: UUID, db: Session = Depends(get_db)):
-    db_user = controller.get_user(db, user_id)
-    if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return db_user
-
-
 # --- Job Endpoints ---
-@app.post("/jobs/", response_model=schemas.Job)
-def create_job(job: schemas.JobCreate, db: Session = Depends(get_db)):
-    if not controller.get_user(db, job.user_id):
-        raise HTTPException(status_code=404, detail="User not found")
+@app.post('/jobs/', response_model=schemas.Job)
+def create_job(job: schemas.JobBase, db: Session = Depends(get_db)):
     return controller.create_job(db, job)
 
-@app.get("/jobs/{job_id}", response_model=schemas.Job)
+@app.get('/jobs/{job_id}', response_model=schemas.Job)
 def get_job(job_id: UUID, db: Session = Depends(get_db)):
     db_job = controller.get_job(db, job_id)
     if not db_job:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise HTTPException(status_code=404, detail='Job not found')
     return db_job
 
-@app.get("/jobs/", response_model=list[schemas.Job])
+@app.get('/jobs/', response_model=list[schemas.Job])
 def get_jobs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return controller.get_jobs(db, skip, limit)
 
-@app.put("/jobs/{job_id}", response_model=schemas.Job)
-def update_job(job_id: UUID, job_update: schemas.JobUpdate, db: Session = Depends(get_db)):
+@app.put('/jobs/{job_id}', response_model=schemas.Job)
+def update_job(job_id: UUID, job_update: schemas.JobBase, db: Session = Depends(get_db)):
     db_job = controller.update_job(db, job_id, job_update)
     if not db_job:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise HTTPException(status_code=404, detail='Job not found')
     return db_job
 
-@app.delete("/jobs/{job_id}")
+@app.delete('/jobs/{job_id}')
 def delete_job(job_id: UUID, db: Session = Depends(get_db)):
     success = controller.delete_job(db, job_id)
     if not success:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return {"detail": "Job deleted"}
+        raise HTTPException(status_code=404, detail='Job not found')
+    return {'detail': 'Job deleted'}

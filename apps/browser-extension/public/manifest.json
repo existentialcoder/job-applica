@@ -13,5 +13,12 @@
     "default_popup": "popup.html",
     "default_icon": "icon.svg"
   },
-  "permissions": ["tabs"]
+  "permissions": ["tabs", "activeTab", "scripting"],
+  "host_permissions": ["https://www.linkedin.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/*"],
+      "js": ["content.js"]
+    }
+  ]
 }
