@@ -1,6 +1,8 @@
 from fastapi import Query, HTTPException
 from math import ceil
-from typing import Optional
+from typing import List, Optional, Type, Dict
+
+from pydantic import BaseModel
 from ...core.constants import Constants
 
 
@@ -24,8 +26,8 @@ def paginate_query(query, pagination: dict):
     page = pagination.get('page', 1)
     per_page = pagination.get('per_page', Constants.DEFAULT_PAGE_SIZE)
 
-    if per_page > Constants.MAX_PER_PAGE:
-        raise HTTPException(status_code=400, detail=f'per_page cannot exceed {Constants.MAX_PER_PAGE}')
+    if per_page > Constants.MAX_PAGE_SIZE:
+        raise HTTPException(status_code=400, detail=f'per_page cannot exceed {Constants.MAX_PAGE_SIZE}')
 
     offset = (page - 1) * per_page
     return query.limit(per_page).offset(offset)
@@ -48,3 +50,10 @@ def build_paginated_response(items: list, total: int, page: int, per_page: int):
         },
         'results': items,
     }
+
+def get_paginated_response_model(item_model: Type[BaseModel]) -> Type[BaseModel]:
+    class PaginatedResponse(BaseModel):
+        meta: Dict[str, int]
+        results: List[item_model]
+
+    return PaginatedResponse

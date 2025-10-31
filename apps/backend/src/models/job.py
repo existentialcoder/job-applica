@@ -26,13 +26,12 @@ class Job(Base):
     
     years_of_experience: Mapped[dict] = mapped_column(JSON, nullable=True)
 
-    company: Mapped['Company'] = relationship('Company', back_populates='jobs')
+    company: Mapped['Company'] = relationship('Company')
     company_id: Mapped[int] = mapped_column(ForeignKey('companies.id'), nullable=True)
 
     required_skills: Mapped[list['Skill']] = relationship(
         'Skill',
-        secondary=job_skill_table,
-        back_populates='jobs',
+        secondary=job_skill_table
     )
 
     def __repr__(self):

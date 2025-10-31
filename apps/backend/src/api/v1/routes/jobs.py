@@ -20,7 +20,8 @@ router = APIRouter(prefix='/jobs')
 #         raise HTTPException(status_code=404, detail='Job not found')
 #     return db_job
 
-@router.get('/', response_model=list[schemas.JobBase])
+
+@router.get('/', response_model=job_service.PaginatedJobs)
 def list_jobs(query: str | None = None, pagination: dict = Depends(pagination_params), db: Session = Depends(get_db)):
     return job_service.get_jobs(db, pagination, query)
 

@@ -1,18 +1,32 @@
-import sqlalchemy
+from typing import Type
 from sqlalchemy.orm import Session
 from ..models.job import Job
-from ..schemas.job import JobBase
-from ..api.deps.pagination import paginate_query
+from ..schemas.job import JobBase, JobRead
+from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
 
 # allowed_job_query_fields = [JobBase.title, JobBase.description, JobBase.company]
 
-def get_jobs(db: Session, pagination: dict, query: str | None = None) -> list[JobBase]:
+PaginatedJobs = get_paginated_response_model(JobBase)
+
+def get_jobs(db: Session, pagination: dict, query: str | None = None) -> PaginatedJobs:
     # query maybe like this query="company: Acme Inc,location: Remote"
     q = db.query(Job)
 
+    # Optional search filter
     # if query:
-    #     query_filters = []
-    #     for field in allowed_job_query_fields:
-    #         query_filters.append(getattr(JobBase, field).ilike(f'%{query}%'))
-    #     q = q.filter(sqlalchemy.or_(*query_filters))
-    return paginate_query(q, pagination)
+    #     filters = [getattr(Job, field).ilike(f"%{query}%") for field in allowed_job_query_fields]
+    #     q = q.filter(or_(*filters))
+
+    total = q.count()  # total before pagination
+    q = paginate_query(q, pagination)
+
+    results = q.all()
+
+    # convert SQLAlchemy models to Pydantic
+    jobs = [JobRead.from_orm(job) for job in results]
+
+    return build_paginated_response(
+        items=jobs,
+        total=total,
+        **pagination
+    )
