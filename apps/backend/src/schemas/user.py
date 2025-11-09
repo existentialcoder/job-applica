@@ -1,8 +1,9 @@
+from enum import Enum
 from pydantic import BaseModel, Field, EmailStr
 
-class UserSignupKey(str):
-    USER_NAME = 'username'
-    EMAIL = 'email'
+class UserSignupKey(str, Enum):
+    USER_NAME = 'USER_NAME'
+    EMAIL = 'EMAIL'
 
 class UserBase(BaseModel):
     first_name: str

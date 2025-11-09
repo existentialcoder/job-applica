@@ -1,14 +1,11 @@
 from pydantic import BaseModel, Field
+from .base import BaseSchema
 from typing import Optional
 
-class SkillBase(BaseModel):
+class Skill(BaseModel):
     name: str
-    proficiency_level: int = Field(..., ge=1, le=10)
+class SkillBase(Skill, BaseSchema):
+    name: str
 
-
-class SkillCreate(SkillBase):
+class SkillCreate(Skill):
     pass
-
-class Skill(SkillBase):
-    class Config:
-        from_attributes = True

@@ -3,23 +3,24 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import date
 
-from .company import Company
+from .base import BaseSchema
+from .company import CompanyBase
 from .skill import SkillBase
 
 
 class JobStatus(str, Enum):
-    OPEN = 'Open'
-    CLOSED = 'Closed'
-    PENDING = 'Pending'
+    Open = 'Open'
+    Closed = 'Closed'
+    Pending = 'Pending'
 
 
 class JobPosition(str, Enum):
-    INTERN = 'Intern'
-    JUNIOR = 'Junior'
-    MID = 'Mid'
-    SENIOR = 'Senior'
-    LEAD = 'Lead'
-    MANAGER = 'Manager'
+    Intern = 'Intern'
+    Junior = 'Junior'
+    Mid = 'Mid'
+    Senior = 'Senior'
+    Lead = 'Lead'
+    Manager = 'Manager'
 
 
 class YearsOfExperience(BaseModel):
@@ -27,11 +28,11 @@ class YearsOfExperience(BaseModel):
     max: Optional[int] = Field(None, ge=0, description='Maximum years of experience')
 
 
-class JobBase(BaseModel):
+class JobBase(BaseSchema):
     title: str
-    company: Optional[Company] = None
-    status: JobStatus = JobStatus.OPEN
-    position: JobPosition
+    company: Optional[CompanyBase] = None
+    status: JobStatus = JobStatus.Open
+    position: JobPosition = JobPosition.Intern
     category: Optional[str] = None
     salary_range: Optional[str] = None
     required_skills: List[SkillBase] = []
@@ -41,22 +42,32 @@ class JobBase(BaseModel):
     model_config = {'from_attributes': True}
 
 
-class JobRead(JobBase):
-    id: int
-    created_at: Optional[date] = None
-    updated_at: Optional[date] = None
+class JobCreate(BaseModel):
+    title: str
+    company_id: Optional[int] = None
+    status: JobStatus = JobStatus.Open
+    position: JobPosition = JobPosition.Intern
+    category: Optional[str] = None
+    salary_range: Optional[str] = None
+    required_skills_ids: List[int] = []
+    description: str
+    years_of_experience: Optional[YearsOfExperience] = None
 
 
-class JobCreate(JobBase):
-    pass
-
-
-class JobUpdate(BaseModel):
-    job_title: Optional[str] = None
+class JobUpdate(JobCreate):
+    title: Optional[str] = None
+    company_id: Optional[int] = None
     status: Optional[JobStatus] = None
     position: Optional[JobPosition] = None
     category: Optional[str] = None
     salary_range: Optional[str] = None
-    required_skills: Optional[List[SkillBase]] = None
-    job_description: Optional[str] = None
+    required_skills_ids: Optional[List[int]] = None
+    description: Optional[str] = None
     years_of_experience: Optional[YearsOfExperience] = None
+
+
+class JobFilterParams(BaseSchema):
+    query: Optional[str] = Field(None, description='Search query string')
+    title: Optional[str] = Field(None, description='Job title')
+    company: Optional[str] = Field(None, description='Company name')
+    location: Optional[str] = Field(None, description='Job location')

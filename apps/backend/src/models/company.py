@@ -9,10 +9,7 @@ class Company(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     website: Mapped[str] = mapped_column(String(255), nullable=True)
     email: Mapped[str] = mapped_column(String(255), nullable=True)
-    location: Mapped[str] = mapped_column(String(255), nullable=False)
     size: Mapped[int] = mapped_column(Integer, nullable=True)
-    headquarters: Mapped[str] = mapped_column(String(255), nullable=True)
-    founded_year: Mapped[int] = mapped_column(Integer, nullable=True)
     industry: Mapped[str] = mapped_column(String(255), nullable=True)
     description: Mapped[str] = mapped_column(String(500), nullable=True)
 
