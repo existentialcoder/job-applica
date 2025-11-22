@@ -49,8 +49,9 @@ class JobCreate(BaseModel):
     position: JobPosition = JobPosition.Intern
     category: Optional[str] = None
     salary_range: Optional[str] = None
-    required_skills_ids: List[int] = []
+    required_skills: List[str] = []
     description: str
+    user_id: int
     years_of_experience: Optional[YearsOfExperience] = None
 
 

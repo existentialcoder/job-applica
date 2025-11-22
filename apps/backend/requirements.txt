@@ -5,7 +5,10 @@ psycopg2-binary
 alembic
 pydantic[email]
 pydantic-settings
-passlib[bcrypt]
+bcrypt==4.3.0
+passlib
 python-dotenv
 requests==2.32.1
 beautifulsoup4==4.13.0
+pyjwt<3.0.0,>=2.8.0
+python-multipart

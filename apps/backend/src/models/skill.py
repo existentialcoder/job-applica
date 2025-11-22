@@ -4,7 +4,9 @@ from ..db.base_class import Base
 
 class Skill(Base):
     __tablename__ = 'skills'
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    label: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String(500), nullable=True)
 
     def __repr__(self) -> str:
-        return f'<Skill(name={self.name}, proficiency_level={self.proficiency_level})>'
+        return f'<Skill(name={self.name}, label={self.label}, description={self.description})>'
