@@ -12,7 +12,6 @@ class Company(BaseModel):
 class CompanyBase(Company, BaseSchema):
     pass
 
-
 class CompanyCreate(Company):
     pass
 

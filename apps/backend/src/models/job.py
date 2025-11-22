@@ -3,6 +3,7 @@ from sqlalchemy import Enum, String, Integer, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..db.base_class import Base
 from .company import Company
+from .user import User
 from .skill import Skill
 from .location import Location
 
@@ -55,6 +56,9 @@ class Job(Base):
     description: Mapped[str] = mapped_column(String(500), nullable=True)
     
     years_of_experience: Mapped[dict] = mapped_column(JSON, nullable=True)
+
+    user: Mapped['User'] = relationship('User')
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
 
     company: Mapped['Company'] = relationship('Company')
     company_id: Mapped[int] = mapped_column(ForeignKey('companies.id'), nullable=True)

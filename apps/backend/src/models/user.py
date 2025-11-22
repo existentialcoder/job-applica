@@ -6,7 +6,7 @@ class User(Base):
     __tablename__ = 'users'
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    user_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    user_name: Mapped[str | None] = mapped_column(String(100), nullable=False, unique=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     signup_key: Mapped[str] = mapped_column(String(255), nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)

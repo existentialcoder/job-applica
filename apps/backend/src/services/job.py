@@ -1,15 +1,21 @@
 from typing import Type
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
+
 from ..models.job import Job
 from ..models.skill import Skill
 from ..models.company import Company
+from ..schemas.user import UserBase
 from ..schemas.job import JobBase, JobUpdate, JobCreate, JobFilterParams
 from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
 
 PaginatedJobs = get_paginated_response_model(JobBase)
 
-def get_jobs(db: Session, pagination: dict, filter: JobFilterParams | None = None) -> PaginatedJobs:
-    q = db.query(Job)
+def get_job_with_id(db: Session, user: UserBase, job_id: int):
+    return db.query(Job).filter(Job.user_id == user.id, Job.id == job_id).first()
+
+def get_jobs(db: Session, user: UserBase, pagination: dict, filter: JobFilterParams | None = None) -> PaginatedJobs:
+    q = db.query(Job).filter(Job.user_id == user.id)
 
     if filter.title:
         q = q.filter(Job.title.ilike(f'%{filter.title}%'))
@@ -37,21 +43,21 @@ def get_jobs(db: Session, pagination: dict, filter: JobFilterParams | None = Non
         **pagination
     )
 
-def get_job(db: Session, job_id: int) -> JobBase | None:
-    db_job = db.query(Job).get(job_id)
+def get_job(db: Session, user: UserBase, job_id: int) -> JobBase | None:
+    db_job = get_job_with_id(db, user, job_id)
     if db_job:
         return JobBase.model_validate(db_job)
     return None
 
-def delete_job(db: Session, job_id: int) -> bool:
-    db_job = db.query(Job).get(job_id)
+def delete_job(db: Session, user: UserBase, job_id: int) -> bool:
+    db_job = get_job_with_id(db, user, job_id)
     if not db_job:
         return False
     db.delete(db_job)
     db.commit()
     return True
 
-def get_tranformed_job(db: Session, job_in: JobCreate | JobUpdate) -> dict:
+def get_tranformed_job(db: Session, job_in: JobCreate | JobUpdate, user: UserBase) -> dict:
     data = job_in.model_dump(exclude_unset=True)
 
     # Replace skill IDs with actual Skill objects
@@ -60,17 +66,21 @@ def get_tranformed_job(db: Session, job_in: JobCreate | JobUpdate) -> dict:
         data.pop('required_skills_ids', None)
 
     # Replace company_id with actual Company object
-    if job_in.company_id:
+    if isinstance(job_in.company_id, int):
         company = db.query(Company).get(job_in.company_id)
         if company:
             data['company'] = company
             del data['company_id']
+        else:
+            raise HTTPException(status_code=400, detail='Invalid company detail')
+    
+    job_in.user_id = user.id
 
     return data
 
 
-def create_job(db: Session, job_in: JobCreate) -> JobBase:
-    job_data = get_tranformed_job(db, job_in)
+def create_job(db: Session, user: UserBase, job_in: JobCreate) -> JobBase:
+    job_data = get_tranformed_job(db, job_in, user)
 
     db_job = Job(**job_data)
 
@@ -81,13 +91,12 @@ def create_job(db: Session, job_in: JobCreate) -> JobBase:
     return JobBase.model_validate(db_job)
 
 
-def update_job(db: Session, job_id: int, job_in: JobUpdate) -> JobBase | None:
-    db_job = db.query(Job).filter(Job.id == job_id).first()
+def update_job(db: Session, job_id: int, user: UserBase, job_in: JobUpdate) -> JobBase | None:
+    db_job = get_job_with_id(db, user, job_id)
     if not db_job:
         return None
 
-    job_data = get_tranformed_job(db, job_in)
-
+    job_data = get_tranformed_job(db, job_in, user)
     for key, value in job_data.items():
         setattr(db_job, key, value)
 
