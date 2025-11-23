@@ -6,6 +6,7 @@ class Skill(Base):
     __tablename__ = 'skills'
     name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     label: Mapped[str] = mapped_column(String(255), nullable=False)
+    logo_url: Mapped[str] = mapped_column(String(500), nullable=True)
     description: Mapped[str] = mapped_column(String(500), nullable=True)
 
     def __repr__(self) -> str:

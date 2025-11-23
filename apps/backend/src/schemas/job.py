@@ -5,7 +5,7 @@ from datetime import date
 
 from .base import BaseSchema
 from .company import CompanyBase
-from .skill import SkillBase
+from .skill import SkillBaseLean
 
 
 class JobStatus(str, Enum):
@@ -35,7 +35,10 @@ class JobBase(BaseSchema):
     position: JobPosition = JobPosition.Intern
     category: Optional[str] = None
     salary_range: Optional[str] = None
-    required_skills: List[SkillBase] = []
+
+    # Avoid mutable defaults
+    required_skills: List[SkillBaseLean] = Field(default_factory=list)
+
     description: str = ''
     years_of_experience: Optional[YearsOfExperience] = None
 
@@ -49,9 +52,11 @@ class JobCreate(BaseModel):
     position: JobPosition = JobPosition.Intern
     category: Optional[str] = None
     salary_range: Optional[str] = None
-    required_skills: List[str] = []
+
+    # Avoid mutable default list
+    required_skills: List[str] = Field(default_factory=list)
+
     description: str
-    user_id: int
     years_of_experience: Optional[YearsOfExperience] = None
 
 
@@ -62,7 +67,10 @@ class JobUpdate(JobCreate):
     position: Optional[JobPosition] = None
     category: Optional[str] = None
     salary_range: Optional[str] = None
-    required_skills_ids: Optional[List[int]] = None
+
+    # Note: leaving this field name as-is per your request
+    required_skills: Optional[List[str]] = None
+
     description: Optional[str] = None
     years_of_experience: Optional[YearsOfExperience] = None
 
