@@ -12,6 +12,6 @@ router = APIRouter(prefix='/companies')
 def list_companies(pagination: dict = Depends(pagination_params), db: Session = Depends(get_db)):
     return company_service.get_companies(db, pagination)
 
-@router.post('/', response_model=schemas.Company, description='Create a new company')
-def create_company(company_data: schemas.CompanyCreate, db: Session = Depends(get_db)):
+@router.post('/', response_model=schemas.CompanyBase, description='Create a new company')
+def create_company(company_data: schemas.CompanyBase, db: Session = Depends(get_db)):
     return company_service.create_company(db, company_data)
