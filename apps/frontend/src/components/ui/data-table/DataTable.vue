@@ -18,6 +18,7 @@ import {
 const props = defineProps<{
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  onRowClick?: (row: TData) => void
 }>()
 
 const table = useVueTable({
@@ -47,6 +48,8 @@ const table = useVueTable({
             v-for="row in table.getRowModel().rows"
             :key="row.id"
             :data-state="row.getIsSelected() ? 'selected' : undefined"
+            :class="onRowClick ? 'cursor-pointer hover:bg-muted/60' : ''"
+            @click="onRowClick?.(row.original)"
           >
             <TableCell v-for="cell in row.getVisibleCells()" :key="cell.id">
               <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />

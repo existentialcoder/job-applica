@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Enum, String, Integer, ForeignKey, JSON
+from sqlalchemy import Enum, String, Integer, ForeignKey, JSON, Text, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..db.base_class import Base
 from .company import Company
@@ -16,10 +16,15 @@ job_skill_table = Table(
     Column('skill_id', Integer, ForeignKey('skills.id', ondelete='CASCADE'), primary_key=True),
 )
 
-class JobStatus(str, enum.Enum):
-    OPEN = 'Open'
-    CLOSED = 'Closed'
-    PENDING = 'Pending'
+class ApplicationStatus(str, enum.Enum):
+    SAVED = 'Saved'
+    APPLIED = 'Applied'
+    PHONE_SCREEN = 'Phone Screen'
+    INTERVIEW = 'Interview'
+    TECHNICAL = 'Technical'
+    OFFER = 'Offer'
+    REJECTED = 'Rejected'
+    WITHDRAWN = 'Withdrawn'
 
 
 class JobPosition(str, enum.Enum):
@@ -35,13 +40,22 @@ class JobWorkModel(str, enum.Enum):
     REMOTE = 'Remote'
     HYBRID = 'Hybrid'
 
+class SourcePlatform(str, enum.Enum):
+    LINKEDIN = 'LinkedIn'
+    INDEED = 'Indeed'
+    GLASSDOOR = 'Glassdoor'
+    MONSTER = 'Monster'
+    ZIPRECRUITER = 'ZipRecruiter'
+    JOBSCAN = 'Jobscan'
+    OTHER = 'Other'
+
 class Job(Base):
     __tablename__ = 'jobs'
     title: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    status: Mapped[JobStatus] = mapped_column(
-        Enum(JobStatus),
-        default=JobStatus.OPEN,
+    status: Mapped[ApplicationStatus] = mapped_column(
+        Enum(ApplicationStatus, name='applicationstatus'),
+        default=ApplicationStatus.SAVED,
         create_constraint=True,
         nullable=False
     )
@@ -53,9 +67,17 @@ class Job(Base):
     )
     category: Mapped[str] = mapped_column(String(100), nullable=True)
     salary_range: Mapped[str] = mapped_column(String(100), nullable=True)
-    description: Mapped[str] = mapped_column(String(500), nullable=True)
-    
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+
     years_of_experience: Mapped[dict] = mapped_column(JSON, nullable=True)
+
+    source_url: Mapped[str] = mapped_column(Text, nullable=True)
+    source_platform: Mapped[SourcePlatform] = mapped_column(
+        Enum(SourcePlatform, name='sourceplatform'),
+        nullable=True
+    )
+    applied_date: Mapped[Date] = mapped_column(Date, nullable=True)
+    notes: Mapped[str] = mapped_column(Text, nullable=True)
 
     user: Mapped['User'] = relationship('User')
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, type RouteMeta } from 'vue-router'
 import AppLayoutVue from '@/layouts/app.vue';
+import { useAuthStore } from '@/stores/auth';
 
 interface IRouteMeta {
   title: string
@@ -16,9 +17,25 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('@/views/Login.vue'),
-      meta: {
-        title: 'JobApplica | Login',
-      } as RouteMeta & IRouteMeta,
+      meta: { title: 'JobApplica | Login' } as RouteMeta & IRouteMeta,
+    },
+    {
+      path: '/signup',
+      name: 'signup',
+      component: () => import('@/views/Signup.vue'),
+      meta: { title: 'JobApplica | Sign Up' } as RouteMeta & IRouteMeta,
+    },
+    {
+      path: '/auth/callback',
+      name: 'auth-callback',
+      component: () => import('@/views/AuthCallback.vue'),
+      meta: { title: 'JobApplica | Signing In' } as RouteMeta & IRouteMeta,
+    },
+    {
+      path: '/auth/relay',
+      name: 'auth-relay',
+      component: () => import('@/views/AuthRelay.vue'),
+      meta: { title: 'JobApplica | Extension Sign-In' } as RouteMeta & IRouteMeta,
     },
     {
       path: '/home',
@@ -76,8 +93,17 @@ const router = createRouter({
   ]
 });
 
-router.beforeEach((loc) => {
-  document.title = loc.meta.title as string;
+router.beforeEach((to, _from, next) => {
+  document.title = to.meta.title as string;
+  const authStore = useAuthStore();
+  const publicRoutes = ['login', 'signup', 'not-found', 'auth-callback', 'auth-relay'];
+  if (!authStore.isAuthenticated && !publicRoutes.includes(to.name as string) && to.path !== '/login') {
+    next('/login');
+  } else if (authStore.isAuthenticated && to.path === '/login') {
+    next('/applications');
+  } else {
+    next();
+  }
 })
 
 export default router

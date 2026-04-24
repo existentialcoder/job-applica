@@ -5,10 +5,10 @@ export default {
   darkMode: ['class'],
   safelist: ['dark'],
   content: [
-    './src/views/**/*.{ts,tsx,vue}',
-    './src/components/**/*.{ts,tsx,vue}',
-    './src/layouts/**/*.{ts,tsx,vue}',
-	],
+    './src/**/*.{ts,tsx,vue}',
+    './public/**/*.html',
+    '../../packages/ui/src/**/*.{ts,tsx,vue}',
+  ],
   
   theme: {
     screens: {

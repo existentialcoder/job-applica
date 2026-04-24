@@ -1,9 +1,19 @@
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import AppSidebar from '@/components/core/sidebar/AppSidebar.vue';
 import AppNavbar from '@/components/core/AppNavbar.vue';
 import { useAppStore } from '@/stores/app';
+import { useAuthStore } from '@/stores/auth';
 
 const store = useAppStore();
+const authStore = useAuthStore();
+
+onMounted(async () => {
+  if (authStore.isAuthenticated && !authStore.user) {
+    await authStore.fetchMe();
+  }
+  await store.initTheme();
+});
 </script>
 
 <template>

@@ -8,10 +8,15 @@ from .company import CompanyBase
 from .skill import SkillBaseLean
 
 
-class JobStatus(str, Enum):
-    Open = 'Open'
-    Closed = 'Closed'
-    Pending = 'Pending'
+class ApplicationStatus(str, Enum):
+    Saved = 'Saved'
+    Applied = 'Applied'
+    PhoneScreen = 'Phone Screen'
+    Interview = 'Interview'
+    Technical = 'Technical'
+    Offer = 'Offer'
+    Rejected = 'Rejected'
+    Withdrawn = 'Withdrawn'
 
 
 class JobPosition(str, Enum):
@@ -23,24 +28,48 @@ class JobPosition(str, Enum):
     Manager = 'Manager'
 
 
+class SourcePlatform(str, Enum):
+    LinkedIn = 'LinkedIn'
+    Indeed = 'Indeed'
+    Glassdoor = 'Glassdoor'
+    Monster = 'Monster'
+    ZipRecruiter = 'ZipRecruiter'
+    Jobscan = 'Jobscan'
+    Other = 'Other'
+
+
 class YearsOfExperience(BaseModel):
-    min: Optional[int] = Field(None, ge=0, description='Minimum years of experience')
-    max: Optional[int] = Field(None, ge=0, description='Maximum years of experience')
+    min: Optional[int] = Field(None, ge=0)
+    max: Optional[int] = Field(None, ge=0)
+
+
+class LocationBase(BaseModel):
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+
+    model_config = {'from_attributes': True}
 
 
 class JobBase(BaseSchema):
     title: str
     company: Optional[CompanyBase] = None
-    status: JobStatus = JobStatus.Open
-    position: JobPosition = JobPosition.Intern
+    location: Optional[LocationBase] = None
+    status: ApplicationStatus = ApplicationStatus.Saved
+    position: Optional[JobPosition] = JobPosition.Intern
     category: Optional[str] = None
     salary_range: Optional[str] = None
+    work_model: Optional[str] = None
 
-    # Avoid mutable defaults
     required_skills: List[SkillBaseLean] = Field(default_factory=list)
 
-    description: str = ''
+    description: Optional[str] = None
     years_of_experience: Optional[YearsOfExperience] = None
+
+    source_url: Optional[str] = None
+    source_platform: Optional[SourcePlatform] = None
+    applied_date: Optional[date] = None
+    notes: Optional[str] = None
 
     model_config = {'from_attributes': True}
 
@@ -48,35 +77,51 @@ class JobBase(BaseSchema):
 class JobCreate(BaseModel):
     title: str
     company_id: Optional[int] = None
-    status: JobStatus = JobStatus.Open
-    position: JobPosition = JobPosition.Intern
+    company_name: Optional[str] = None
+    location: Optional[str] = None
+    status: ApplicationStatus = ApplicationStatus.Saved
+    position: Optional[JobPosition] = JobPosition.Intern
     category: Optional[str] = None
     salary_range: Optional[str] = None
+    work_model: Optional[str] = 'On-site'
 
-    # Avoid mutable default list
     required_skills: List[str] = Field(default_factory=list)
 
-    description: str
+    description: Optional[str] = None
     years_of_experience: Optional[YearsOfExperience] = None
 
+    source_url: Optional[str] = None
+    source_platform: Optional[SourcePlatform] = None
+    applied_date: Optional[date] = None
+    notes: Optional[str] = None
 
-class JobUpdate(JobCreate):
+
+class JobUpdate(BaseModel):
     title: Optional[str] = None
     company_id: Optional[int] = None
-    status: Optional[JobStatus] = None
+    company_name: Optional[str] = None
+    location: Optional[str] = None
+    status: Optional[ApplicationStatus] = None
     position: Optional[JobPosition] = None
     category: Optional[str] = None
     salary_range: Optional[str] = None
+    work_model: Optional[str] = None
 
-    # Note: leaving this field name as-is per your request
     required_skills: Optional[List[str]] = None
 
     description: Optional[str] = None
     years_of_experience: Optional[YearsOfExperience] = None
 
+    source_url: Optional[str] = None
+    source_platform: Optional[SourcePlatform] = None
+    applied_date: Optional[date] = None
+    notes: Optional[str] = None
 
-class JobFilterParams(BaseSchema):
+
+class JobFilterParams(BaseModel):
     query: Optional[str] = Field(None, description='Search query string')
-    title: Optional[str] = Field(None, description='Job title')
-    company: Optional[str] = Field(None, description='Company name')
-    location: Optional[str] = Field(None, description='Job location')
+    title: Optional[str] = Field(None, description='Job title filter')
+    company: Optional[str] = Field(None, description='Company name filter')
+    location: Optional[str] = Field(None, description='Location filter')
+    status: Optional[ApplicationStatus] = Field(None, description='Application status filter')
+    source_platform: Optional[SourcePlatform] = Field(None, description='Source platform filter')

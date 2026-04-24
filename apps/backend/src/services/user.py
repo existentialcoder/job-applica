@@ -37,12 +37,16 @@ def create_user(db: Session, user_data: UserSignup) -> UserBase:
     return UserBase.model_validate(user_data)
 
 def user_login(db: Session, login_data: UserLogin) -> UserLoginTokenResponse:
-    # Check if user name and password match
-    user_data = db.query(User).filter(User.email == login_data.username or User.user_name == login_data.username).first()
+    user_data = db.query(User).filter(
+        (User.email == login_data.username) | (User.user_name == login_data.username)
+    ).first()
 
     if not user_data:
-        raise HTTPException(status_code=404, detail = 'User not found')
-    
+        raise HTTPException(status_code=404, detail='User not found')
+
+    if not user_data.hashed_password:
+        raise HTTPException(status_code=400, detail='This account uses social login. Please sign in with Google or LinkedIn.')
+
     # Check if passwords match
     is_authenticated = verify_password(login_data.password, user_data.hashed_password)
 
