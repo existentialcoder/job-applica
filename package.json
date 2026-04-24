@@ -1,0 +1,15 @@
+{
+  "name": "job-applica",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:frontend": "yarn workspace vue dev",
+    "dev:extension": "yarn workspace vue3-extension dev",
+    "build:frontend": "yarn workspace vue build",
+    "build:extension": "yarn workspace vue3-extension build"
+  }
+}

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Job Applica Tracker Extension",
   "version": "1.0",
-  "description": "JobApplica Browser Extension to detect and track jobs",
+  "description": "JobApplica Browser Extension to detect and track jobs from LinkedIn, Indeed, Glassdoor, Monster, ZipRecruiter, and Jobscan",
   "icons": {
     "24": "icon.svg",
     "48": "icon-48.svg",
@@ -13,12 +13,62 @@
     "default_popup": "popup.html",
     "default_icon": "icon.svg"
   },
-  "permissions": ["tabs", "activeTab", "scripting"],
-  "host_permissions": ["https://www.linkedin.com/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["tabs", "activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "http://localhost:5173/*",
+    "http://localhost:8000/*",
+    "https://www.linkedin.com/*",
+    "https://linkedin.com/*",
+    "https://www.indeed.com/*",
+    "https://indeed.com/*",
+    "https://www.glassdoor.com/*",
+    "https://glassdoor.com/*",
+    "https://www.monster.com/*",
+    "https://monster.com/*",
+    "https://www.ziprecruiter.com/*",
+    "https://ziprecruiter.com/*",
+    "https://www.jobscan.co/*",
+    "https://jobscan.co/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["https://www.linkedin.com/*"],
-      "js": ["content.js"]
+      "matches": ["http://localhost:5173/*"],
+      "js": ["content-webapp.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.linkedin.com/*", "https://linkedin.com/*"],
+      "js": ["content-linkedin.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.indeed.com/*", "https://indeed.com/*"],
+      "js": ["content-indeed.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.glassdoor.com/*", "https://glassdoor.com/*"],
+      "js": ["content-glassdoor.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.monster.com/*", "https://monster.com/*"],
+      "js": ["content-monster.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.ziprecruiter.com/*", "https://ziprecruiter.com/*"],
+      "js": ["content-ziprecruiter.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.jobscan.co/*", "https://jobscan.co/*"],
+      "js": ["content-jobscan.js"],
+      "run_at": "document_idle"
     }
   ]
 }

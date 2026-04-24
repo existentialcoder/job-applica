@@ -29,7 +29,7 @@ def create_job(job_in: schemas.JobCreate, user: UserBase = Depends(get_current_u
 
 @router.patch('/{job_id}', response_model=schemas.JobBase, description='Update existing job')
 def update_job(job_id: int, job_update: schemas.JobUpdate, user: UserBase = Depends(get_current_user), db: Session = Depends(get_db)):
-    db_job = job_service.update_job(db, job_id, job_update)
+    db_job = job_service.update_job(db, job_id, user, job_update)
     if not db_job:
         raise HTTPException(status_code=404, detail='Job not found')
 
@@ -37,7 +37,7 @@ def update_job(job_id: int, job_update: schemas.JobUpdate, user: UserBase = Depe
 
 @router.delete('/{job_id}', description='Delete existing job')
 def delete_job(job_id: int, user: UserBase = Depends(get_current_user), db: Session = Depends(get_db)):
-    success = job_service.delete_job(db, job_id)
+    success = job_service.delete_job(db, user, job_id)
     if not success:
         raise HTTPException(status_code=404, detail='Job not found')
     return {'detail': 'Job deleted'}

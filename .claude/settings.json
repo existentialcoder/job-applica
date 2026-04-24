@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn install *)",
+      "Bash(node -e \"const p=require\\('/home/existentialcoder/projects/job-applica/apps/browser-extension/node_modules/tailwindcss/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(ln -sf /home/existentialcoder/projects/job-applica/apps/frontend/node_modules/tailwindcss /home/existentialcoder/projects/job-applica/apps/browser-extension/node_modules/tailwindcss)",
+      "Bash(node -e \"const p=require\\('/home/existentialcoder/projects/job-applica/apps/browser-extension/node_modules/tailwindcss/package.json'\\); console.log\\('Tailwind version now:', p.version\\)\")",
+      "Bash(node -e \"const p=require\\('/home/existentialcoder/projects/job-applica/node_modules/tailwindcss/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(grep -E \"^vite$\")",
+      "Bash(node -e \"const p=require\\('/home/existentialcoder/projects/job-applica/apps/browser-extension/node_modules/tailwindcss/package.json'\\); console.log\\('TW:', p.version\\)\")",
+      "Bash(node_modules/.bin/vite build *)",
+      "Bash(python -m alembic upgrade head)",
+      "Bash(python -m alembic stamp c1d5f9a2b347)",
+      "Bash(yarn workspace *)",
+      "Bash(yarn add *)"
+    ]
+  }
+}
