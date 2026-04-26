@@ -12,30 +12,30 @@ export const APP_MENU: AppMenus[] = [
   {
     title: 'Dashboard',
     icon: 'CircleGauge',
-    path: 'home',
+    path: '/home',
   },
   {
-    title: 'Applications',
-    icon: 'IdCard',
-    path: 'applications',
-    description: 'Manage Applications'
+    title: 'Application Boards',
+    icon: 'LayoutDashboard',
+    path: '/boards',
+    description: 'Manage Boards and Applications'
   },
   {
     title: 'Profile',
     icon: 'User',
-    path: 'profile',
+    path: '/profile',
     description: 'Manage Profile',
   },
   {
     title: 'Plugins',
     icon: 'Workflow',
-    path: 'plugins',
+    path: '/plugins',
     description: 'Manage Plugins, Workflows and Integrations'
   },
   {
     title: 'Settings',
     icon: 'Settings',
-    path: 'settings',
+    path: '/settings',
     description: 'Manage Settings',
   }
 ];

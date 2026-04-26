@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build && node scripts/build-content.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

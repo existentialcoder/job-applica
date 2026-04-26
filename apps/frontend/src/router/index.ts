@@ -45,19 +45,32 @@ const router = createRouter({
       },
       children: [
         {
-          path: 'home',
+          path: '',
           name: 'home',
           component: () => import('@/views/Home.vue'),
           meta: {
-            title: 'JobApplica | DashBoard',
+            title: 'JobApplica | Dashboard',
           } as RouteMeta & IRouteMeta
         },
         {
-          path: '/applications',
-          component: () => import('@/views/Applications.vue'),
+          path: '/boards',
+          name: 'boards',
+          component: () => import('@/views/Boards.vue'),
           meta: {
-            title: 'JobApplica | Applications',
+            title: 'JobApplica | Application Boards',
           } as RouteMeta & IRouteMeta,
+        },
+        {
+          path: '/boards/:boardId',
+          name: 'board-detail',
+          component: () => import('@/views/BoardDetail.vue'),
+          meta: {
+            title: 'JobApplica | Board',
+          } as RouteMeta & IRouteMeta,
+        },
+        {
+          path: '/applications',
+          redirect: '/boards',
         },
         {
           path: '/profile',
@@ -100,7 +113,7 @@ router.beforeEach((to, _from, next) => {
   if (!authStore.isAuthenticated && !publicRoutes.includes(to.name as string) && to.path !== '/login') {
     next('/login');
   } else if (authStore.isAuthenticated && to.path === '/login') {
-    next('/applications');
+    next('/boards');
   } else {
     next();
   }

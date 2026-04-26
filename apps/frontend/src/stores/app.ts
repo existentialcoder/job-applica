@@ -2,12 +2,18 @@ import { defineStore } from 'pinia';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
+export interface BreadcrumbItem {
+  label: string
+  path?: string
+}
+
 interface IAppStore {
   themeMode: 'light' | 'dark'
   sidebarExpand: boolean
   wrapperWidth: number | string
   wrapperLeftOffset: number | string
   navWidth: number | string
+  breadcrumbs: BreadcrumbItem[]
 }
 
 const LIGHT = 'light';
@@ -26,7 +32,8 @@ export const useAppStore = defineStore('app', {
     sidebarExpand: true,
     wrapperWidth: 0,
     wrapperLeftOffset: 0,
-    navWidth: '100%'
+    navWidth: '100%',
+    breadcrumbs: [],
   }),
   getters: {
     theme: (state) => state.themeMode,
@@ -105,6 +112,9 @@ export const useAppStore = defineStore('app', {
           body: JSON.stringify({ settings: { theme: this.themeMode } }),
         });
       } catch { /* ignore network errors */ }
+    },
+    setBreadcrumbs(items: BreadcrumbItem[]) {
+      this.breadcrumbs = items;
     },
     appUnmount() {
       window.removeEventListener('resize', this.initWrapper);

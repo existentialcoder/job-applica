@@ -55,11 +55,12 @@ class JobBase(BaseSchema):
     title: str
     company: Optional[CompanyBase] = None
     location: Optional[LocationBase] = None
-    status: ApplicationStatus = ApplicationStatus.Saved
+    status: str = 'Saved'
     position: Optional[JobPosition] = JobPosition.Intern
     category: Optional[str] = None
     salary_range: Optional[str] = None
     work_model: Optional[str] = None
+    board_id: Optional[int] = None
 
     required_skills: List[SkillBaseLean] = Field(default_factory=list)
 
@@ -79,11 +80,12 @@ class JobCreate(BaseModel):
     company_id: Optional[int] = None
     company_name: Optional[str] = None
     location: Optional[str] = None
-    status: ApplicationStatus = ApplicationStatus.Saved
+    status: str = 'Saved'
     position: Optional[JobPosition] = JobPosition.Intern
     category: Optional[str] = None
     salary_range: Optional[str] = None
     work_model: Optional[str] = 'On-site'
+    board_id: Optional[int] = None
 
     required_skills: List[str] = Field(default_factory=list)
 
@@ -101,11 +103,12 @@ class JobUpdate(BaseModel):
     company_id: Optional[int] = None
     company_name: Optional[str] = None
     location: Optional[str] = None
-    status: Optional[ApplicationStatus] = None
+    status: Optional[str] = None
     position: Optional[JobPosition] = None
     category: Optional[str] = None
     salary_range: Optional[str] = None
     work_model: Optional[str] = None
+    board_id: Optional[int] = None
 
     required_skills: Optional[List[str]] = None
 
@@ -123,5 +126,6 @@ class JobFilterParams(BaseModel):
     title: Optional[str] = Field(None, description='Job title filter')
     company: Optional[str] = Field(None, description='Company name filter')
     location: Optional[str] = Field(None, description='Location filter')
-    status: Optional[ApplicationStatus] = Field(None, description='Application status filter')
+    status: Optional[str] = Field(None, description='Application status filter')
     source_platform: Optional[SourcePlatform] = Field(None, description='Source platform filter')
+    board_id: Optional[int] = Field(None, description='Board ID filter')

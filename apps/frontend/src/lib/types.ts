@@ -19,6 +19,23 @@ export interface SkillData {
   logo_url?: string
 }
 
+export interface StageData {
+  key: string
+  label: string
+  color: string
+}
+
+export interface BoardData {
+  id: number
+  name: string
+  color?: string
+  description?: string
+  stages: StageData[]
+  is_default: boolean
+  created_at?: string
+  updated_at?: string
+}
+
 export interface JobData {
   id: number
   title: string
@@ -29,6 +46,7 @@ export interface JobData {
   category?: string
   salary_range?: string
   work_model?: string
+  board_id?: number
   required_skills?: SkillData[]
   description?: string
   years_of_experience?: { min?: number; max?: number }
@@ -57,6 +75,7 @@ export interface JobCreatePayload {
   category?: string
   salary_range?: string
   work_model?: string
+  board_id?: number
   required_skills?: string[]
   description?: string
   source_url?: string
@@ -66,3 +85,33 @@ export interface JobCreatePayload {
 }
 
 export type JobUpdatePayload = Partial<JobCreatePayload>
+
+// ── Dashboard ──────────────────────────────────────────────────────────────
+
+export interface DashboardOverview {
+  total_saved: number
+  total_applied: number
+  total_interviews: number
+  total_offers: number
+  total_rejected: number
+  total_withdrawn: number
+  total_ghosted: number
+  total_stuck: number
+  total_active: number
+  response_rate: number
+  interview_rate: number
+  offer_rate: number
+}
+
+export interface StageCount  { stage: string;    count: number }
+export interface WeekCount   { week: string;     count: number }
+export interface PlatformCount { platform: string; count: number }
+export interface CompanyCount  { company: string;  count: number }
+
+export interface DashboardStats {
+  overview: DashboardOverview
+  by_stage: StageCount[]
+  by_week: WeekCount[]
+  by_platform: PlatformCount[]
+  top_companies: CompanyCount[]
+}

@@ -28,20 +28,26 @@ input:active, input:focus, input:blur {
   transition: all 0.4s cubic-bezier(0.075, 0.82, 0.165, 1);
   overflow-x: hidden;
 }
-.custom_scroll {
-  overflow-y: auto;
+/* ── Shadcn-style scrollbars (global) ─────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.4);
 }
 
-.custom_scroll::-webkit-scrollbar {
-  position: absolute;
-  width: 6px;
-}
-.custom_scroll::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-.custom_scroll::-webkit-scrollbar-thumb {
-  background: #999999; 
-  border-radius: 10px;
+.custom_scroll {
+  overflow-y: auto;
 }
 
 .sidebar.is-active {

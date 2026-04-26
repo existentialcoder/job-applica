@@ -26,7 +26,7 @@ declare namespace WebExtension {
   }
 
   interface Tabs {
-    query(queryInfo: { active?: boolean; currentWindow?: boolean }): Promise<Tab[]>;
+    query(queryInfo: { active?: boolean; currentWindow?: boolean; url?: string | string[] }): Promise<Tab[]>;
     create(createProperties: { url?: string; active?: boolean }): Promise<Tab>;
     remove(tabIds: number | number[]): Promise<void>;
     onUpdated: {
