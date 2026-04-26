@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import type { JobData, JobCreatePayload } from '@/lib/types';
+import type { JobData, JobCreatePayload, StageData } from '@/lib/types';
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -11,7 +11,26 @@ import { Label } from '@/components/ui/label';
 import dataservice, { type JobFilters } from '@/lib/dataservice';
 import { TableApplications, BoardApplications, AddJobModal } from '@/components/applications';
 
-const selectedLayout = ref<'table' | 'board'>('table');
+const props = defineProps<{
+  boardId?: number
+  stages?: StageData[]
+  defaultStatus?: string
+}>();
+
+const emit = defineEmits<{
+  (e: 'stages-updated', stages: StageData[]): void
+}>();
+
+const STORAGE_KEY_VIEW = 'ja_view_mode';
+const savedView = localStorage.getItem(STORAGE_KEY_VIEW);
+const selectedLayout = ref<'table' | 'board'>(
+  savedView === 'board' || savedView === 'table' ? savedView : 'table'
+);
+
+watch(selectedLayout, (val) => {
+  localStorage.setItem(STORAGE_KEY_VIEW, val);
+});
+
 const allJobs = ref<JobData[]>([]);
 const totalJobs = ref(0);
 const isLoading = ref(false);
@@ -21,13 +40,22 @@ const isModalOpen = ref(false);
 const editingJob = ref<JobData | null>(null);
 
 const searchQuery = ref('');
-const filterStatus = ref('');
-const filterPlatform = ref('');
+const filterStatus = ref('__all__');
+const filterPlatform = ref('__all__');
 const currentPage = ref(1);
 const pageSize = 20;
 
-const STATUS_OPTIONS = ['Saved', 'Applied', 'Phone Screen', 'Interview', 'Technical', 'Offer', 'Rejected', 'Withdrawn'];
 const PLATFORM_OPTIONS = ['LinkedIn', 'Indeed', 'Glassdoor', 'Monster', 'ZipRecruiter', 'Jobscan', 'Other'];
+
+const DEFAULT_STAGES = ['Saved', 'Applied', 'Phone Screen', 'Interview', 'Technical', 'Offer', 'Rejected', 'Withdrawn'];
+
+const statusOptions = ref<string[]>(
+  props.stages?.map(s => s.label) ?? DEFAULT_STAGES
+);
+
+watch(() => props.stages, (stages) => {
+  if (stages?.length) statusOptions.value = stages.map(s => s.label);
+}, { immediate: true });
 
 async function loadJobs() {
   isLoading.value = true;
@@ -35,9 +63,10 @@ async function loadJobs() {
     page: currentPage.value,
     per_page: pageSize,
   };
+  if (props.boardId) filters.board_id = props.boardId;
   if (searchQuery.value.trim()) filters.query = searchQuery.value.trim();
-  if (filterStatus.value) filters.status = filterStatus.value;
-  if (filterPlatform.value) filters.source_platform = filterPlatform.value;
+  if (filterStatus.value && filterStatus.value !== '__all__') filters.status = filterStatus.value;
+  if (filterPlatform.value && filterPlatform.value !== '__all__') filters.source_platform = filterPlatform.value;
 
   const res = await dataservice.getJobs(filters);
   allJobs.value = res.items;
@@ -72,6 +101,7 @@ function openEditModal(job: JobData) {
 }
 
 async function handleSaveJob(payload: JobCreatePayload) {
+  if (props.boardId) payload = { ...payload, board_id: props.boardId };
   if (editingJob.value) {
     await dataservice.updateJob(editingJob.value.id, payload);
   } else {
@@ -85,13 +115,63 @@ async function handleStatusChange(jobId: number, newStatus: string) {
   await loadJobs();
 }
 
-function clearFilters() {
-  searchQuery.value = '';
-  filterStatus.value = '';
-  filterPlatform.value = '';
+async function handleDeleteJob(jobId: number) {
+  await dataservice.deleteJob(jobId);
+  await loadJobs();
 }
 
-const hasActiveFilters = () => !!(searchQuery.value || filterStatus.value || filterPlatform.value);
+async function handleAddStage(stage: StageData) {
+  if (!props.boardId || !props.stages) return;
+  const newStages = [...props.stages, stage];
+  const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
+  if (updated) emit('stages-updated', updated.stages);
+}
+
+async function handleRemoveStage(key: string) {
+  if (!props.boardId || !props.stages) return;
+  const newStages = props.stages.filter(s => s.key !== key);
+  if (newStages.length === 0) return;
+  const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
+  if (updated) {
+    emit('stages-updated', updated.stages);
+    await loadJobs();
+  }
+}
+
+async function handleUpdateStage(payload: { oldKey: string; stage: StageData }) {
+  if (!props.boardId || !props.stages) return;
+  const { oldKey, stage } = payload;
+  const newStages = props.stages.map(s => s.key === oldKey ? stage : s);
+  const keyRenames = oldKey !== stage.key ? { [oldKey]: stage.key } : undefined;
+  const updated = await dataservice.updateBoard(props.boardId, { stages: newStages, key_renames: keyRenames });
+  if (updated) {
+    emit('stages-updated', updated.stages);
+    if (keyRenames) await loadJobs();
+  }
+}
+
+async function handleQuickAddJob(payload: { title: string; company_name?: string; status: string }) {
+  const fullPayload: JobCreatePayload = {
+    title: payload.title,
+    company_name: payload.company_name,
+    status: payload.status,
+    board_id: props.boardId,
+  };
+  await dataservice.createJob(fullPayload);
+  await loadJobs();
+}
+
+function clearFilters() {
+  searchQuery.value = '';
+  filterStatus.value = '__all__';
+  filterPlatform.value = '__all__';
+}
+
+const hasActiveFilters = () => !!(
+  searchQuery.value ||
+  (filterStatus.value && filterStatus.value !== '__all__') ||
+  (filterPlatform.value && filterPlatform.value !== '__all__')
+);
 
 const route = useRoute();
 
@@ -118,14 +198,14 @@ onMounted(async () => {
           placeholder="Search jobs..."
           class="w-48"
         />
-        <Select v-model="filterStatus">
+        <Select v-if="selectedLayout !== 'board'" v-model="filterStatus">
           <SelectTrigger class="w-36">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="">All Statuses</SelectItem>
-              <SelectItem v-for="s in STATUS_OPTIONS" :key="s" :value="s">{{ s }}</SelectItem>
+              <SelectItem value="__all__">All Statuses</SelectItem>
+              <SelectItem v-for="s in statusOptions" :key="s" :value="s">{{ s }}</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -135,7 +215,7 @@ onMounted(async () => {
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="">All Platforms</SelectItem>
+              <SelectItem value="__all__">All Platforms</SelectItem>
               <SelectItem v-for="p in PLATFORM_OPTIONS" :key="p" :value="p">{{ p }}</SelectItem>
             </SelectGroup>
           </SelectContent>
@@ -215,23 +295,33 @@ onMounted(async () => {
     <TableApplications
       v-else-if="selectedLayout === 'table' && !isLoading"
       :jobs="allJobs"
+      :status-options="statusOptions"
       @selection-change="onTableSelectionChange"
       @edit="openEditModal"
       @status-change="handleStatusChange"
+      @add-quick="handleQuickAddJob"
     />
 
     <!-- Board view -->
     <BoardApplications
       v-else-if="selectedLayout === 'board' && !isLoading"
       :jobs="allJobs"
+      :stages="stages"
       @edit="openEditModal"
       @status-change="handleStatusChange"
+      @delete="handleDeleteJob"
+      @add-stage="handleAddStage"
+      @remove-stage="handleRemoveStage"
+      @update-stage="handleUpdateStage"
+      @add-job="handleQuickAddJob"
     />
 
     <!-- Add/Edit modal -->
     <AddJobModal
       v-model:open="isModalOpen"
       :edit-job="editingJob"
+      :status-options="statusOptions"
+      :default-status="defaultStatus ?? statusOptions[0]"
       @save="handleSaveJob"
     />
   </div>

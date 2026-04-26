@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.deps.auth import get_current_user
-from .api.v1.routes import jobs, companies, auth, skills
+from .api.v1.routes import jobs, companies, auth, skills, boards, dashboard
 from .core.config import settings
 from .db.base_class import Base
 from .db.session import engine
@@ -28,7 +28,9 @@ enabled_routes = [
     { 'tags': ['Jobs'], 'route': jobs },
     { 'tags': ['Companies'], 'route': companies },
     { 'tags': ['Auth'], 'route': auth },
-    { 'tags': ['Skills'], 'route': skills }
+    { 'tags': ['Skills'], 'route': skills },
+    { 'tags': ['Boards'], 'route': boards },
+    { 'tags': ['Dashboard'], 'route': dashboard },
 ]
 
 for enabled_route in enabled_routes:

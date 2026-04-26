@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
     root: rootDir,
     base: '/',
     appType: 'spa',
+    publicDir: path.resolve(__dirname, 'public'),
     plugins: [
       vue(),
     ],

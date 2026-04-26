@@ -12,7 +12,13 @@
       "Bash(python -m alembic upgrade head)",
       "Bash(python -m alembic stamp c1d5f9a2b347)",
       "Bash(yarn workspace *)",
-      "Bash(yarn add *)"
+      "Bash(yarn add *)",
+      "Read(//home/existentialcoder/apps/backend/alembic/versions/**)",
+      "Bash(npx vue-tsc *)",
+      "Bash(node -e \"require\\('radix-vue'\\)\")",
+      "Bash(python -c \"from src.schemas.board import BoardUpdate; print\\('schema OK'\\); from src.services.board import update_board; print\\('service OK'\\)\")",
+      "Read(//home/existentialcoder/apps/frontend/src/lib/**)",
+      "Bash(python3 -c ' *)"
     ]
   }
 }

@@ -6,6 +6,7 @@ from .company import Company
 from .user import User
 from .skill import Skill
 from .location import Location
+from .board import Board
 
 from sqlalchemy import Table, Column
 
@@ -53,12 +54,7 @@ class Job(Base):
     __tablename__ = 'jobs'
     title: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    status: Mapped[ApplicationStatus] = mapped_column(
-        Enum(ApplicationStatus, name='applicationstatus'),
-        default=ApplicationStatus.SAVED,
-        create_constraint=True,
-        nullable=False
-    )
+    status: Mapped[str] = mapped_column(String(100), nullable=False, default='Saved')
     position: Mapped[JobPosition] = mapped_column(
         Enum(JobPosition),
         default=JobPosition.INTERN,
@@ -98,6 +94,9 @@ class Job(Base):
 
     location: Mapped['Location'] = relationship('Location')
     location_id: Mapped[int] = mapped_column(ForeignKey('locations.id'), nullable=True)
+
+    board: Mapped['Board'] = relationship('Board')
+    board_id: Mapped[int | None] = mapped_column(ForeignKey('boards.id'), nullable=True)
 
     def __repr__(self):
         return f'<Job id={self.id} title={self.title}>'

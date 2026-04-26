@@ -6,6 +6,7 @@ from ..models.skill import Skill
 from ..models.company import Company
 from ..models.location import Location
 from ..services import skill as skill_service
+from ..services.board import get_default_board_id
 from ..schemas.skill import SkillCreate
 from ..schemas.user import UserBase
 from ..schemas.job import JobBase, JobUpdate, JobCreate, JobFilterParams
@@ -79,6 +80,8 @@ def get_jobs(db: Session, user: UserBase, pagination: dict, filter: JobFilterPar
             q = q.filter(Job.status == filter.status)
         if filter.source_platform:
             q = q.filter(Job.source_platform == filter.source_platform)
+        if filter.board_id:
+            q = q.filter(Job.board_id == filter.board_id)
 
     total = q.count()
     q = paginate_query(q, pagination)
@@ -107,6 +110,10 @@ def delete_job(db: Session, user: UserBase, job_id: int) -> bool:
 def get_transformed_job(db: Session, job_in: JobCreate | JobUpdate, user: UserBase) -> dict:
     data = job_in.model_dump(exclude_unset=True)
     data['user_id'] = user.id
+
+    # Assign default board when board_id not provided on create
+    if 'board_id' not in data and isinstance(job_in, JobCreate):
+        data['board_id'] = get_default_board_id(db, user.id)
 
     # Handle company: prefer company_id, fall back to company_name string
     company_name = data.pop('company_name', None)

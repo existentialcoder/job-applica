@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#3B30C4"/>
+      <stop offset="55%"  stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <!-- Subtle inner-glow on the J hook concave face -->
+    <linearGradient id="hookDepth" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="rgba(180,165,255,0.45)"/>
+      <stop offset="100%" stop-color="rgba(180,165,255,0)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ─── Background ─────────────────────────────── -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- ─── Main white silhouette ─────────────────────
+       One connected shape: profile head → suit body → J hook
+       Traced clockwise from top-left of head.
+  ──────────────────────────────────────────────── -->
+  <path fill="white" d="
+    M 206,55
+    C 222,33 260,28 290,46
+    Q 310,60 309,84
+    L 311,104
+    Q 319,128 308,147
+    Q 299,159 284,165
+    L 314,170
+    L 314,352
+    C 315,402 308,442 278,461
+    C 257,474 226,474 200,459
+    C 170,441 163,400 166,358
+    L 190,350
+    L 190,170
+    L 218,165
+    Q 204,157 199,141
+    Q 190,113 200,84
+    Q 202,66 206,55
+    Z
+  "/>
+
+  <!-- ─── J hook concave depth ───────────────────── -->
+  <path fill="url(#hookDepth)" d="
+    M 190,350
+    C 190,400 196,434 220,452
+    C 243,469 268,467 290,451
+    C 312,434 314,400 308,360
+    L 298,352
+    C 303,396 300,428 282,444
+    C 263,459 238,458 220,443
+    C 201,428 200,396 202,356
+    Z
+  "/>
+
+  <!-- ─── Suit lapels ────────────────────────────── -->
+  <path fill="rgba(80,62,200,0.28)" d="M 218,170 L 244,228 L 258,184"/>
+  <path fill="rgba(80,62,200,0.28)" d="M 284,170 L 258,228 L 258,184"/>
+
+  <!-- ─── Tie ────────────────────────────────────── -->
+  <!-- Knot -->
+  <path fill="rgba(60,45,175,0.62)" d="M 253,184 L 258,194 L 263,184 L 258,177 Z"/>
+  <!-- Body of tie -->
+  <path fill="rgba(60,45,175,0.45)" d="M 253,193 L 247,272 L 258,285 L 269,272 L 263,193 Z"/>
+
+  <!-- ─── Suit center button ─────────────────────── -->
+  <circle cx="258" cy="308" r="3" fill="rgba(80,62,200,0.2)"/>
+
+  <!-- ─── Right arm ──────────────────────────────── -->
+  <path fill="white" d="
+    M 314,300
+    C 326,304 340,310 348,325
+    L 337,337
+    C 329,324 316,320 308,316 Z
+  "/>
+
+  <!-- ─── Briefcase ─────────────────────────────── -->
+  <!-- Body -->
+  <rect x="316" y="322" width="116" height="86" rx="10" fill="white"/>
+
+  <!-- Handle -->
+  <path fill="none" stroke="white" stroke-width="12"
+        stroke-linecap="round" stroke-linejoin="round"
+        d="M 344,322 L 344,306 Q 344,295 360,295 L 390,295 Q 406,295 406,306 L 406,322"/>
+
+  <!-- Handle straps -->
+  <rect x="337" y="315" width="15" height="12" rx="3" fill="rgba(80,62,200,0.22)"/>
+  <rect x="400" y="315" width="15" height="12" rx="3" fill="rgba(80,62,200,0.22)"/>
+
+  <!-- Horizontal divider -->
+  <line x1="316" y1="362" x2="432" y2="362" stroke="rgba(80,62,200,0.22)" stroke-width="2"/>
+
+  <!-- Clasp housing -->
+  <rect x="354" y="353" width="44" height="19" rx="5" fill="rgba(80,62,200,0.22)"/>
+  <!-- Clasp button -->
+  <rect x="362" y="357" width="28" height="11" rx="3" fill="rgba(80,62,200,0.30)"/>
+
+  <!-- Corner rivets -->
+  <circle cx="330" cy="340" r="3.5" fill="rgba(80,62,200,0.15)"/>
+  <circle cx="418" cy="340" r="3.5" fill="rgba(80,62,200,0.15)"/>
+  <circle cx="330" cy="394" r="3.5" fill="rgba(80,62,200,0.15)"/>
+  <circle cx="418" cy="394" r="3.5" fill="rgba(80,62,200,0.15)"/>
+</svg>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import dataservice from './lib/dataservice';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import dataservice, { type BoardData } from './lib/dataservice';
 import ext from './lib/ext';
 import { Button } from '@job-applica/ui/components/ui/button';
 import { Input } from '@job-applica/ui/components/ui/input';
@@ -89,11 +89,41 @@ const isSaveBtnLoading = ref(false);
 const saveError = ref('');
 const isFetchingData = ref(false);
 
-const STATUS_OPTIONS = ['Saved', 'Applied', 'Phone Screen', 'Interview', 'Technical', 'Offer', 'Rejected', 'Withdrawn'];
+// ── Boards ────────────────────────────────────────────────────────────────────
+const boards = ref<BoardData[]>([]);
+const selectedBoardId = ref<number | null>(null);
 
-const addMessageListener = (callback: (msg: any) => void) => {
-  ext.runtime.onMessage.addListener(callback);
-};
+const selectedBoard = computed(() =>
+  boards.value.find(b => b.id === selectedBoardId.value) ?? null
+);
+
+const statusOptions = computed<string[]>(() => {
+  const stages = selectedBoard.value?.stages;
+  return stages?.length ? stages.map((s) => s.key) : ['Saved', 'Applied', 'Phone Screen', 'Interview', 'Technical', 'Offer', 'Rejected', 'Withdrawn'];
+});
+
+watch(selectedBoardId, async (id: number | null) => {
+  if (id !== null) {
+    await ext.storage.local.set({ last_board_id: id });
+    // Re-fetch to get the latest stages (user may have edited them in the web app)
+    const fresh = await dataservice.getBoard(id);
+    if (fresh) {
+      const idx = boards.value.findIndex(b => b.id === id);
+      if (idx !== -1) boards.value[idx] = fresh;
+      else boards.value.push(fresh);
+    }
+    const stages = selectedBoard.value?.stages;
+    jobStatus.value = stages?.[0]?.key ?? 'Saved';
+  }
+});
+
+watch(statusOptions, (opts: string[]) => {
+  if (!opts.includes(jobStatus.value)) {
+    jobStatus.value = opts[0] ?? 'Saved';
+  }
+}, { immediate: true });
+
+let messageListenerAdded = false;
 
 async function setupData() {
   let loggedIn = await dataservice.isLoggedIn();
@@ -117,20 +147,33 @@ async function setupData() {
   platform.value = dataservice.detectPlatform(url);
   view.value = 'job';
 
-  addMessageListener(async (msg: any) => {
-    if (msg.jobTitle) jobTitle.value = msg.jobTitle;
-    if (msg.company) company.value = msg.company;
-    if (msg.location) jobLocation.value = msg.location;
-    if (msg.jobDescription) jobDescription.value = msg.jobDescription;
-    if (msg.salaryRange) salaryRange.value = msg.salaryRange;
-    if (msg.workModel) workModel.value = msg.workModel;
-    isFetchingData.value = false;
+  // Load boards and restore last-used board
+  const [fetchedBoards, cached] = await Promise.all([
+    dataservice.getBoards(),
+    ext.storage.local.get(['last_board_id']),
+  ]);
+  boards.value = fetchedBoards;
+  const lastId = cached.last_board_id as number | undefined;
+  const defaultBoard = fetchedBoards.find(b => b.is_default);
+  selectedBoardId.value = fetchedBoards.find(b => b.id === lastId)?.id ?? defaultBoard?.id ?? fetchedBoards[0]?.id ?? null;
 
-    // Check by title + company once we have the data from the page
-    if (msg.jobTitle) {
-      existingJobId.value = await dataservice.checkJobExists(msg.jobTitle, msg.company || undefined);
-    }
-  });
+  if (!messageListenerAdded) {
+    messageListenerAdded = true;
+    ext.runtime.onMessage.addListener(async (msg: any) => {
+      if (msg.jobTitle) jobTitle.value = msg.jobTitle;
+      if (msg.company) company.value = msg.company;
+      if (msg.location) jobLocation.value = msg.location;
+      if (msg.jobDescription) jobDescription.value = msg.jobDescription;
+      if (msg.salaryRange) salaryRange.value = msg.salaryRange;
+      if (msg.workModel) workModel.value = msg.workModel;
+      isFetchingData.value = false;
+
+      // Check by title + company once we have the data from the page
+      if (msg.jobTitle) {
+        existingJobId.value = await dataservice.checkJobExists(msg.jobTitle, msg.company || undefined);
+      }
+    });
+  }
 
   isFetchingData.value = true;
   try {
@@ -194,6 +237,7 @@ async function saveJob() {
       source_url: currentUrl.value || undefined,
       source_platform: platform.value || undefined,
       notes: notes.value || undefined,
+      board_id: selectedBoardId.value ?? undefined,
     });
 
     if (jobId !== null) {
@@ -328,10 +372,9 @@ const platformBadgeVariant: Record<string, any> = {
             </svg>
           </div>
           <div>
-            <p class="text-sm font-medium">Already in your tracker</p>
-            <p class="text-xs text-muted-foreground mt-0.5">This job was saved previously.</p>
+            <p class="text-sm font-medium">Job saved already</p>
           </div>
-          <a :href="`http://localhost:5173/applications?job=${existingJobId}`" target="_blank"
+          <a :href="`http://localhost:5173/boards/${selectedBoardId}?job=${existingJobId}`" target="_blank"
             class="text-xs text-primary hover:underline font-medium">
             View in Dashboard →
           </a>
@@ -349,6 +392,18 @@ const platformBadgeVariant: Record<string, any> = {
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
           Auto-filling from page...
+        </div>
+
+        <!-- Board selector -->
+        <div v-if="boards.length > 0" class="flex flex-col gap-1.5">
+          <Label for="board-select">Board</Label>
+          <NativeSelect
+            id="board-select"
+            :modelValue="selectedBoardId !== null ? String(selectedBoardId) : ''"
+            @update:modelValue="selectedBoardId = Number($event)"
+          >
+            <option v-for="b in boards" :key="b.id" :value="String(b.id)">{{ b.name }}</option>
+          </NativeSelect>
         </div>
 
         <!-- Job Title -->
@@ -374,7 +429,7 @@ const platformBadgeVariant: Record<string, any> = {
           <div class="flex flex-col gap-1.5">
             <Label for="status">Status</Label>
             <NativeSelect id="status" v-model="jobStatus">
-              <option v-for="s in STATUS_OPTIONS" :key="s" :value="s">{{ s }}</option>
+              <option v-for="s in statusOptions" :key="s" :value="s">{{ s }}</option>
             </NativeSelect>
           </div>
           <div class="flex flex-col gap-1.5">
@@ -395,16 +450,6 @@ const platformBadgeVariant: Record<string, any> = {
 
         <!-- Description & retry row -->
         <div class="flex items-center justify-between">
-          <span class="flex items-center gap-1 text-xs"
-            :class="jobDescription ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'">
-            <svg v-if="jobDescription" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <svg v-else class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6" />
-            </svg>
-            {{ jobDescription ? 'Description captured' : 'No description' }}
-          </span>
           <button v-if="!isFetchingData" @click="retryFetch"
             class="text-xs text-primary hover:underline">
             Re-fetch

@@ -9,6 +9,7 @@ import { useRoute } from 'vue-router'
 import { APP_MENU } from '@/config/app'
 import { ArrowLeftToLine } from 'lucide-vue-next'
 import { useAppStore } from '@/stores/app'
+import AppLogo from '@/components/core/AppLogo.vue'
 
 const route = useRoute()
 
@@ -38,30 +39,31 @@ const toggleSidebar = () => {
         <!-- Header -->
         <div class="h-[64px]">
           <div
-            class="px-4 h-[64px] flex fixed z-10 items-center justify-between border-b-[1px]"
+            class="px-4 h-[64px] flex fixed z-10 items-center border-b-[1px]"
+            :class="store.sidebarExpanded ? 'justify-between' : 'justify-center'"
             :style="{ width: `${store.sidebarExpanded ? 280 : 64}px` }"
           >
-            <transition name="fade">
-              <h2 v-show="store.sidebarExpanded" class="text-2xl font-semibold flex items-center">
-                <span class="text-foreground">
-                  <span class="mr-2 flex items-center">
-                    <Icon name="BriefcaseBusiness" />
-                  </span>
-                </span>
-                JobApplica
-              </h2>
-            </transition>
-            <Button
-              variant="outline"
-              class="p-[6px] w-8 h-8 transition-all duration-200"
-              :class="store.sidebarExpanded ? 'bg-transparent' : 'dark:bg-white'"
+            <!-- Collapsed: logo icon is the expand trigger -->
+            <button
+              v-if="!store.sidebarExpanded"
+              class="cursor-pointer rounded-md p-0.5 hover:opacity-80 transition-opacity"
               @click="toggleSidebar"
+              aria-label="Expand sidebar"
             >
-              <ArrowLeftToLine
-                class="transition-all duration-500"
-                :class="!store.sidebarExpanded ? 'rotate-180 text-black' : ''"
-              />
-            </Button>
+              <AppLogo :collapsed="true" />
+            </button>
+
+            <!-- Expanded: full logo + collapse button -->
+            <template v-else>
+              <AppLogo :collapsed="false" />
+              <Button
+                variant="outline"
+                class="p-[6px] w-8 h-8 flex-shrink-0 bg-transparent transition-all duration-200"
+                @click="toggleSidebar"
+              >
+                <ArrowLeftToLine class="transition-all duration-500" />
+              </Button>
+            </template>
           </div>
         </div>
 

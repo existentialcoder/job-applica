@@ -37,37 +37,7 @@
   "content_scripts": [
     {
       "matches": ["http://localhost:5173/*"],
-      "js": ["content-webapp.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["https://www.linkedin.com/*", "https://linkedin.com/*"],
-      "js": ["content-linkedin.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["https://www.indeed.com/*", "https://indeed.com/*"],
-      "js": ["content-indeed.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["https://www.glassdoor.com/*", "https://glassdoor.com/*"],
-      "js": ["content-glassdoor.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["https://www.monster.com/*", "https://monster.com/*"],
-      "js": ["content-monster.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["https://www.ziprecruiter.com/*", "https://ziprecruiter.com/*"],
-      "js": ["content-ziprecruiter.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["https://www.jobscan.co/*", "https://jobscan.co/*"],
-      "js": ["content-jobscan.js"],
+      "js": ["content/webapp.js"],
       "run_at": "document_idle"
     }
   ]

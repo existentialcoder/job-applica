@@ -1,4 +1,4 @@
-import type { JobData, JobCreatePayload, JobUpdatePayload } from './types';
+import type { JobData, JobCreatePayload, JobUpdatePayload, BoardData, DashboardStats } from './types';
 import { useAuthStore } from '@/stores/auth';
 import router from '@/router';
 import { toast } from 'vue-sonner';
@@ -72,6 +72,7 @@ export interface JobFilters {
   location?: string
   status?: string
   source_platform?: string
+  board_id?: number
   page?: number
   per_page?: number
 }
@@ -103,6 +104,7 @@ export default {
     if (filters.location) params.set('location', filters.location);
     if (filters.status) params.set('status', filters.status);
     if (filters.source_platform) params.set('source_platform', filters.source_platform);
+    if (filters.board_id) params.set('board_id', String(filters.board_id));
     if (filters.page) params.set('page', String(filters.page));
     if (filters.per_page) params.set('per_page', String(filters.per_page));
 
@@ -155,5 +157,66 @@ export default {
       headers: { ...authHeaders() },
     });
     return response.ok;
+  },
+
+  async getBoards(): Promise<BoardData[]> {
+    const response = await apiFetch(`${API_BASE}/boards`, {
+      headers: { ...authHeaders() },
+    });
+    if (!response.ok) return [];
+    return response.json();
+  },
+
+  async getBoard(boardId: number): Promise<BoardData | null> {
+    const response = await apiFetch(`${API_BASE}/boards/${boardId}`, {
+      headers: { ...authHeaders() },
+    });
+    if (!response.ok) return null;
+    return response.json();
+  },
+
+  async createBoard(payload: { name: string; color?: string; description?: string; stages?: { key: string; label: string; color: string }[] }): Promise<BoardData | null> {
+    const response = await apiFetch(`${API_BASE}/boards`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) return null;
+    return response.json();
+  },
+
+  async updateBoard(boardId: number, payload: { name?: string; color?: string; description?: string; stages?: { key: string; label: string; color: string }[]; key_renames?: Record<string, string> }): Promise<BoardData | null> {
+    const response = await apiFetch(`${API_BASE}/boards/${boardId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) return null;
+    return response.json();
+  },
+
+  async setDefaultBoard(boardId: number): Promise<BoardData | null> {
+    const response = await apiFetch(`${API_BASE}/boards/${boardId}/set-default`, {
+      method: 'POST',
+      headers: { ...authHeaders() },
+    });
+    if (!response.ok) return null;
+    return response.json();
+  },
+
+  async deleteBoard(boardId: number): Promise<boolean> {
+    const response = await apiFetch(`${API_BASE}/boards/${boardId}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() },
+    });
+    return response.ok;
+  },
+
+  async getDashboardStats(): Promise<DashboardStats | null> {
+    const response = await apiFetch(`${API_BASE}/dashboard/stats`, {
+      headers: { ...authHeaders() },
+    });
+    if (!response.ok) return null;
+    return response.json();
   },
 };

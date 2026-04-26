@@ -28,3 +28,9 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# Generated icon assets (produced by scripts/generate-icons.py — run locally)
+public/icon-*.png
+public/apple-touch-icon.png
+public/favicon.ico
+scripts/

@@ -36,10 +36,10 @@ async function handleLogout() {
     class="flex items-center justify-between h-[64px] border-b-[1px] px-4 fixed z-40 top-0 bg-background/80 backdrop-blur-lg border-b border-border"
     :style="{ width: store.navWidth }"
   >
-    <div class="w-24 hidden lg:block">
+    <div class="min-w-0 max-w-xs hidden lg:block">
       <Breadcrumb />
     </div>
-    <div class="w-2/5 hidden lg:block" />
+    <div class="flex-1 hidden lg:block" />
 
     <Button
       variant="outline"

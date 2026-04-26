@@ -19,6 +19,20 @@ const storage = {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+export interface StageData {
+  key: string;
+  label: string;
+  color: string;
+}
+
+export interface BoardData {
+  id: number;
+  name: string;
+  color?: string;
+  stages: StageData[];
+  is_default: boolean;
+}
+
 export interface JobData {
   title: string;
   company_name?: string;
@@ -33,17 +47,12 @@ export interface JobData {
   source_platform?: string;
   applied_date?: string;
   notes?: string;
+  board_id?: number;
 }
 
 export interface AuthTokens {
   access_token: string;
   refresh_token: string;
-}
-
-async function getAuthHeader(): Promise<Record<string, string>> {
-  const token = await storage.get('access_token');
-  if (!token) return {};
-  return { Authorization: `Bearer ${token}` };
 }
 
 async function refreshAccessToken(): Promise<string | null> {
@@ -157,12 +166,12 @@ export default {
     if (!tabId) return;
 
     const url = tabs[0]?.url || '';
-    let scriptFile = 'content-linkedin.js';
-    if (url.includes('indeed.com')) scriptFile = 'content-indeed.js';
-    else if (url.includes('glassdoor.com')) scriptFile = 'content-glassdoor.js';
-    else if (url.includes('monster.com')) scriptFile = 'content-monster.js';
-    else if (url.includes('ziprecruiter.com')) scriptFile = 'content-ziprecruiter.js';
-    else if (url.includes('jobscan.co')) scriptFile = 'content-jobscan.js';
+    let scriptFile = 'content/linkedin.js';
+    if (url.includes('indeed.com')) scriptFile = 'content/indeed.js';
+    else if (url.includes('glassdoor.com')) scriptFile = 'content/glassdoor.js';
+    else if (url.includes('monster.com')) scriptFile = 'content/monster.js';
+    else if (url.includes('ziprecruiter.com')) scriptFile = 'content/ziprecruiter.js';
+    else if (url.includes('jobscan.co')) scriptFile = 'content/jobscan.js';
 
     await ext.scripting.executeScript({ target: { tabId }, files: [scriptFile] });
   },
@@ -175,7 +184,7 @@ export default {
     const response = await authedFetch(`${API_BASE}/jobs?${params}`);
     if (!response.ok) return null;
     const data = await response.json();
-    return data?.items?.[0]?.id ?? null;
+    return data?.results?.[0]?.id ?? null;
   },
 
   // Pull the web app's localStorage token into extension storage.
@@ -242,5 +251,19 @@ export default {
       method: 'PATCH',
       body: JSON.stringify({ settings: patch }),
     });
+  },
+
+  // ── Boards ────────────────────────────────────────────────────────────────
+
+  async getBoards(): Promise<BoardData[]> {
+    const response = await authedFetch(`${API_BASE}/boards`);
+    if (!response.ok) return [];
+    return response.json();
+  },
+
+  async getBoard(boardId: number): Promise<BoardData | null> {
+    const response = await authedFetch(`${API_BASE}/boards/${boardId}`);
+    if (!response.ok) return null;
+    return response.json();
   },
 };

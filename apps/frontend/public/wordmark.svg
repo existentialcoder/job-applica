@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 60">
+  <style>
+    .wm {
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+      font-weight: 700;
+      font-size: 52px;
+      letter-spacing: -1.5px;
+    }
+  </style>
+  <text class="wm" y="48">
+    <tspan fill="#18181b">Job</tspan><tspan fill="#6366F1">Applica</tspan>
+  </text>
+</svg>

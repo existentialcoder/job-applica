@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import type { JobData, JobCreatePayload } from '@/lib/types';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -15,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 const props = defineProps<{
   open: boolean
   editJob?: JobData | null
+  statusOptions?: string[]
+  defaultStatus?: string
 }>();
 
 const emit = defineEmits<{
@@ -22,7 +24,11 @@ const emit = defineEmits<{
   (e: 'save', payload: JobCreatePayload): void
 }>();
 
-const STATUS_OPTIONS = ['Saved', 'Applied', 'Phone Screen', 'Interview', 'Technical', 'Offer', 'Rejected', 'Withdrawn'];
+const STATUS_OPTIONS = computed(() =>
+  props.statusOptions?.length
+    ? props.statusOptions
+    : ['Saved', 'Applied', 'Phone Screen', 'Interview', 'Technical', 'Offer', 'Rejected', 'Withdrawn']
+);
 const POSITION_OPTIONS = ['Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager'];
 const WORK_MODEL_OPTIONS = ['On-site', 'Remote', 'Hybrid'];
 const PLATFORM_OPTIONS = ['LinkedIn', 'Indeed', 'Glassdoor', 'Monster', 'ZipRecruiter', 'Jobscan', 'Other'];
@@ -30,7 +36,7 @@ const PLATFORM_OPTIONS = ['LinkedIn', 'Indeed', 'Glassdoor', 'Monster', 'ZipRecr
 const title = ref('');
 const companyName = ref('');
 const location = ref('');
-const status = ref('Saved');
+const status = ref(props.defaultStatus ?? STATUS_OPTIONS.value[0] ?? 'Saved');
 const position = ref('');
 const workModel = ref('');
 const salaryRange = ref('');
@@ -44,7 +50,7 @@ function resetForm() {
   title.value = '';
   companyName.value = '';
   location.value = '';
-  status.value = 'Saved';
+  status.value = props.defaultStatus ?? STATUS_OPTIONS.value[0] ?? 'Saved';
   position.value = '';
   workModel.value = '';
   salaryRange.value = '';
@@ -127,6 +133,12 @@ function handleSave() {
           </div>
         </div>
 
+        <!-- Description -->
+        <div class="flex flex-col gap-1.5">
+          <Label for="modal-desc">Job Description</Label>
+          <Textarea id="modal-desc" v-model="description" placeholder="Paste job description..." class="min-h-[120px]" rows="5" />
+        </div>
+
         <!-- Status + Position row -->
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
@@ -203,12 +215,6 @@ function handleSave() {
         <div class="flex flex-col gap-1.5">
           <Label for="modal-url">Job URL</Label>
           <Input id="modal-url" v-model="sourceUrl" placeholder="https://..." type="url" />
-        </div>
-
-        <!-- Description -->
-        <div class="flex flex-col gap-1.5">
-          <Label for="modal-desc">Job Description</Label>
-          <Textarea id="modal-desc" v-model="description" placeholder="Paste job description..." class="resize-none" rows="3" />
         </div>
 
         <!-- Notes -->
