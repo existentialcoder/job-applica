@@ -62,17 +62,11 @@ async function handleLogout() {
 
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
-          <Button variant="outline" class="border-0 flex items-center max-w-[220px] w-full justify-start gap-2">
-            <Avatar class="h-8 w-8 flex-shrink-0">
+          <Button variant="outline" class="border-0 p-[6px] w-8 h-8">
+            <Avatar class="h-8 w-8">
               <AvatarImage v-if="authStore.user?.avatar_url" :src="authStore.user.avatar_url" :alt="authStore.displayName" />
               <AvatarFallback class="text-xs font-semibold">{{ initials }}</AvatarFallback>
             </Avatar>
-            <span class="hidden md:flex flex-col items-start min-w-0">
-              <p class="text-sm font-medium leading-tight truncate max-w-[140px]">{{ authStore.displayName }}</p>
-              <small class="text-xs text-muted-foreground font-light truncate max-w-[140px]">
-                {{ authStore.user?.email ?? authStore.user?.user_name }}
-              </small>
-            </span>
           </Button>
         </DropdownMenuTrigger>
 
@@ -84,7 +78,7 @@ async function handleLogout() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem class="cursor-pointer" @click="router.push('/settings?tab=profile')">
             <User class="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>

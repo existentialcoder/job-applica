@@ -2,6 +2,12 @@ from pydantic import BaseModel
 from typing import List
 
 
+class StageInfo(BaseModel):
+    key: str
+    label: str
+    color: str
+
+
 class OverviewStats(BaseModel):
     total_saved: int
     total_applied: int
@@ -38,6 +44,7 @@ class CompanyCount(BaseModel):
 
 
 class DashboardStats(BaseModel):
+    stages: List[StageInfo]
     overview: OverviewStats
     by_stage: List[StageCount]
     by_week: List[WeekCount]

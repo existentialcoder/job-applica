@@ -74,10 +74,7 @@ const router = createRouter({
         },
         {
           path: '/profile',
-          component: () => import('@/views/Profile.vue'),
-          meta: {
-            title: 'JobApplica | Profile',
-          } as RouteMeta & IRouteMeta,
+          redirect: '/settings?tab=profile',
         },
         {
           path: '/plugins',
@@ -88,7 +85,7 @@ const router = createRouter({
         },
         {
           path: '/settings',
-          component: () => import('@/views/Settings.vue'),
+          component: () => import('@/views/Profile.vue'),
           meta: {
             title: 'JobApplica | Settings',
           } as RouteMeta & IRouteMeta,

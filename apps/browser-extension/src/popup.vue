@@ -264,7 +264,20 @@ const platformBadgeVariant: Record<string, any> = {
   <div class="popup-container w-full bg-background text-foreground flex flex-col">
     <!-- Header -->
     <div class="flex items-center justify-between px-4 py-3 border-b border-border">
-      <span class="text-sm font-bold">Job Applica</span>
+      <div class="flex items-center gap-2">
+        <svg width="22" height="22" viewBox="20 0 432 480" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="popup-dew" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#4F46E5"/>
+              <stop offset="100%" stop-color="#7C3AED"/>
+            </linearGradient>
+          </defs>
+          <path fill="url(#popup-dew)" d="M 430,112 C 452,222 362,470 230,470 A 200,200 0 0 1 30,270 C 30,78 172,8 430,112 Z"/>
+          <circle cx="248" cy="154" r="22" fill="white"/>
+          <path fill="white" d="M 231,194 L 265,194 L 265,360 Q 265,442 210,442 Q 172,442 172,406 L 172,388 Q 172,418 210,418 Q 248,418 248,360 L 248,194 Z"/>
+        </svg>
+        <span class="text-sm font-bold">Job<span class="text-indigo-400">Applica</span></span>
+      </div>
       <div class="flex items-center gap-2">
         <Badge v-if="platform" :variant="platformBadgeVariant[platform] || 'secondary'" class="text-xs">
           {{ platform }}
