@@ -1,4 +1,4 @@
-import type { JobData, JobCreatePayload, JobUpdatePayload, BoardData, DashboardStats } from './types';
+import type { JobData, JobCreatePayload, JobUpdatePayload, BoardData, DashboardStats, SkillData, ResumeData } from './types';
 import { useAuthStore } from '@/stores/auth';
 import router from '@/router';
 import { toast } from 'vue-sonner';
@@ -212,11 +212,129 @@ export default {
     return response.ok;
   },
 
-  async getDashboardStats(): Promise<DashboardStats | null> {
-    const response = await apiFetch(`${API_BASE}/dashboard/stats`, {
-      headers: { ...authHeaders() },
-    });
+  async getDashboardStats(boardId?: number): Promise<DashboardStats | null> {
+    const url = boardId != null
+      ? `${API_BASE}/dashboard/stats?board_id=${boardId}`
+      : `${API_BASE}/dashboard/stats`;
+    const response = await apiFetch(url, { headers: { ...authHeaders() } });
     if (!response.ok) return null;
     return response.json();
+  },
+
+  // ── Profile ────────────────────────────────────────────────────────────────
+  async updateProfile(payload: { first_name?: string; last_name?: string; avatar_url?: string }) {
+    const response = await apiFetch(`${API_BASE}/auth/me`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error('Failed to update profile');
+    return response.json();
+  },
+
+  async uploadAvatar(file: File): Promise<{ avatar_url: string }> {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await apiFetch(`${API_BASE}/auth/avatar`, {
+      method: 'POST',
+      headers: { ...authHeaders() },
+      body: form,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || 'Upload failed');
+    }
+    return response.json();
+  },
+
+  async changePassword(payload: { current_password: string; new_password: string }) {
+    const response = await apiFetch(`${API_BASE}/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to change password');
+    }
+    return response.json();
+  },
+
+  async getSettings(): Promise<Record<string, unknown>> {
+    const response = await apiFetch(`${API_BASE}/auth/settings`, { headers: { ...authHeaders() } });
+    if (!response.ok) return {};
+    const data = await response.json();
+    return data.settings ?? {};
+  },
+
+  async updateSettings(settings: Record<string, unknown>) {
+    const response = await apiFetch(`${API_BASE}/auth/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ settings }),
+    });
+    if (!response.ok) throw new Error('Failed to update settings');
+    return response.json();
+  },
+
+  // ── Skills catalog ─────────────────────────────────────────────────────────
+  async getSkills(): Promise<SkillData[]> {
+    const response = await apiFetch(`${API_BASE}/skills`, { headers: { ...authHeaders() } });
+    if (!response.ok) return [];
+    return response.json();
+  },
+
+  // ── User skills ────────────────────────────────────────────────────────────
+  async getUserSkills(): Promise<SkillData[]> {
+    const response = await apiFetch(`${API_BASE}/auth/skills`, { headers: { ...authHeaders() } });
+    if (!response.ok) return [];
+    return response.json();
+  },
+
+  async addUserSkill(skillId: number): Promise<SkillData[]> {
+    const response = await apiFetch(`${API_BASE}/auth/skills/${skillId}`, {
+      method: 'POST',
+      headers: { ...authHeaders() },
+    });
+    if (!response.ok) throw new Error('Failed to add skill');
+    return response.json();
+  },
+
+  async removeUserSkill(skillId: number): Promise<SkillData[]> {
+    const response = await apiFetch(`${API_BASE}/auth/skills/${skillId}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() },
+    });
+    if (!response.ok) throw new Error('Failed to remove skill');
+    return response.json();
+  },
+
+  // ── Resumes ────────────────────────────────────────────────────────────────
+  async getResumes(): Promise<ResumeData[]> {
+    const response = await apiFetch(`${API_BASE}/auth/resumes`, { headers: { ...authHeaders() } });
+    if (!response.ok) return [];
+    return response.json();
+  },
+
+  async uploadResume(file: File): Promise<ResumeData> {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await apiFetch(`${API_BASE}/auth/resumes`, {
+      method: 'POST',
+      headers: { ...authHeaders() },
+      body: form,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || 'Upload failed');
+    }
+    return response.json();
+  },
+
+  async deleteResume(resumeId: number): Promise<void> {
+    await apiFetch(`${API_BASE}/auth/resumes/${resumeId}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() },
+    });
   },
 };

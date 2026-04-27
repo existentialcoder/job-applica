@@ -21,24 +21,19 @@ export const APP_MENU: AppMenus[] = [
     description: 'Manage Boards and Applications'
   },
   {
-    title: 'Profile',
-    icon: 'User',
-    path: '/profile',
-    description: 'Manage Profile',
-  },
-  {
     title: 'Plugins',
     icon: 'Workflow',
     path: '/plugins',
     description: 'Manage Plugins, Workflows and Integrations'
   },
-  {
-    title: 'Settings',
-    icon: 'Settings',
-    path: '/settings',
-    description: 'Manage Settings',
-  }
 ];
+
+export const SETTINGS_MENU_ITEM: AppMenus = {
+  title: 'Settings',
+  icon: 'Settings',
+  path: '/settings',
+  description: 'Manage account, skills, CVs and preferences',
+};
 
 export const globalSearch = {
 

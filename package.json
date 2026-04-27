@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "apps/frontend",
+    "apps/browser-extension",
     "packages/*"
   ],
   "scripts": {
-    "dev:frontend": "yarn workspace vue dev",
-    "dev:extension": "yarn workspace vue3-extension dev",
-    "build:frontend": "yarn workspace vue build",
-    "build:extension": "yarn workspace vue3-extension build"
+    "dev:frontend": "yarn workspace frontend dev",
+    "dev:extension": "yarn workspace jobapplica--extension dev",
+    "dev:website": "npm --prefix apps/website run dev",
+    "build:frontend": "yarn workspace frontend build",
+    "build:extension": "yarn workspace jobapplica--extension build",
+    "build:website": "npm --prefix apps/website run build",
+    "generate:website": "npm --prefix apps/website run generate"
   }
 }

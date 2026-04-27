@@ -18,7 +18,13 @@
       "Bash(node -e \"require\\('radix-vue'\\)\")",
       "Bash(python -c \"from src.schemas.board import BoardUpdate; print\\('schema OK'\\); from src.services.board import update_board; print\\('service OK'\\)\")",
       "Read(//home/existentialcoder/apps/frontend/src/lib/**)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(npm install *)",
+      "Bash(pkill -f \"nuxt dev\")"
+    ],
+    "additionalDirectories": [
+      "/home/existentialcoder/projects/job-applica/apps/website"
     ]
   }
 }

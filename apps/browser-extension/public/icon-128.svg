@@ -1,8 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="#4f46e5"
-    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-    class="lucide lucide-briefcase-business-icon lucide-briefcase-business">
-    <path d="M12 12h.01" />
-    <path d="M16 6V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-    <path d="M22 13a18.15 18.15 0 0 1-20 0" />
-    <rect width="20" height="14" x="2" y="6" rx="2" />
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="20 0 432 480">
+  <defs>
+    <linearGradient id="dew" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#dew)" d="M 430,112 C 452,222 362,470 230,470 A 200,200 0 0 1 30,270 C 30,78 172,8 430,112 Z"/>
+  <circle cx="248" cy="154" r="22" fill="white"/>
+  <path fill="white" d="M 231,194 L 265,194 L 265,360 Q 265,442 210,442 Q 172,442 172,406 L 172,388 Q 172,418 210,418 Q 248,418 248,360 L 248,194 Z"/>
 </svg>

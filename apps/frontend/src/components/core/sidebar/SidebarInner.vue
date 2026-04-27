@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import router from '@/router'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { APP_MENU } from '@/config/app'
+import { APP_MENU, SETTINGS_MENU_ITEM } from '@/config/app'
 import { ArrowLeftToLine } from 'lucide-vue-next'
 import { useAppStore } from '@/stores/app'
 import AppLogo from '@/components/core/AppLogo.vue'
@@ -68,7 +68,7 @@ const toggleSidebar = () => {
         </div>
 
         <!-- Scrollable menu -->
-        <ScrollArea style="height: calc(100vh - 64px)">
+        <ScrollArea style="height: calc(100vh - 64px - 72px)">
           <div class="transition-all" :class="store.sidebarExpanded ? 'p-4' : 'p-2'">
             <ul>
               <li
@@ -108,12 +108,31 @@ const toggleSidebar = () => {
         </ScrollArea>
       </div>
 
-      <!-- Footer -->
-      <div
-        class="border-t-[1px] transition-all duration-400 py-4"
-        :class="store.sidebarExpanded ? 'opacity-100' : 'opacity-0'"
-      >
-        <p class="text-xs text-foreground/50 text-center">&copy; 2024 Dashcn</p>
+      <!-- Bottom: Settings pinned -->
+      <div class="border-t-[1px] transition-all duration-400" :class="store.sidebarExpanded ? 'p-4' : 'p-2'">
+        <TooltipProvider :disable-hoverable-content="true">
+          <Tooltip :delay-duration="0">
+            <TooltipTrigger class="w-full">
+              <Toggle
+                class="w-full overflow-x-hidden justify-start duration-150"
+                :pressed="route.path.startsWith(SETTINGS_MENU_ITEM.path)"
+                @click="handleNavigate(SETTINGS_MENU_ITEM.path)"
+              >
+                <span class="flex items-center" :class="store.sidebarExpanded ? 'mr-4' : 'm-0'">
+                  <Icon :name="SETTINGS_MENU_ITEM.icon" />
+                </span>
+                <transition name="fade" :duration="300">
+                  <span v-show="store.sidebarExpanded">{{ SETTINGS_MENU_ITEM.title }}</span>
+                </transition>
+              </Toggle>
+            </TooltipTrigger>
+            <template v-if="!store.sidebarExpanded">
+              <TooltipContent side="right">
+                <p class="text-sm">{{ SETTINGS_MENU_ITEM.title }}</p>
+              </TooltipContent>
+            </template>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   </div>
