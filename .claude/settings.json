@@ -21,7 +21,9 @@
       "Bash(python3 -c ' *)",
       "Bash(python3 -m json.tool)",
       "Bash(npm install *)",
-      "Bash(pkill -f \"nuxt dev\")"
+      "Bash(pkill -f \"nuxt dev\")",
+      "Bash(yarn husky *)",
+      "Bash(chmod +x /home/existentialcoder/projects/job-applica/.husky/commit-msg)"
     ],
     "additionalDirectories": [
       "/home/existentialcoder/projects/job-applica/apps/website"

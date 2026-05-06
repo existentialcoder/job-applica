@@ -1,0 +1,11 @@
+__pycache__
+*.pyc
+*.pyo
+.env
+.env.*
+api-backend-env
+uploads/
+*.sqlite
+.pytest_cache
+tests/
+README.md
