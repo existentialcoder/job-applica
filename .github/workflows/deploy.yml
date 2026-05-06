@@ -1,0 +1,266 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump (auto = derive from commits)'
+        required: true
+        type: choice
+        options: [auto, patch, minor, major, none]
+        default: auto
+      backend:
+        description: 'Backend — FastAPI (Railway)'
+        type: boolean
+        default: false
+      frontend:
+        description: 'Frontend App — Vue (CF Pages)'
+        type: boolean
+        default: false
+      website:
+        description: 'Website — Nuxt (CF Pages)'
+        type: boolean
+        default: false
+      extension:
+        description: 'Extension — Chrome (artifact)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Version bump ─────────────────────────────────────────────────────────────
+  version:
+    name: Bump Versions
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Resolve bump type from commits
+        id: resolve
+        run: |
+          INPUT="${{ inputs.bump }}"
+
+          if [[ "$INPUT" != "auto" ]]; then
+            echo "bump=$INPUT" >> $GITHUB_OUTPUT
+            echo "Bump override: $INPUT"
+            exit 0
+          fi
+
+          # Find commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [[ -z "$LAST_TAG" ]]; then
+            RANGE="HEAD"
+          else
+            RANGE="$LAST_TAG..HEAD"
+          fi
+
+          COMMITS=$(git log "$RANGE" --pretty=format:"%s")
+          echo "Analysing commits since ${LAST_TAG:-beginning}:"
+          echo "$COMMITS"
+
+          BUMP="patch"
+          while IFS= read -r msg; do
+            # Breaking change: feat!: or fix!: or BREAKING CHANGE in body
+            if echo "$msg" | grep -qE '^[a-z]+(\([^)]+\))?!:' || echo "$msg" | grep -qi "BREAKING CHANGE"; then
+              BUMP="major"
+              break
+            fi
+            # New feature
+            if echo "$msg" | grep -qE '^feat(\([^)]+\))?:'; then
+              BUMP="minor"
+            fi
+          done <<< "$COMMITS"
+
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+          echo "Auto-resolved bump: $BUMP"
+
+      - name: Bump versions
+        id: bump
+        run: |
+          bump_semver() {
+            local v=$1 type=$2
+            IFS='.' read -r maj min pat <<< "$v"
+            case "$type" in
+              major) echo "$((maj+1)).0.0" ;;
+              minor) echo "$maj.$((min+1)).0" ;;
+              patch) echo "$maj.$min.$((pat+1))" ;;
+            esac
+          }
+
+          set_pkg_version() {
+            local dir=$1 ver=$2
+            node -e "
+              const fs = require('fs');
+              const p = JSON.parse(fs.readFileSync('$dir/package.json'));
+              p.version = '$ver';
+              fs.writeFileSync('$dir/package.json', JSON.stringify(p, null, 2) + '\n');
+            "
+          }
+
+          BUMP="${{ steps.resolve.outputs.bump }}"
+
+          # Derive new version from backend __version__.py
+          CURRENT=$(grep -oP '(?<=__version__ = ")[^"]+' apps/backend/src/__version__.py)
+          NEW=$(bump_semver "$CURRENT" "$BUMP")
+          echo "version=$NEW" >> $GITHUB_OUTPUT
+          echo "Release: $CURRENT → $NEW ($BUMP)"
+
+          if [[ "$BUMP" != "none" ]]; then
+            [[ "${{ inputs.backend }}"   == "true" ]] && \
+              sed -i "s/__version__ = \".*\"/__version__ = \"$NEW\"/" apps/backend/src/__version__.py
+            [[ "${{ inputs.frontend }}"  == "true" ]] && set_pkg_version apps/frontend "$NEW"
+            [[ "${{ inputs.website }}"   == "true" ]] && set_pkg_version apps/website "$NEW"
+            [[ "${{ inputs.extension }}" == "true" ]] && set_pkg_version apps/browser-extension "$NEW"
+          fi
+
+      - name: Commit & tag
+        if: inputs.bump != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --staged --quiet && echo "Nothing to commit" && exit 0
+
+          APPS=""
+          [[ "${{ inputs.backend }}"   == "true" ]] && APPS="$APPS backend"
+          [[ "${{ inputs.frontend }}"  == "true" ]] && APPS="$APPS frontend"
+          [[ "${{ inputs.website }}"   == "true" ]] && APPS="$APPS website"
+          [[ "${{ inputs.extension }}" == "true" ]] && APPS="$APPS extension"
+
+          VERSION="${{ steps.bump.outputs.version }}"
+          git commit -m "chore: release v$VERSION [${{ steps.resolve.outputs.bump }}] —$APPS"
+          git tag "v$VERSION"
+          git push origin HEAD:main --tags
+
+  # ── Backend → Railway ─────────────────────────────────────────────────────────
+  deploy-backend:
+    name: Backend → Railway
+    needs: version
+    runs-on: ubuntu-latest
+    if: always() && inputs.backend
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy
+        run: railway up --service ${{ vars.RAILWAY_SERVICE_NAME }} --detach
+        working-directory: apps/backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  # ── Frontend → Cloudflare Pages ───────────────────────────────────────────────
+  deploy-frontend:
+    name: Frontend → CF Pages
+    needs: version
+    runs-on: ubuntu-latest
+    if: always() && inputs.frontend
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: yarn workspace frontend build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+
+      - name: Deploy
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ vars.CF_PAGES_PROJECT_FRONTEND }}
+          directory: apps/frontend/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Website → Cloudflare Pages ────────────────────────────────────────────────
+  deploy-website:
+    name: Website → CF Pages
+    needs: version
+    runs-on: ubuntu-latest
+    if: always() && inputs.website
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/website/package-lock.json
+
+      - name: Install
+        run: npm install --legacy-peer-deps
+        working-directory: apps/website
+
+      - name: Generate
+        run: npm run generate
+        working-directory: apps/website
+
+      - name: Deploy
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ vars.CF_PAGES_PROJECT_WEBSITE }}
+          directory: apps/website/.output/public
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Extension → Artifact ──────────────────────────────────────────────────────
+  build-extension:
+    name: Extension → Artifact
+    needs: version
+    runs-on: ubuntu-latest
+    if: always() && inputs.extension
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: yarn workspace jobapplica--extension build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-v${{ needs.version.outputs.version }}
+          path: apps/browser-extension/dist/
+          retention-days: 30
