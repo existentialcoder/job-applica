@@ -163,6 +163,7 @@ jobs:
         working-directory: apps/backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
 
   # ── Frontend → Cloudflare Pages ───────────────────────────────────────────────
   deploy-frontend:
