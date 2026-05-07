@@ -2,6 +2,7 @@
   "name": "job-applica",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "yarn@1.22.22",
   "workspaces": [
     "apps/frontend",
     "apps/browser-extension",

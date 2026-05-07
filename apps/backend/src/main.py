@@ -15,6 +15,10 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title='JobApplica API')
 
+@app.get('/health', tags=['Health'], include_in_schema=False)
+def health():
+    return {'status': 'ok'}
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
