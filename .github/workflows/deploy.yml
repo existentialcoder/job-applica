@@ -207,16 +207,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: apps/website/package-lock.json
+          cache: yarn
 
       - name: Install
-        run: npm install --legacy-peer-deps
-        working-directory: apps/website
+        run: yarn install --frozen-lockfile
 
       - name: Generate
-        run: npm run generate
-        working-directory: apps/website
+        run: yarn workspace website generate
 
       - name: Deploy
         uses: cloudflare/pages-action@v1

@@ -6,21 +6,25 @@
   "workspaces": [
     "apps/frontend",
     "apps/browser-extension",
+    "apps/website",
     "packages/*"
   ],
   "scripts": {
     "dev:frontend": "yarn workspace frontend dev",
     "dev:extension": "yarn workspace jobapplica--extension dev",
-    "dev:website": "npm --prefix apps/website run dev",
+    "dev:website": "yarn workspace website dev",
     "build:frontend": "yarn workspace frontend build",
     "build:extension": "yarn workspace jobapplica--extension build",
-    "build:website": "npm --prefix apps/website run build",
-    "generate:website": "npm --prefix apps/website run generate",
+    "build:website": "yarn workspace website build",
+    "generate:website": "yarn workspace website generate",
     "prepare": "husky"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
     "husky": "^9.1.7"
+  },
+  "resolutions": {
+    "rollup-plugin-visualizer": "^6.0.0"
   }
 }
