@@ -51,13 +51,13 @@ def upgrade() -> None:
     op.drop_column('jobs', 'status')
 
     # 5. Add new typed status column from temp
-    op.add_column('jobs', sa.Column('status', sa.Enum(*APPLICATION_STATUSES, name='applicationstatus'), nullable=True))
+    op.add_column('jobs', sa.Column('status', sa.Enum(*APPLICATION_STATUSES, name='applicationstatus', create_type=False), nullable=True))
     op.execute("UPDATE jobs SET status = status_temp::applicationstatus")
     op.alter_column('jobs', 'status', nullable=False)
     op.drop_column('jobs', 'status_temp')
 
     # 6. Add typed source_platform column from temp
-    op.add_column('jobs', sa.Column('source_platform', sa.Enum(*SOURCE_PLATFORMS, name='sourceplatform'), nullable=True))
+    op.add_column('jobs', sa.Column('source_platform', sa.Enum(*SOURCE_PLATFORMS, name='sourceplatform', create_type=False), nullable=True))
     op.drop_column('jobs', 'source_platform_temp')
 
     # 7. Drop old jobstatus enum if it exists
@@ -82,7 +82,7 @@ def downgrade() -> None:
     """)
 
     op.drop_column('jobs', 'status')
-    op.add_column('jobs', sa.Column('status', sa.Enum('Open', 'Closed', 'Pending', name='jobstatus'), nullable=True))
+    op.add_column('jobs', sa.Column('status', sa.Enum('Open', 'Closed', 'Pending', name='jobstatus', create_type=False), nullable=True))
     op.execute("UPDATE jobs SET status = status_temp::jobstatus")
     op.alter_column('jobs', 'status', nullable=False)
     op.drop_column('jobs', 'status_temp')
