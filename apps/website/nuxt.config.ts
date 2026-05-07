@@ -23,5 +23,9 @@ export default defineNuxtConfig({
 
   nitro: {
     preset: 'static',
+    prerender: {
+      failOnError: false,
+      ignore: ['/terms', '/privacy', '/app'],
+    },
   },
 })

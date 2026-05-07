@@ -141,7 +141,7 @@ jobs:
           VERSION="${{ steps.bump.outputs.version }}"
           git commit -m "chore: release v$VERSION [${{ steps.resolve.outputs.bump }}] —$APPS"
           git tag "v$VERSION"
-          git push origin HEAD:main --tags
+          git push origin HEAD:${{ github.ref_name }} --tags
 
   # ── Backend → Railway ─────────────────────────────────────────────────────────
   deploy-backend:
@@ -151,19 +151,11 @@ jobs:
     if: always() && inputs.backend
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy
-        run: railway up --service ${{ vars.RAILWAY_SERVICE_NAME }} --detach
-        working-directory: apps/backend
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+      - name: Trigger deploy
+        run: |
+          echo "Railway auto-deploys from GitHub on push."
+          echo "The version commit pushed by the 'version' job triggers Railway automatically."
+          echo "No additional step needed — configure 'Auto Deploy' on the Railway service."
 
   # ── Frontend → Cloudflare Pages ───────────────────────────────────────────────
   deploy-frontend:
@@ -175,7 +167,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -194,10 +186,11 @@ jobs:
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ vars.CF_PAGES_PROJECT_FRONTEND }}
           directory: apps/frontend/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
 
   # ── Website → Cloudflare Pages ────────────────────────────────────────────────
   deploy-website:
@@ -209,7 +202,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -229,10 +222,11 @@ jobs:
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ vars.CF_PAGES_PROJECT_WEBSITE }}
           directory: apps/website/.output/public
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
 
   # ── Extension → Artifact ──────────────────────────────────────────────────────
   build-extension:
@@ -244,7 +238,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref }}
 
       - uses: actions/setup-node@v4
         with:
