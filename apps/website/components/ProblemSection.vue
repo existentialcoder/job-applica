@@ -1,31 +1,32 @@
+<script setup lang="ts">
+const t = useT()
+const p = t.problem
+</script>
+
 <template>
-  <section aria-labelledby="problem-heading">
+  <section class="problem-section" aria-labelledby="problem-heading">
     <div class="container">
-      <div class="section-label"><span class="badge">The problem</span></div>
-      <h2 class="section-heading" id="problem-heading">
-        Job searching is <span class="gradient-text">chaos</span> by default
-      </h2>
-      <p class="section-sub">Most job seekers are juggling tabs, spreadsheets, and gut feelings. JobApplica replaces all of it.</p>
+      <div class="problem-text-block">
+        <div class="section-eyebrow">{{ p.eyebrow }}</div>
+        <h2
+          id="problem-heading"
+          style="font-family:var(--font-display);font-size:clamp(28px,3.5vw,42px);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:0"
+        >
+          {{ p.headline }}
+        </h2>
+        <p>{{ p.body }}</p>
+      </div>
+
       <div class="problem-grid" role="list">
-        <div class="problem-card" role="listitem">
-          <div class="problem-icon">📋</div>
-          <strong>Spreadsheet overload</strong>
-          <p class="problem-text">Manually copying job details into rows you'll never update again.</p>
-        </div>
-        <div class="problem-card" role="listitem">
-          <div class="problem-icon">👻</div>
-          <strong>"Did I even apply here?"</strong>
-          <p class="problem-text">No idea which applications got a response — and which have been ghosting you for weeks.</p>
-        </div>
-        <div class="problem-card" role="listitem">
-          <div class="problem-icon">📊</div>
-          <strong>No visibility</strong>
-          <p class="problem-text">Can't see if you're applying to enough roles or getting stuck at the same stage every time.</p>
-        </div>
-        <div class="problem-card" role="listitem">
-          <div class="problem-icon">⏱️</div>
-          <strong>Wasted time switching tabs</strong>
-          <p class="problem-text">Copy-pasting between LinkedIn, your notes app, a calendar, and an email thread.</p>
+        <div
+          v-for="card in p.cards"
+          :key="card.label"
+          class="problem-cell"
+          role="listitem"
+        >
+          <div class="problem-label" aria-hidden="true">{{ card.label }}</div>
+          <div class="problem-title">{{ card.title }}</div>
+          <p class="problem-desc">{{ card.desc }}</p>
         </div>
       </div>
     </div>

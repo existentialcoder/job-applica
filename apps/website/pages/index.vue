@@ -1,21 +1,25 @@
 <script setup lang="ts">
+import { sections } from '~/config/sections'
+
+const t = useT()
+
 useSeoMeta({
-  title: 'JobApplica — Job Application Tracker with Kanban Boards & Analytics',
-  description: 'Track every job application with visual Kanban boards, a browser extension that auto-saves jobs from LinkedIn & Indeed, and an analytics dashboard showing your interview rate, ghosted applications, and offer pipeline.',
-  keywords: 'job application tracker, job search organizer, kanban job tracker, job hunt spreadsheet alternative, job application dashboard, browser extension job saver, interview tracker, job search analytics',
+  title: 'JobApplica — AI-Powered Job Search Platform | Discover, Apply & Track',
+  description: 'JobApplica is a complete AI-powered job search platform. Discover relevant jobs automatically, generate tailored CVs and cover letters, track your pipeline on visual Kanban boards, and let email intelligence handle follow-ups.',
+  keywords: 'ai job search platform, job application tracker, job discovery ai, ats score match, cv generator, cover letter generator, kanban job tracker, job search automation, interview tracker, follow-up automation',
   robots: 'index, follow',
   author: 'JobApplica',
   ogType: 'website',
   ogUrl: 'https://jobapplica.io/',
-  ogTitle: 'JobApplica — Job Application Tracker',
-  ogDescription: 'Stop losing track of jobs. Visual boards, browser extension auto-save, and analytics that answer: how many applied, how many ghosted, and where your pipeline stands.',
+  ogTitle: 'JobApplica — AI-Powered Job Search Platform',
+  ogDescription: 'Not just a tracker. JobApplica discovers jobs for you, generates tailored CVs, matches ATS scores, and follows up automatically. Free to start.',
   ogImage: 'https://jobapplica.io/og-image.png',
   ogSiteName: 'JobApplica',
   ogLocale: 'en_US',
   twitterCard: 'summary_large_image',
   twitterSite: '@jobapplica',
-  twitterTitle: 'JobApplica — Job Application Tracker',
-  twitterDescription: 'Visual Kanban boards + browser extension + analytics dashboard. Never lose track of a job application again.',
+  twitterTitle: 'JobApplica — AI-Powered Job Search Platform',
+  twitterDescription: 'Discover jobs, generate CVs, track applications, automate follow-ups. Your complete AI job search system — free to start.',
   twitterImage: 'https://jobapplica.io/og-image.png',
 })
 
@@ -31,49 +35,23 @@ useHead({
         '@type': 'SoftwareApplication',
         name: 'JobApplica',
         url: 'https://jobapplica.io',
-        description: 'Job application tracker with visual Kanban boards, browser extension auto-save, and an analytics dashboard.',
+        description: 'AI-powered complete job search platform — discover jobs, generate tailored CVs, track applications on Kanban boards, and automate follow-ups.',
         applicationCategory: 'BusinessApplication',
         applicationSubCategory: 'Productivity',
-        operatingSystem: 'Web, Chrome, Firefox',
+        operatingSystem: 'Web, Chrome',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
         featureList: [
+          'AI-powered job discovery based on your profile',
+          'Smart import from LinkedIn and Gmail',
+          'AI CV and cover letter generator',
+          'ATS score match and gap analysis',
           'Visual Kanban job application boards',
-          'Browser extension for LinkedIn, Indeed, Glassdoor, ZipRecruiter',
+          'Browser extension for one-click job saving',
+          'Email intelligence — auto-detect replies and rejections',
+          'Automated follow-up suggestions',
           'Analytics dashboard with interview rate and ghosting detection',
-          'Custom stages and pipeline configuration',
-          'Notes, salary range, and job description capture',
-          'Application funnel and weekly activity tracking',
         ],
         screenshot: 'https://jobapplica.io/screenshot.png',
-      }),
-    },
-    {
-      type: 'application/ld+json',
-      innerHTML: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [
-          {
-            '@type': 'Question',
-            name: 'Is JobApplica free?',
-            acceptedAnswer: { '@type': 'Answer', text: 'Yes. JobApplica is completely free to use, including the browser extension.' },
-          },
-          {
-            '@type': 'Question',
-            name: 'Which job sites does the browser extension support?',
-            acceptedAnswer: { '@type': 'Answer', text: 'The extension works on LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, and Jobscan. Jobs are captured with one click while you browse.' },
-          },
-          {
-            '@type': 'Question',
-            name: "What is 'ghosted' in the analytics?",
-            acceptedAnswer: { '@type': 'Answer', text: 'A job is marked ghosted when it has been in the Applied stage for 14 or more days with no status update — a strong signal the employer has moved on without a response.' },
-          },
-          {
-            '@type': 'Question',
-            name: 'Can I customise the pipeline stages?',
-            acceptedAnswer: { '@type': 'Answer', text: 'Yes. Every board lets you create, rename, and reorder stages to match your personal process.' },
-          },
-        ],
       }),
     },
   ],
@@ -85,14 +63,14 @@ useHead({
     <TheNav />
     <main>
       <HeroSection />
-      <PlatformsStrip />
-      <ProblemSection />
-      <HowItWorksSection />
-      <FeaturesSection />
-      <AnalyticsSection />
-      <ExtensionSection />
-      <FaqSection />
-      <FinalCtaSection />
+      <PlatformsStrip    v-if="sections.platformsStrip" />
+      <ProblemSection    v-if="sections.problem" />
+      <HowItWorksSection v-if="sections.howItWorks" />
+      <FeaturesSection   v-if="sections.features" />
+      <AnalyticsSection  v-if="sections.analytics" />
+      <ExtensionSection  v-if="sections.extension" />
+      <PricingSection    v-if="sections.pricing" />
+      <FinalCtaSection   v-if="sections.finalCta" />
     </main>
     <TheFooter />
   </div>
