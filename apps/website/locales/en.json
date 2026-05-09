@@ -1,0 +1,348 @@
+{
+  "nav": {
+    "logoText": "JobApplica",
+    "links": {
+      "features": "Features",
+      "howItWorks": "How it works",
+      "pricing": "Pricing",
+      "extension": "Extension"
+    },
+    "login": "Log in",
+    "signupFree": "Get started free",
+    "dashboard": "Dashboard"
+  },
+
+  "hero": {
+    "badge": "AI-powered. Free to start.",
+    "headline": "The complete platform for your entire job search.",
+    "headlineParts": {
+      "line1": "The complete platform",
+      "line2": "for your",
+      "emphasis": "entire",
+      "line3": "job search."
+    },
+    "subtext": "JobApplica is not just a tracker. It discovers jobs for you, helps you apply with AI-generated CVs and cover letters, tracks your pipeline, monitors your inbox for replies, and follows up on your behalf.",
+    "ctaPrimary": "Start for free",
+    "ctaSecondary": "See how it works",
+    "note": "Free tier available. No credit card required.",
+    "kanbanPreview": {
+      "boardName": "Job Search 2025",
+      "boardCount": "12 open roles",
+      "columns": {
+        "saved": "Saved",
+        "applied": "Applied",
+        "interview": "Interview"
+      },
+      "cards": {
+        "role1": { "title": "Sr. Frontend Eng", "sub": "Stripe · Remote", "tag": "$160k+" },
+        "role2": { "title": "Product Designer", "sub": "Figma · SF", "tag": "$140k" },
+        "role3": { "title": "Staff Engineer", "sub": "Linear · NYC", "tag": "Day 3" },
+        "role4": { "title": "Lead Designer", "sub": "Vercel · Remote", "tag": "Day 7" },
+        "role5": { "title": "Eng Manager", "sub": "Notion · Remote", "tag": "Scheduled" }
+      }
+    }
+  },
+
+  "platforms": {
+    "label": "Works on",
+    "items": ["LinkedIn", "Indeed", "Glassdoor", "ZipRecruiter", "Monster", "Jobscan"]
+  },
+
+  "problem": {
+    "eyebrow": "The problem",
+    "headline": "Job searching is a full-time job. It should not be.",
+    "body": "Most people manage their job search across multiple browser tabs, a half-updated spreadsheet, and a vague memory of what they applied to three weeks ago. The process is broken, not you.",
+    "cards": [
+      {
+        "label": "01",
+        "title": "Finding the right jobs",
+        "desc": "Endlessly scrolling job boards, missing relevant roles, and applying to positions that never fit your profile."
+      },
+      {
+        "label": "02",
+        "title": "Tailoring every application",
+        "desc": "Rewriting your CV and cover letter for each role from scratch, a process that can take hours per application."
+      },
+      {
+        "label": "03",
+        "title": "No record of what happened",
+        "desc": "No clear view of who responded, who went silent, or which applications have been waiting so long they need a follow-up."
+      },
+      {
+        "label": "04",
+        "title": "Missed follow-ups",
+        "desc": "Forgetting to follow up after an interview, or not knowing which stale applications are still worth pursuing."
+      }
+    ]
+  },
+
+  "features": {
+    "eyebrow": "What JobApplica does",
+    "headline": "End to end. Not just tracking.",
+    "subtext": "Every stage of your job search, from discovering the right roles to signing the offer, in one platform.",
+    "items": [
+      {
+        "label": "AI",
+        "title": "Job Discovery",
+        "desc": "Set up your profile once. JobApplica scans job boards, aggregates new listings, and surfaces roles that match your experience, delivered to you daily.",
+        "bullets": [
+          "Profile-based job recommendations",
+          "Aggregated from multiple job boards",
+          "Daily digest of new matching roles",
+          "Smart filters by location, salary, work model"
+        ]
+      },
+      {
+        "label": "IMPORT",
+        "title": "Smart Import",
+        "desc": "Connect LinkedIn or your email and JobApplica automatically imports jobs you have saved, applied to, or received responses about. No manual entry needed.",
+        "bullets": [
+          "Import saved jobs from LinkedIn",
+          "Auto-detect job emails in Gmail",
+          "Sync application history from your inbox",
+          "One-click browser extension for any job board"
+        ]
+      },
+      {
+        "label": "CV",
+        "title": "AI Applications",
+        "desc": "Paste a job description. Get a tailored CV and cover letter in seconds, matched to the role and optimised for ATS screening systems.",
+        "bullets": [
+          "Tailored to each specific job description",
+          "ATS-optimised formatting and keywords",
+          "Cover letter matched to your tone",
+          "Editable drafts you own and control"
+        ]
+      },
+      {
+        "label": "ATS",
+        "title": "Score Match",
+        "desc": "Before you apply, see how well your CV matches the job description. Identify missing keywords and close gaps before the recruiter's system filters you out.",
+        "bullets": [
+          "Keyword match score against the job description",
+          "Gap analysis with improvement suggestions",
+          "Skills and qualification comparison",
+          "Instant re-score after edits"
+        ]
+      },
+      {
+        "label": "BOARD",
+        "title": "Visual Pipeline",
+        "desc": "Track every application on a Kanban board. Drag cards through stages, add notes, and see your entire search at a glance. Free tier includes up to 50 applications.",
+        "bullets": [
+          "Multiple boards for different search tracks",
+          "Custom stages: rename, add, reorder",
+          "Rich job details: salary, skills, notes",
+          "Board and list view"
+        ]
+      },
+      {
+        "label": "EMAIL",
+        "title": "Email Intelligence",
+        "desc": "Connect your inbox and JobApplica reads it for you. It auto-detects interview invites, rejections, and stale threads that need a follow-up message.",
+        "bullets": [
+          "Auto-detect rejections and interview invites",
+          "Flag applications with no reply in 14+ days",
+          "Suggested follow-up email drafts",
+          "Never miss an important reply again"
+        ]
+      }
+    ]
+  },
+
+  "howItWorks": {
+    "eyebrow": "How it works",
+    "headline": "From zero to offer, in one workflow.",
+    "subtext": "JobApplica handles every stage of the job search. Here is the full picture.",
+    "steps": [
+      {
+        "tag": "Discover",
+        "heading": "Jobs come to you",
+        "body": "Complete your profile once: your skills, experience, location, preferred role, and salary range. JobApplica scans job boards daily and surfaces the most relevant matches. You can also connect LinkedIn or Gmail to import jobs and applications you have already started.",
+        "action": "Set up your profile"
+      },
+      {
+        "tag": "Apply smarter",
+        "heading": "Tailor every application in minutes",
+        "body": "Open any job listing. JobApplica shows your ATS match score against the job description, highlights missing keywords, and generates a tailored CV and cover letter matched to that specific role. Edit, approve, and apply. No more starting from scratch.",
+        "action": null
+      },
+      {
+        "tag": "Track",
+        "heading": "Your pipeline, always up to date",
+        "body": "Every application, whether saved manually, imported from LinkedIn, or applied through JobApplica, lands on your Kanban board. Drag cards through stages as things progress. Add interview notes, salary details, and contact information. Your search, in one place.",
+        "action": "Open your dashboard"
+      },
+      {
+        "tag": "Follow up",
+        "heading": "Never let a lead go cold",
+        "body": "Connect your inbox and JobApplica monitors it for you. It auto-detects interview invites and rejections, flags applications that have gone silent, and drafts follow-up messages for threads that deserve attention. Stay on top of every active application, without the manual effort.",
+        "action": null
+      }
+    ]
+  },
+
+  "analytics": {
+    "eyebrow": "Analytics",
+    "headline": "Know exactly where you stand.",
+    "body": "The analytics dashboard answers the questions every job seeker has but rarely tracks: response rate, ghosted applications, interview conversion, and pipeline velocity.",
+    "bullets": [
+      "Response rate and interview conversion rate",
+      "Ghosted applications (14 or more days without reply)",
+      "Weekly application activity chart",
+      "Stage funnel with drop-off percentages",
+      "Top companies and source platform breakdown"
+    ],
+    "preview": {
+      "stats": [
+        { "value": 42, "label": "Applied", "color": "#818cf8" },
+        { "value": 12, "label": "Interviews", "color": "#a78bfa" },
+        { "value": 8, "label": "Ghosted", "color": "#f59e0b" },
+        { "value": 15, "label": "Rejected", "color": "#ef4444" }
+      ],
+      "funnelTitle": "Application Funnel",
+      "funnelStages": [
+        { "label": "Applied",      "width": "100%", "color": "#6366f1", "count": 42 },
+        { "label": "Phone Screen", "width": "40%",  "color": "#f59e0b", "count": 17 },
+        { "label": "Interview",    "width": "21%",  "color": "#f97316", "count": 9  },
+        { "label": "Technical",    "width": "12%",  "color": "#a855f7", "count": 5  },
+        { "label": "Offer",        "width": "5%",   "color": "#10b981", "count": 2  }
+      ],
+      "note": "Sample data. Your dashboard updates live as you track applications."
+    }
+  },
+
+  "extension": {
+    "eyebrow": "Browser Extension",
+    "headline": "Save any job in one click.",
+    "body": "Browse job boards yourself and save anything interesting. The extension reads the page and adds it to your board, capturing the title, company, salary, and description automatically.",
+    "steps": [
+      {
+        "heading": "Install from the Chrome Web Store",
+        "sub": "Free. Takes under 30 seconds."
+      },
+      {
+        "heading": "Sign in to your JobApplica account",
+        "sub": "Your board is ready the moment you sign in."
+      },
+      {
+        "heading": "Browse jobs and click Save",
+        "sub": "The extension reads the page. You never have to type anything."
+      }
+    ],
+    "ctaInstall": "Install for Chrome",
+    "ctaAccount": "Create an account",
+    "popup": {
+      "appName": "JobApplica",
+      "detectedLabel": "Job detected on this page",
+      "saveBtn": "Save",
+      "jobs": [
+        { "title": "Senior Frontend Engineer", "sub": "Stripe · Remote · $160k–$200k" },
+        { "title": "Product Designer",         "sub": "Figma · San Francisco · $140k–$180k" }
+      ],
+      "savedMessage": "2 jobs saved to Job Search 2025"
+    }
+  },
+
+  "pricing": {
+    "eyebrow": "Pricing",
+    "headline": "Start free. Scale when you need to.",
+    "subtext": "Job tracking is free for smaller searches. Unlock AI features when you are ready to search smarter.",
+    "plans": [
+      {
+        "name": "Free",
+        "price": "$0",
+        "period": "forever",
+        "desc": "Track applications manually and get a feel for the platform.",
+        "highlight": false,
+        "cta": "Get started free",
+        "ctaHref": "https://app.jobapplica.io/signup",
+        "features": [
+          "Up to 50 tracked job applications",
+          "Visual Kanban board",
+          "Browser extension (manual save)",
+          "Basic analytics dashboard",
+          "Custom pipeline stages"
+        ],
+        "notIncluded": [
+          "AI job discovery",
+          "CV and cover letter generation",
+          "ATS score match",
+          "Email intelligence and follow-ups",
+          "LinkedIn and Gmail import"
+        ]
+      },
+      {
+        "name": "Pro",
+        "price": "$12",
+        "period": "per month",
+        "desc": "For active job seekers who want AI handling the heavy lifting.",
+        "highlight": true,
+        "cta": "Start Pro free for 14 days",
+        "ctaHref": "https://app.jobapplica.io/signup?plan=pro",
+        "features": [
+          "Unlimited job applications",
+          "AI-powered job discovery",
+          "AI CV and cover letter generator",
+          "ATS score match and gap analysis",
+          "Email intelligence (Gmail integration)",
+          "Smart import from LinkedIn and Gmail",
+          "Automated follow-up suggestions",
+          "Priority support"
+        ],
+        "notIncluded": []
+      }
+    ],
+    "note": "Prices in USD. Cancel or change plans anytime. Annual billing available."
+  },
+
+  "finalCta": {
+    "headline": "Your next role is out there. Start with a system.",
+    "body": "Set up your profile, let AI find the right jobs, tailor your applications in minutes, and track everything in one place from first contact to final offer.",
+    "ctaPrimary": "Get started free",
+    "ctaExtension": "Install browser extension"
+  },
+
+  "footer": {
+    "logoText": "JobApplica",
+    "links": {
+      "features": "Features",
+      "howItWorks": "How it works",
+      "pricing": "Pricing",
+      "extension": "Extension",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "dashboard": "Dashboard"
+    },
+    "copyright": "2025 JobApplica. All rights reserved."
+  },
+
+  "privacy": {
+    "title": "Privacy Policy",
+    "seoTitle": "Privacy Policy — JobApplica",
+    "seoDesc": "JobApplica privacy policy. Learn what data we collect, how we use it, and how we protect your job search information.",
+    "lastUpdated": "Last updated: May 2025",
+    "backToHome": "Back to home",
+    "tldr": "We collect only what is needed to run JobApplica. We do not sell your data. We do not share your job search information with employers or recruiters. Your data is yours.",
+    "contactEmail": "shravanayyappa@gmail.com",
+    "securityEmail": "shravanayyappa@gmail.com"
+  },
+
+  "terms": {
+    "title": "Terms of Service",
+    "seoTitle": "Terms of Service — JobApplica",
+    "seoDesc": "JobApplica terms of service. Read the terms and conditions for using the JobApplica job search platform.",
+    "lastUpdated": "Last updated: May 2025",
+    "backToHome": "Back to home",
+    "tldr": "By using JobApplica, you agree to these terms. They are written to be readable, not lawyerly. If something is unclear, email us.",
+    "contactEmail": "shravanayyappa@gmail.com"
+  },
+
+  "notFound": {
+    "code": "404",
+    "title": "This page does not exist.",
+    "body": "The link you followed may be broken, or the page may have been removed. Your job search does not have to stop here.",
+    "backHome": "Back to home",
+    "dashboard": "Go to dashboard"
+  }
+}

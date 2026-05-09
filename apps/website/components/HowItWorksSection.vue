@@ -1,26 +1,55 @@
+<script setup lang="ts">
+const t = useT()
+const h = t.howItWorks
+</script>
+
 <template>
-  <section id="how-it-works" aria-labelledby="how-heading">
+  <section id="how-it-works" class="how-section" aria-labelledby="how-heading">
     <div class="container">
-      <div class="section-label"><span class="badge">How it works</span></div>
-      <h2 class="section-heading" id="how-heading">
-        Three steps to a <span class="gradient-text">organised search</span>
-      </h2>
-      <p class="section-sub">From spotting a role to tracking an offer — everything in one place.</p>
-      <div class="steps">
-        <article class="step" aria-labelledby="step1-heading">
-          <div class="step-num" aria-hidden="true">1</div>
-          <h3 id="step1-heading">Browse &amp; capture with the extension</h3>
-          <p>Install the browser extension. While browsing LinkedIn, Indeed, or Glassdoor, hit the JobApplica button to save a job — title, company, location, salary, and description captured automatically.</p>
-        </article>
-        <article class="step" aria-labelledby="step2-heading">
-          <div class="step-num" aria-hidden="true">2</div>
-          <h3 id="step2-heading">Organise on your Kanban board</h3>
-          <p>Every saved job lands in your custom pipeline. Drag cards across stages — Saved, Applied, Phone Screen, Interview, Technical, Offer — or create your own stages. Add notes, set salary expectations, tag skills.</p>
-        </article>
-        <article class="step" aria-labelledby="step3-heading">
-          <div class="step-num" aria-hidden="true">3</div>
-          <h3 id="step3-heading">Measure with the analytics dashboard</h3>
-          <p>See your response rate, interview conversion, ghosted applications, and weekly activity. Know exactly which companies you've reached and where your pipeline is stalling.</p>
+      <div class="steps-header">
+        <div class="section-eyebrow">{{ h.eyebrow }}</div>
+        <h2 id="how-heading">{{ h.headline }}</h2>
+        <p>{{ h.subtext }}</p>
+      </div>
+
+      <div class="steps-list" role="list">
+        <article
+          v-for="(step, i) in h.steps"
+          :key="i"
+          class="step-row"
+          role="listitem"
+          :aria-labelledby="`step${i + 1}-h`"
+        >
+          <div class="step-num-wrap">
+            <div class="step-num" :aria-label="`Step ${i + 1}`">{{ i + 1 }}</div>
+          </div>
+          <div class="step-body">
+            <span class="step-tag">{{ step.tag }}</span>
+            <h3 :id="`step${i + 1}-h`">{{ step.heading }}</h3>
+            <p>{{ step.body }}</p>
+            <div v-if="step.action" class="step-action">
+              <a
+                v-if="i === 0"
+                href="https://chrome.google.com/webstore"
+                class="btn btn-ghost btn-sm"
+                target="_blank"
+                rel="noopener"
+                :aria-label="step.action"
+              >
+                {{ step.action }}
+              </a>
+              <a
+                v-else-if="i === 2"
+                href="https://app.jobapplica.io"
+                class="btn btn-ghost btn-sm"
+                target="_blank"
+                rel="noopener"
+                :aria-label="step.action"
+              >
+                {{ step.action }}
+              </a>
+            </div>
+          </div>
         </article>
       </div>
     </div>
