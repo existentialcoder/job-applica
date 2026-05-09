@@ -58,7 +58,6 @@ class Job(Base):
     position: Mapped[JobPosition] = mapped_column(
         Enum(JobPosition),
         default=JobPosition.INTERN,
-        create_constraint=True,
         nullable=True
     )
     category: Mapped[str] = mapped_column(String(100), nullable=True)
@@ -88,7 +87,6 @@ class Job(Base):
     work_model: Mapped[JobWorkModel] = mapped_column(
         Enum(JobWorkModel, name='jobworkmodel'),
         default=JobWorkModel.ON_SITE,
-        create_constraint=True,
         nullable=False
     )
 

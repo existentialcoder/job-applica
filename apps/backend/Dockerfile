@@ -15,4 +15,4 @@ RUN mkdir -p uploads/resumes uploads/avatars
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "python scripts/db_init.py && uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

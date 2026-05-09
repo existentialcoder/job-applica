@@ -1,26 +1,32 @@
 {
   "manifest_version": 3,
-  "name": "Job Applica Tracker Extension",
+  "name": "Job Applica Tracker",
   "version": "1.0",
-  "description": "JobApplica Browser Extension to detect and track jobs from LinkedIn, Indeed, Glassdoor, Monster, ZipRecruiter, and Jobscan",
+  "description": "JobApplica Browser Extension to detect and track jobs from the most popular job portals",
   "icons": {
-    "24": "icon.svg",
-    "48": "icon-48.svg",
-    "64": "icon-64.svg",
-    "128": "icon-128.svg"
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "64": "icon-64.png",
+    "128": "icon-128.png"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "icon.svg"
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png"
+    }
   },
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": ["tabs", "activeTab", "scripting", "storage"],
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
   "host_permissions": [
-    "http://localhost:5173/*",
-    "http://localhost:8000/*",
     "https://www.linkedin.com/*",
     "https://linkedin.com/*",
     "https://www.indeed.com/*",
@@ -32,12 +38,18 @@
     "https://www.ziprecruiter.com/*",
     "https://ziprecruiter.com/*",
     "https://www.jobscan.co/*",
-    "https://jobscan.co/*"
+    "https://jobscan.co/*",
+    "https://app.jobapplica.io/*",
+    "https://api.jobapplica.io/*"
   ],
   "content_scripts": [
     {
-      "matches": ["http://localhost:5173/*"],
-      "js": ["content/webapp.js"],
+      "matches": [
+        "https://app.jobapplica.io/*"
+      ],
+      "js": [
+        "content/webapp.js"
+      ],
       "run_at": "document_idle"
     }
   ]

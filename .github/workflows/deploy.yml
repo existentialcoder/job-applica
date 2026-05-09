@@ -10,19 +10,19 @@ on:
         options: [auto, patch, minor, major, none]
         default: auto
       backend:
-        description: 'Backend — FastAPI (Railway)'
+        description: 'Backend'
         type: boolean
         default: false
       frontend:
-        description: 'Frontend App — Vue (CF Pages)'
+        description: 'Frontend App'
         type: boolean
         default: false
       website:
-        description: 'Website — Nuxt (CF Pages)'
+        description: 'Website'
         type: boolean
         default: false
       extension:
-        description: 'Extension — Chrome (artifact)'
+        description: 'Extension — Chrome'
         type: boolean
         default: false
 
@@ -225,9 +225,9 @@ jobs:
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.ref_name }}
 
-  # ── Extension → Artifact ──────────────────────────────────────────────────────
+  # ── Extension → Chrome Web Store + Firefox AMO ───────────────────────────────
   build-extension:
-    name: Extension → Artifact
+    name: Extension
     needs: version
     runs-on: ubuntu-latest
     if: always() && inputs.extension
@@ -245,14 +245,63 @@ jobs:
       - name: Install
         run: yarn install --frozen-lockfile
 
-      - name: Build
+      # ── Chrome build ────────────────────────────────────────────────────────
+      - name: Prepare manifest (Chrome)
+        run: node apps/browser-extension/scripts/prepare-release.mjs
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          FRONTEND_URL: https://app.jobapplica.io
+          BACKEND_URL: https://api.jobapplica.io
+
+      - name: Build (Chrome)
         run: yarn workspace jobapplica--extension build
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          NODE_ENV: production
 
-      - name: Upload artifact
+      - name: Package (Chrome)
+        run: cd apps/browser-extension/dist && zip -r ../extension-chrome.zip .
+
+      - name: Publish → Chrome Web Store
+        run: |
+          npx chrome-webstore-upload-cli upload \
+            --source apps/browser-extension/extension-chrome.zip \
+            --extension-id ${{ secrets.CHROME_EXTENSION_ID }} \
+            --client-id ${{ secrets.CHROME_CLIENT_ID }} \
+            --client-secret ${{ secrets.CHROME_CLIENT_SECRET }} \
+            --refresh-token ${{ secrets.CHROME_REFRESH_TOKEN }} \
+            --auto-publish
+
+      # ── Firefox build ───────────────────────────────────────────────────────
+      - name: Prepare manifest (Firefox)
+        run: node apps/browser-extension/scripts/prepare-release.mjs --firefox
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          FRONTEND_URL: https://app.jobapplica.io
+          BACKEND_URL: https://api.jobapplica.io
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+
+      - name: Build (Firefox)
+        run: yarn workspace jobapplica--extension build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          NODE_ENV: production
+
+      - name: Publish → Firefox AMO
+        run: |
+          npx web-ext sign \
+            --source-dir apps/browser-extension/dist \
+            --channel listed \
+            --api-key ${{ secrets.FIREFOX_API_KEY }} \
+            --api-secret ${{ secrets.FIREFOX_API_SECRET }} \
+            --id ${{ secrets.FIREFOX_EXTENSION_ID }}
+
+      # ── Save artifacts ──────────────────────────────────────────────────────
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: extension-v${{ needs.version.outputs.version }}
-          path: apps/browser-extension/dist/
+          path: |
+            apps/browser-extension/extension-chrome.zip
+            apps/browser-extension/dist/
           retention-days: 30
