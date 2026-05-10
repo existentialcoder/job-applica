@@ -9,7 +9,8 @@ import { Badge } from '@job-applica/ui/components/ui/badge';
 import { NativeSelect } from '@job-applica/ui/components/ui/select';
 import { Textarea } from '@job-applica/ui/components/ui/textarea';
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE as string;
+const APP_URL = import.meta.env.VITE_APP_URL as string;
 
 // ── Dark mode ────────────────────────────────────────────────────────────────
 const isDark = ref(false);
@@ -42,7 +43,7 @@ async function toggleDark() {
 }
 
 // ── View state ──────────────────────────────────────────────────────────────
-const view = ref<'login' | 'job' | 'no-job'>('no-job');
+const view = ref<'login' | 'setup' | 'job' | 'no-job'>('no-job');
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 const loginUsername = ref('');
@@ -71,6 +72,29 @@ function openOAuth(provider: 'google' | 'linkedin') {
 async function handleLogout() {
   await dataservice.logout();
   view.value = 'login';
+}
+
+// ── First-run board setup ─────────────────────────────────────────────────────
+const newBoardName = ref('My Job Search');
+const isCreatingBoard = ref(false);
+const createBoardError = ref('');
+
+async function handleCreateBoard() {
+  if (!newBoardName.value.trim()) return;
+  isCreatingBoard.value = true;
+  createBoardError.value = '';
+  const board = await dataservice.createBoard(newBoardName.value.trim());
+  isCreatingBoard.value = false;
+  if (!board) {
+    createBoardError.value = 'Could not create board. Please try again.';
+    return;
+  }
+  boards.value = [board];
+  selectedBoardId.value = board.id;
+  await ext.storage.local.set({ last_board_id: board.id });
+  const url = await dataservice.getCurrentTabUrl();
+  currentUrl.value = url;
+  view.value = url && dataservice.isJobPage(url) ? 'job' : 'no-job';
 }
 
 // ── Job data ──────────────────────────────────────────────────────────────────
@@ -153,6 +177,12 @@ async function setupData() {
     ext.storage.local.get(['last_board_id']),
   ]);
   boards.value = fetchedBoards;
+
+  if (fetchedBoards.length === 0) {
+    view.value = 'setup';
+    return;
+  }
+
   const lastId = cached.last_board_id as number | undefined;
   const defaultBoard = fetchedBoards.find(b => b.is_default);
   selectedBoardId.value = fetchedBoards.find(b => b.id === lastId)?.id ?? defaultBoard?.id ?? fetchedBoards[0]?.id ?? null;
@@ -362,6 +392,38 @@ const platformBadgeVariant: Record<string, any> = {
       </Button>
     </div>
 
+    <!-- First-run setup view -->
+    <div v-else-if="view === 'setup'" class="p-4 flex flex-col gap-4">
+      <div class="flex flex-col items-center gap-2 text-center pt-2">
+        <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+          <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+          </svg>
+        </div>
+        <p class="text-sm font-semibold">Create your first job board</p>
+        <p class="text-xs text-muted-foreground">Give it a name — you can always add more boards from the dashboard.</p>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <Label for="board-name">Board name</Label>
+        <Input
+          id="board-name"
+          v-model="newBoardName"
+          type="text"
+          placeholder="e.g. My Job Search"
+          @keyup.enter="handleCreateBoard"
+        />
+      </div>
+      <p v-if="createBoardError" class="text-xs text-destructive">{{ createBoardError }}</p>
+      <Button @click="handleCreateBoard" :disabled="isCreatingBoard || !newBoardName.trim()" class="w-full">
+        <svg v-if="isCreatingBoard" class="w-4 h-4 animate-spin mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+        {{ isCreatingBoard ? 'Creating...' : 'Create Board' }}
+      </Button>
+    </div>
+
     <!-- No job detected view -->
     <div v-else-if="view === 'no-job'" class="p-4 flex flex-col items-center gap-3 text-center">
       <svg class="w-10 h-10 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -387,7 +449,7 @@ const platformBadgeVariant: Record<string, any> = {
           <div>
             <p class="text-sm font-medium">Job saved already</p>
           </div>
-          <a :href="`http://localhost:5173/boards/${selectedBoardId}?job=${existingJobId}`" target="_blank"
+          <a :href="`${APP_URL}/boards/${selectedBoardId}?job=${existingJobId}`" target="_blank"
             class="text-xs text-primary hover:underline font-medium">
             View in Dashboard →
           </a>
@@ -483,7 +545,7 @@ const platformBadgeVariant: Record<string, any> = {
 
     <!-- Footer -->
     <div class="px-4 py-2 border-t border-border">
-      <a href="http://localhost:5173/applications" target="_blank"
+      <a :href="`${APP_URL}/boards`" target="_blank"
         class="block text-center text-xs text-primary hover:underline">
         Open Dashboard →
       </a>

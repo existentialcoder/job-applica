@@ -1,6 +1,6 @@
 import ext from './ext';
 
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE as string;
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 
@@ -191,7 +191,8 @@ export default {
   // Called on popup open when no token is stored in the extension.
   async syncFromWebApp(): Promise<boolean> {
     try {
-      const tabs = await ext.tabs.query({ url: 'http://localhost:5173/*' });
+      const appUrl = import.meta.env.VITE_APP_URL as string;
+      const tabs = await ext.tabs.query({ url: `${appUrl}/*` });
       for (const tab of tabs || []) {
         if (!tab.id) continue;
         const [result] = await ext.scripting.executeScript({
@@ -254,6 +255,15 @@ export default {
   },
 
   // ── Boards ────────────────────────────────────────────────────────────────
+
+  async createBoard(name: string): Promise<BoardData | null> {
+    const response = await authedFetch(`${API_BASE}/boards`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) return null;
+    return response.json();
+  },
 
   async getBoards(): Promise<BoardData[]> {
     const response = await authedFetch(`${API_BASE}/boards`);

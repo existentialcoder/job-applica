@@ -3,7 +3,7 @@ import { RouterView } from 'vue-router'
 import { onMounted } from 'vue';
 import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
-import { ScrollArea, ScrollBar } from './components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Toaster } from 'vue-sonner';
 
 onMounted(async () => {

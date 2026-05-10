@@ -218,7 +218,7 @@
     "body": "Browse job boards yourself and save anything interesting. The extension reads the page and adds it to your board, capturing the title, company, salary, and description automatically.",
     "steps": [
       {
-        "heading": "Install from the Chrome Web Store",
+        "heading": "Install the extension",
         "sub": "Free. Takes under 30 seconds."
       },
       {
@@ -230,7 +230,7 @@
         "sub": "The extension reads the page. You never have to type anything."
       }
     ],
-    "ctaInstall": "Install for Chrome",
+    "ctaInstall": "Install Extension",
     "ctaAccount": "Create an account",
     "popup": {
       "appName": "JobApplica",

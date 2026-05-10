@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@job-applica/ui': path.resolve(__dirname, '../../packages/ui/src'),
+        '@/components/ui': path.resolve(__dirname, '../../packages/ui/src/components/ui'),
         '@': rootDir,
       }
     },
