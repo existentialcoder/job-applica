@@ -6,14 +6,18 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import router from '@/router'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { APP_MENU, SETTINGS_MENU_ITEM } from '@/config/app'
+import { ALL_MENU_ITEMS, SETTINGS_MENU_ITEM } from '@/config/app'
 import { ArrowLeftToLine } from 'lucide-vue-next'
 import { useAppStore } from '@/stores/app'
+import { useFeatureStore } from '@/stores/features'
 import AppLogo from '@/components/core/AppLogo.vue'
 
 const route = useRoute()
+const featureStore = useFeatureStore()
 
-const menus = APP_MENU
+const menus = computed(() =>
+  ALL_MENU_ITEMS.filter(m => !m.flag || featureStore.flags[m.flag])
+)
 
 const handleNavigate = (path: string) => {
   router.push(path)

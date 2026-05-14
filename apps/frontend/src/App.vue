@@ -3,10 +3,13 @@ import { RouterView } from 'vue-router'
 import { onMounted } from 'vue';
 import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
+import { useFeatureStore } from '@/stores/features';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Toaster } from 'vue-sonner';
 
 onMounted(async () => {
+  // Load feature flags before anything else — all defaults are true so no flash
+  await useFeatureStore().load();
   await useAppStore().initTheme();
 
   // Extension → Web app SSO: apply token received from extension login/logout.

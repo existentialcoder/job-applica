@@ -1,19 +1,19 @@
 /**
  * Background service worker — cross-browser (Chrome MV3, Firefox MV3).
  *
- * 1. OAuth relay: watches for localhost:5173/auth/relay after OAuth login,
+ * 1. OAuth relay: watches for /auth/relay on both dev and prod origins,
  *    extracts tokens, saves to storage, closes the tab.
  * 2. Web app session sync (web → ext): receives SYNC_AUTH messages from
- *    content-webapp.js and mirrors the token into extension storage.
+ *    content/webapp.js and mirrors the token into extension storage.
  * 3. Extension session sync (ext → web): when extension storage changes
  *    (e.g. popup login/logout), notifies open web app tabs via APPLY_TOKEN.
  */
 
 const ext = globalThis.browser ?? globalThis.chrome;
 
-const RELAY_ORIGIN = 'http://localhost:5173';
+const RELAY_ORIGINS = ['http://localhost:5173', 'https://app.jobapplica.io'];
 const RELAY_PATH = '/auth/relay';
-const WEBAPP_URL_PATTERN = 'http://localhost:5173/*';
+const WEBAPP_URL_PATTERNS = ['http://localhost:5173/*', 'https://app.jobapplica.io/*'];
 
 // ── OAuth relay ───────────────────────────────────────────────────────────────
 
@@ -26,7 +26,7 @@ ext.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   let parsed;
   try { parsed = new URL(url); } catch { return; }
 
-  if (parsed.origin !== RELAY_ORIGIN || parsed.pathname !== RELAY_PATH) return;
+  if (!RELAY_ORIGINS.includes(parsed.origin) || parsed.pathname !== RELAY_PATH) return;
 
   const accessToken = parsed.searchParams.get('access_token');
   const refreshToken = parsed.searchParams.get('refresh_token');
@@ -63,12 +63,16 @@ ext.storage.onChanged.addListener(async (changes, area) => {
 
   const newToken = changes.access_token?.newValue || null;
 
-  const tabs = await ext.tabs.query({ url: WEBAPP_URL_PATTERN });
-  for (const tab of (tabs || [])) {
+  const tabArrays = await Promise.all(
+    WEBAPP_URL_PATTERNS.map(pattern => ext.tabs.query({ url: pattern }).catch(() => []))
+  );
+  const tabs = tabArrays.flat();
+
+  for (const tab of tabs) {
     if (!tab.id) continue;
     try {
       // Ensure content script is live in this tab before messaging
-      await ext.scripting.executeScript({ target: { tabId: tab.id }, files: ['content-webapp.js'] });
+      await ext.scripting.executeScript({ target: { tabId: tab.id }, files: ['content/webapp.js'] });
     } catch { /* already injected or inaccessible */ }
     try {
       await ext.tabs.sendMessage(tab.id, { type: 'APPLY_TOKEN', access_token: newToken });

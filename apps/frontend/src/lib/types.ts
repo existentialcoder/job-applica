@@ -1,3 +1,15 @@
+export interface ConnectedAccount {
+  provider: 'google' | 'linkedin'
+  provider_email: string | null
+  display_name: string | null
+  avatar_url: string | null
+  scopes: string[]
+  connected_at: string | null
+  last_used_at: string | null
+  has_gmail: boolean
+  has_calendar: boolean
+}
+
 export interface ResumeData {
   id: number
   original_name: string

@@ -6,6 +6,7 @@ from ..db.base_class import Base
 
 if TYPE_CHECKING:
     from .skill import Skill
+    from .connected_account import ConnectedAccount
 
 user_skill_table = Table(
     'user_skill',
@@ -24,14 +25,18 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True, index=True)
     signup_key: Mapped[str] = mapped_column(String(255), nullable=False)
     hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    google_id: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True, index=True)
-    linkedin_id: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True, index=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
     )
 
     skills: Mapped[list['Skill']] = relationship('Skill', secondary=user_skill_table, lazy='selectin')
+    connected_accounts: Mapped[list['ConnectedAccount']] = relationship(
+        'ConnectedAccount', back_populates='user', lazy='selectin', cascade='all, delete-orphan'
+    )
+
+    def get_connected_account(self, provider: str) -> 'ConnectedAccount | None':
+        return next((a for a in self.connected_accounts if a.provider == provider), None)
 
     def __repr__(self) -> str:
         return f'<User(user_name={self.user_name}, email={self.email})>'

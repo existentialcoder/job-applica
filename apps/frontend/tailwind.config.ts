@@ -8,7 +8,8 @@ export default {
     './src/views/**/*.{ts,tsx,vue}',
     './src/components/**/*.{ts,tsx,vue}',
     './src/layouts/**/*.{ts,tsx,vue}',
-	],
+    '../../packages/ui/src/**/*.{ts,tsx,vue}',
+  ],
   
   theme: {
     screens: {

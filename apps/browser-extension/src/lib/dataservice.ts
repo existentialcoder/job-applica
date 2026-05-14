@@ -1,6 +1,5 @@
 import ext from './ext';
-
-const API_BASE = import.meta.env.VITE_API_BASE as string;
+import { config } from './config';
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 
@@ -59,7 +58,7 @@ async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = await storage.get('refresh_token');
   if (!refreshToken) return null;
   try {
-    const response = await fetch(`${API_BASE}/auth/refresh`, {
+    const response = await fetch(`${config.apiBase}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refreshToken }),
@@ -104,7 +103,7 @@ export default {
     body.append('username', username);
     body.append('password', password);
 
-    const response = await fetch(`${API_BASE}/auth/login`, {
+    const response = await fetch(`${config.apiBase}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
@@ -181,7 +180,7 @@ export default {
   async checkJobExists(title: string, company?: string): Promise<number | null> {
     const params = new URLSearchParams({ title });
     if (company) params.set('company', company);
-    const response = await authedFetch(`${API_BASE}/jobs?${params}`);
+    const response = await authedFetch(`${config.apiBase}/jobs?${params}`);
     if (!response.ok) return null;
     const data = await response.json();
     return data?.results?.[0]?.id ?? null;
@@ -191,8 +190,8 @@ export default {
   // Called on popup open when no token is stored in the extension.
   async syncFromWebApp(): Promise<boolean> {
     try {
-      const appUrl = import.meta.env.VITE_APP_URL as string;
-      const tabs = await ext.tabs.query({ url: `${appUrl}/*` });
+      
+      const tabs = await ext.tabs.query({ url: `${config.appUrl}/*` });
       for (const tab of tabs || []) {
         if (!tab.id) continue;
         const [result] = await ext.scripting.executeScript({
@@ -214,7 +213,7 @@ export default {
   },
 
   async createJob(jobData: JobData): Promise<number | null> {
-    const response = await authedFetch(`${API_BASE}/jobs/`, {
+    const response = await authedFetch(`${config.apiBase}/jobs/`, {
       method: 'POST',
       body: JSON.stringify(jobData),
     });
@@ -227,7 +226,7 @@ export default {
   },
 
   async updateJobStatus(jobId: number, status: string): Promise<boolean> {
-    const response = await authedFetch(`${API_BASE}/jobs/${jobId}`, {
+    const response = await authedFetch(`${config.apiBase}/jobs/${jobId}`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
@@ -239,7 +238,7 @@ export default {
   async getSettings(): Promise<Record<string, any>> {
     const token = await storage.get('access_token');
     if (!token) return {};
-    const response = await authedFetch(`${API_BASE}/auth/settings`);
+    const response = await authedFetch(`${config.apiBase}/auth/settings`);
     if (!response.ok) return {};
     const data = await response.json();
     return data.settings ?? {};
@@ -248,7 +247,7 @@ export default {
   async updateSettings(patch: Record<string, any>): Promise<void> {
     const token = await storage.get('access_token');
     if (!token) return;
-    await authedFetch(`${API_BASE}/auth/settings`, {
+    await authedFetch(`${config.apiBase}/auth/settings`, {
       method: 'PATCH',
       body: JSON.stringify({ settings: patch }),
     });
@@ -257,7 +256,7 @@ export default {
   // ── Boards ────────────────────────────────────────────────────────────────
 
   async createBoard(name: string): Promise<BoardData | null> {
-    const response = await authedFetch(`${API_BASE}/boards`, {
+    const response = await authedFetch(`${config.apiBase}/boards`, {
       method: 'POST',
       body: JSON.stringify({ name }),
     });
@@ -266,13 +265,13 @@ export default {
   },
 
   async getBoards(): Promise<BoardData[]> {
-    const response = await authedFetch(`${API_BASE}/boards`);
+    const response = await authedFetch(`${config.apiBase}/boards`);
     if (!response.ok) return [];
     return response.json();
   },
 
   async getBoard(boardId: number): Promise<BoardData | null> {
-    const response = await authedFetch(`${API_BASE}/boards/${boardId}`);
+    const response = await authedFetch(`${config.apiBase}/boards/${boardId}`);
     if (!response.ok) return null;
     return response.json();
   },

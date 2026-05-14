@@ -2,15 +2,13 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import dataservice, { type BoardData } from './lib/dataservice';
 import ext from './lib/ext';
+import { config, loadConfig, saveConfig, resetConfig } from './lib/config';
 import { Button } from '@job-applica/ui/components/ui/button';
 import { Input } from '@job-applica/ui/components/ui/input';
 import { Label } from '@job-applica/ui/components/ui/label';
 import { Badge } from '@job-applica/ui/components/ui/badge';
 import { NativeSelect } from '@job-applica/ui/components/ui/select';
 import { Textarea } from '@job-applica/ui/components/ui/textarea';
-
-const API_BASE = import.meta.env.VITE_API_BASE as string;
-const APP_URL = import.meta.env.VITE_APP_URL as string;
 
 // ── Dark mode ────────────────────────────────────────────────────────────────
 const isDark = ref(false);
@@ -43,7 +41,41 @@ async function toggleDark() {
 }
 
 // ── View state ──────────────────────────────────────────────────────────────
-const view = ref<'login' | 'setup' | 'job' | 'no-job'>('no-job');
+const view = ref<'login' | 'setup' | 'job' | 'no-job' | 'settings'>('no-job');
+let preSettingsView: typeof view.value = 'no-job';
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+const settingsApiUrl = ref('');
+const settingsAppUrl = ref('');
+const settingsSaved = ref(false);
+
+function openSettings() {
+  preSettingsView = view.value;
+  settingsApiUrl.value = config.apiBase;
+  settingsAppUrl.value = config.appUrl;
+  settingsSaved.value = false;
+  view.value = 'settings';
+}
+
+function closeSettings() {
+  view.value = preSettingsView;
+}
+
+async function handleSaveSettings() {
+  const api = settingsApiUrl.value.trim();
+  const app = settingsAppUrl.value.trim();
+  if (!api || !app) return;
+  await saveConfig(api, app);
+  settingsSaved.value = true;
+  setTimeout(() => { settingsSaved.value = false; }, 2000);
+}
+
+async function handleResetSettings() {
+  await resetConfig();
+  settingsApiUrl.value = config.apiBase;
+  settingsAppUrl.value = config.appUrl;
+  settingsSaved.value = false;
+}
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 const loginUsername = ref('');
@@ -66,7 +98,7 @@ async function handleLogin() {
 
 function openOAuth(provider: 'google' | 'linkedin') {
   isOAuthLoading.value = provider;
-  ext.tabs.create({ url: `${API_BASE}/auth/${provider}?origin=extension` });
+  ext.tabs.create({ url: `${config.apiBase}/auth/${provider}?origin=extension` });
 }
 
 async function handleLogout() {
@@ -227,6 +259,7 @@ function onStorageChange(changes: Record<string, { newValue?: any; oldValue?: an
 }
 
 onMounted(async () => {
+  await loadConfig();
   await initDarkMode();
   ext.storage.onChanged.addListener(onStorageChange);
   await setupData();
@@ -316,6 +349,15 @@ const platformBadgeVariant: Record<string, any> = {
           class="text-xs text-muted-foreground hover:text-destructive transition">
           Sign out
         </button>
+        <!-- Settings -->
+        <button @click="view === 'settings' ? closeSettings() : openSettings()"
+          class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition"
+          title="Settings">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path stroke-linecap="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </button>
         <!-- Dark mode toggle -->
         <button @click="toggleDark"
           class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition"
@@ -333,8 +375,43 @@ const platformBadgeVariant: Record<string, any> = {
       </div>
     </div>
 
+    <!-- Settings view -->
+    <div v-if="view === 'settings'" class="p-4 flex flex-col gap-4">
+      <div class="flex items-center gap-2">
+        <button @click="closeSettings" class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition" title="Back">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <span class="text-sm font-semibold">Settings</span>
+      </div>
+
+      <div class="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+        Override these if you are self-hosting JobApplica. Leave as default for the cloud version.
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <Label for="settings-app-url">App URL</Label>
+        <Input id="settings-app-url" v-model="settingsAppUrl" placeholder="https://app.jobapplica.io" class="text-xs font-mono" />
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <Label for="settings-api-url">API URL</Label>
+        <Input id="settings-api-url" v-model="settingsApiUrl" placeholder="https://api.jobapplica.io/api/v1" class="text-xs font-mono" />
+      </div>
+
+      <div class="flex gap-2">
+        <Button class="flex-1" @click="handleSaveSettings">
+          {{ settingsSaved ? '✓ Saved' : 'Save' }}
+        </Button>
+        <Button variant="outline" @click="handleResetSettings" title="Reset to cloud defaults">
+          Reset
+        </Button>
+      </div>
+    </div>
+
     <!-- Login view -->
-    <div v-if="view === 'login'" class="p-4 flex flex-col gap-3">
+    <div v-else-if="view === 'login'" class="p-4 flex flex-col gap-3">
       <p class="text-sm text-muted-foreground text-center">Sign in to track jobs</p>
 
       <!-- OAuth buttons -->
