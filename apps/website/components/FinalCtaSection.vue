@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const t = useT()
 const c = t.finalCta
+const { storeUrl, storeName } = useExtensionLink()
 </script>
 
 <template>
@@ -17,11 +18,11 @@ const c = t.finalCta
           {{ c.ctaPrimary }}
         </a>
         <a
-          href="https://chrome.google.com/webstore"
+          :href="storeUrl"
           class="btn btn-ghost btn-lg"
           target="_blank"
           rel="noopener"
-          aria-label="Install the browser extension"
+          :aria-label="`Install the browser extension from ${storeName}`"
         >
           {{ c.ctaExtension }}
         </a>

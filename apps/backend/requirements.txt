@@ -13,3 +13,4 @@ beautifulsoup4==4.13.0
 pyjwt<3.0.0,>=2.8.0
 python-multipart
 httpx
+cryptography

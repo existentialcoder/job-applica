@@ -245,8 +245,28 @@ jobs:
       - name: Install
         run: yarn install --frozen-lockfile
 
+      # ── Detect if extension source changed since last tag ───────────────────
+      - name: Check extension source changed
+        id: ext_changed
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [[ -z "$LAST_TAG" ]]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "No previous tag — treating as changed"
+          else
+            CHANGED=$(git diff --name-only "$LAST_TAG"..HEAD -- apps/browser-extension/ | grep -v '^$' | wc -l)
+            if [[ "$CHANGED" -gt 0 ]]; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "$CHANGED file(s) changed in apps/browser-extension/ since $LAST_TAG"
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+              echo "No extension source changes since $LAST_TAG — skipping Chrome publish"
+            fi
+          fi
+
       # ── Chrome build ────────────────────────────────────────────────────────
       - name: Prepare manifest (Chrome)
+        if: steps.ext_changed.outputs.changed == 'true'
         run: node apps/browser-extension/scripts/prepare-release.mjs
         env:
           VERSION: ${{ needs.version.outputs.version }}
@@ -254,15 +274,18 @@ jobs:
           BACKEND_URL: https://api.jobapplica.io
 
       - name: Build (Chrome)
+        if: steps.ext_changed.outputs.changed == 'true'
         run: yarn workspace jobapplica--extension build
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           NODE_ENV: production
 
       - name: Package (Chrome)
+        if: steps.ext_changed.outputs.changed == 'true'
         run: cd apps/browser-extension/dist && zip -r ../extension-chrome.zip .
 
       - name: Publish → Chrome Web Store
+        if: steps.ext_changed.outputs.changed == 'true'
         run: |
           npx chrome-webstore-upload-cli upload \
             --source apps/browser-extension/extension-chrome.zip \

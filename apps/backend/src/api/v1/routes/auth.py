@@ -17,6 +17,7 @@ from ...deps.auth import get_current_user
 from ...deps.db import get_db
 from ....services import user as user_service
 from ....services import oauth as oauth_service
+from ....services import connected_accounts as ca_service
 from ....models.user import User
 from ....models.skill import Skill
 from ....models.resume import Resume
@@ -322,19 +323,43 @@ def delete_resume(
 
 @router.get('/google', description='Redirect to Google OAuth consent screen')
 def google_login(origin: str = 'web'):
-    url = oauth_service.get_google_auth_url(origin)
+    url = ca_service.google_auth_url(origin=origin)
     return RedirectResponse(url)
 
 
-@router.get('/google/callback', description='Google OAuth callback')
+@router.get('/google/callback', description='Google OAuth callback — handles both login and scope upgrades')
 async def google_callback(code: str, state: str = '', db: Session = Depends(get_db)):
     if not code:
         raise HTTPException(status_code=400, detail='Missing authorization code')
 
-    origin = state.split(':')[0] if ':' in state else 'web'
+    state_data = ca_service.verify_state(state) or {}
+    origin = state_data.get('origin', 'web')
+    purpose = state_data.get('purpose', 'login')
 
-    user_info = await oauth_service.exchange_google_code(code)
+    result = await oauth_service.exchange_google_code(code)
+    user_info = result['user_info']
 
+    if purpose == 'upgrade':
+        # Scope upgrade for an already-authenticated user — just update the account row
+        user_id = state_data.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=400, detail='Invalid upgrade state')
+        ca_service.upsert(
+            db=db,
+            user_id=int(user_id),
+            provider='google',
+            provider_user_id=user_info.get('sub', ''),
+            provider_email=user_info.get('email'),
+            display_name=f"{user_info.get('given_name', '')} {user_info.get('family_name', '')}".strip(),
+            avatar_url=user_info.get('picture'),
+            access_token=result['access_token'],
+            refresh_token=result.get('refresh_token'),
+            expires_in=result.get('expires_in'),
+            scopes=result['scopes'],
+        )
+        return RedirectResponse(f'{settings.FRONTEND_URL}/plugins?connected=google')
+
+    # Normal login flow
     user = oauth_service.get_or_create_oauth_user(
         db=db,
         provider='google',
@@ -343,10 +368,13 @@ async def google_callback(code: str, state: str = '', db: Session = Depends(get_
         first_name=user_info.get('given_name', ''),
         last_name=user_info.get('family_name', ''),
         avatar_url=user_info.get('picture'),
+        access_token=result['access_token'],
+        refresh_token=result.get('refresh_token'),
+        expires_in=result.get('expires_in'),
+        scopes=result['scopes'],
     )
 
     tokens = oauth_service.create_tokens_for_user(user)
-
     relay_path = '/auth/relay' if origin == 'extension' else '/auth/callback'
     redirect_url = (
         f'{settings.FRONTEND_URL}{relay_path}'
@@ -371,7 +399,8 @@ async def linkedin_callback(code: str, state: str = '', db: Session = Depends(ge
 
     origin = state.split(':')[0] if ':' in state else 'web'
 
-    user_info = await oauth_service.exchange_linkedin_code(code)
+    result = await oauth_service.exchange_linkedin_code(code)
+    user_info = result['user_info']
 
     user = oauth_service.get_or_create_oauth_user(
         db=db,
@@ -381,10 +410,13 @@ async def linkedin_callback(code: str, state: str = '', db: Session = Depends(ge
         first_name=user_info.get('given_name', ''),
         last_name=user_info.get('family_name', ''),
         avatar_url=user_info.get('picture'),
+        access_token=result['access_token'],
+        refresh_token=result.get('refresh_token'),
+        expires_in=result.get('expires_in'),
+        scopes=result['scopes'],
     )
 
     tokens = oauth_service.create_tokens_for_user(user)
-
     relay_path = '/auth/relay' if origin == 'extension' else '/auth/callback'
     redirect_url = (
         f'{settings.FRONTEND_URL}{relay_path}'

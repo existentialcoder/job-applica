@@ -1,4 +1,4 @@
-import type { JobData, JobCreatePayload, JobUpdatePayload, BoardData, DashboardStats, SkillData, ResumeData } from './types';
+import type { JobData, JobCreatePayload, JobUpdatePayload, BoardData, DashboardStats, SkillData, ResumeData, ConnectedAccount } from './types';
 import { useAuthStore } from '@/stores/auth';
 import router from '@/router';
 import { toast } from 'vue-sonner';
@@ -333,6 +333,31 @@ export default {
 
   async deleteResume(resumeId: number): Promise<void> {
     await apiFetch(`${API_BASE}/auth/resumes/${resumeId}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() },
+    });
+  },
+
+  // ── Connected Accounts ──────────────────────────────────────────────────────
+
+  async getConnectedAccounts(): Promise<ConnectedAccount[]> {
+    const response = await apiFetch(`${API_BASE}/connected-accounts`, { headers: { ...authHeaders() } });
+    if (!response.ok) return [];
+    return response.json();
+  },
+
+  async getGoogleConnectUrl(features: string[] = []): Promise<string> {
+    const params = features.length ? `?features=${features.join(',')}` : '';
+    const response = await apiFetch(`${API_BASE}/connected-accounts/google/connect${params}`, {
+      headers: { ...authHeaders() },
+    });
+    if (!response.ok) throw new Error('Failed to get connect URL');
+    const data = await response.json();
+    return data.url as string;
+  },
+
+  async disconnectProvider(provider: 'google' | 'linkedin'): Promise<void> {
+    await apiFetch(`${API_BASE}/connected-accounts/${provider}`, {
       method: 'DELETE',
       headers: { ...authHeaders() },
     });
