@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Job Applica Tracker",
-  "version": "1.0",
+  "version": "1.0.1",
   "description": "JobApplica Browser Extension to detect and track jobs from the most popular job portals",
   "icons": {
     "16": "icon-16.png",
@@ -21,14 +21,18 @@
       "id": "extension@jobapplica.io",
       "strict_min_version": "140.0",
       "data_collection_permissions": {
-        "required": ["none"],
+        "required": [
+          "none"
+        ],
         "optional": []
       }
     }
   },
   "background": {
     "service_worker": "background.js",
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
   "permissions": [
     "tabs",
@@ -49,6 +53,10 @@
     "https://ziprecruiter.com/*",
     "https://www.jobscan.co/*",
     "https://jobscan.co/*",
+    "https://app.jobapplica.io/*",
+    "https://api.jobapplica.io/*",
+    "https://app.jobapplica.io/*",
+    "https://api.jobapplica.io/*",
     "https://app.jobapplica.io/*",
     "https://api.jobapplica.io/*"
   ],

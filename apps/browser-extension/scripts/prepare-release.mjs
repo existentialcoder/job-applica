@@ -3,6 +3,7 @@
  *  - Updates the version from the VERSION env var
  *  - Replaces localhost host_permissions / content_scripts with production URLs
  *  - Writes an optional Firefox variant with the gecko ID injected
+ *  - Writes .env.production so Vite bakes the correct URLs into the JS bundle
  *
  * Usage:
  *   VERSION=1.2.3 \
@@ -48,15 +49,26 @@ if (manifest.content_scripts) {
   }));
 }
 
-// ── Firefox: inject gecko ID ──────────────────────────────────────────────────
+// ── Firefox: inject gecko ID (preserve existing strict_min_version / data_collection_permissions) ──
 if (FOR_FIREFOX) {
+  const existing = manifest.browser_specific_settings?.gecko || {};
   manifest.browser_specific_settings = {
     gecko: {
+      ...existing,
       id: GECKO_ID,
-      strict_min_version: '109.0',
     },
   };
 }
 
 writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + '\n');
 console.log(`manifest.json updated → v${manifest.version}${FOR_FIREFOX ? ' (Firefox)' : ' (Chrome)'}`);
+
+// ── Write .env.production so Vite bakes the right URLs into the JS bundle ─────
+// .env.production is gitignored (no secrets, but avoids confusion); this script
+// generates it fresh every release so CI doesn't need a committed env file.
+const ENV_PATH = resolve(__dirname, '../.env.production');
+writeFileSync(
+  ENV_PATH,
+  `VITE_API_BASE=${BACKEND_URL}/api/v1\nVITE_APP_URL=${FRONTEND_URL}\n`,
+);
+console.log(`  .env.production written → API: ${BACKEND_URL}/api/v1  App: ${FRONTEND_URL}`);

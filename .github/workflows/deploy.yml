@@ -25,6 +25,10 @@ on:
         description: 'Extension — Chrome'
         type: boolean
         default: false
+      extension_firefox:
+        description: 'Extension — Firefox'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -121,7 +125,8 @@ jobs:
               sed -i "s/__version__ = \".*\"/__version__ = \"$NEW\"/" apps/backend/src/__version__.py
             [[ "${{ inputs.frontend }}"  == "true" ]] && set_pkg_version apps/frontend "$NEW"
             [[ "${{ inputs.website }}"   == "true" ]] && set_pkg_version apps/website "$NEW"
-            [[ "${{ inputs.extension }}" == "true" ]] && set_pkg_version apps/browser-extension "$NEW"
+            ([[ "${{ inputs.extension }}" == "true" ]] || [[ "${{ inputs.extension_firefox }}" == "true" ]]) && \
+              set_pkg_version apps/browser-extension "$NEW"
           fi
 
       - name: Commit & tag
@@ -136,12 +141,16 @@ jobs:
           [[ "${{ inputs.backend }}"   == "true" ]] && APPS="$APPS backend"
           [[ "${{ inputs.frontend }}"  == "true" ]] && APPS="$APPS frontend"
           [[ "${{ inputs.website }}"   == "true" ]] && APPS="$APPS website"
-          [[ "${{ inputs.extension }}" == "true" ]] && APPS="$APPS extension"
+          [[ "${{ inputs.extension }}"         == "true" ]] && APPS="$APPS extension-chrome"
+          [[ "${{ inputs.extension_firefox }}" == "true" ]] && APPS="$APPS extension-firefox"
 
           VERSION="${{ steps.bump.outputs.version }}"
           git commit -m "chore: release v$VERSION [${{ steps.resolve.outputs.bump }}] —$APPS"
-          git tag "v$VERSION"
-          git push origin HEAD:${{ github.ref_name }} --tags
+          # Force-update the tag locally; rebase onto remote before pushing
+          git tag -f "v$VERSION"
+          git pull --rebase origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "v$VERSION" --force
 
   # ── Backend → Railway ─────────────────────────────────────────────────────────
   deploy-backend:
@@ -276,9 +285,6 @@ jobs:
       - name: Build (Chrome)
         if: steps.ext_changed.outputs.changed == 'true'
         run: yarn workspace jobapplica--extension build
-        env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-          NODE_ENV: production
 
       - name: Package (Chrome)
         if: steps.ext_changed.outputs.changed == 'true'
@@ -290,12 +296,42 @@ jobs:
           npx chrome-webstore-upload-cli upload \
             --source apps/browser-extension/extension-chrome.zip \
             --extension-id ${{ secrets.CHROME_EXTENSION_ID }} \
-            --client-id ${{ secrets.CHROME_CLIENT_ID }} \
-            --client-secret ${{ secrets.CHROME_CLIENT_SECRET }} \
-            --refresh-token ${{ secrets.CHROME_REFRESH_TOKEN }} \
             --auto-publish
+        env:
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
 
-      # ── Firefox build ───────────────────────────────────────────────────────
+      # ── Save Chrome artifact ────────────────────────────────────────────────
+      - name: Upload Chrome artifact
+        if: steps.ext_changed.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-chrome-v${{ needs.version.outputs.version }}
+          path: apps/browser-extension/extension-chrome.zip
+          retention-days: 30
+
+  # ── Extension → Firefox AMO ───────────────────────────────────────────────────
+  build-extension-firefox:
+    name: Extension → Firefox AMO
+    needs: version
+    runs-on: ubuntu-latest
+    if: always() && inputs.extension_firefox
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
       - name: Prepare manifest (Firefox)
         run: node apps/browser-extension/scripts/prepare-release.mjs --firefox
         env:
@@ -306,9 +342,6 @@ jobs:
 
       - name: Build (Firefox)
         run: yarn workspace jobapplica--extension build
-        env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-          NODE_ENV: production
 
       - name: Publish → Firefox AMO
         run: |
@@ -319,12 +352,9 @@ jobs:
             --api-secret ${{ secrets.FIREFOX_API_SECRET }} \
             --id ${{ secrets.FIREFOX_EXTENSION_ID }}
 
-      # ── Save artifacts ──────────────────────────────────────────────────────
-      - name: Upload artifacts
+      - name: Upload Firefox artifact
         uses: actions/upload-artifact@v4
         with:
-          name: extension-v${{ needs.version.outputs.version }}
-          path: |
-            apps/browser-extension/extension-chrome.zip
-            apps/browser-extension/dist/
+          name: extension-firefox-v${{ needs.version.outputs.version }}
+          path: apps/browser-extension/dist/
           retention-days: 30

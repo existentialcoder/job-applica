@@ -61,6 +61,7 @@ function closeSettings() {
   view.value = preSettingsView;
 }
 
+
 async function handleSaveSettings() {
   const api = settingsApiUrl.value.trim();
   const app = settingsAppUrl.value.trim();
@@ -526,7 +527,7 @@ const platformBadgeVariant: Record<string, any> = {
           <div>
             <p class="text-sm font-medium">Job saved already</p>
           </div>
-          <a :href="`${APP_URL}/boards/${selectedBoardId}?job=${existingJobId}`" target="_blank"
+          <a :href="`${config.appUrl}/boards/${selectedBoardId}?job=${existingJobId}`" target="_blank"
             class="text-xs text-primary hover:underline font-medium">
             View in Dashboard →
           </a>
@@ -622,7 +623,7 @@ const platformBadgeVariant: Record<string, any> = {
 
     <!-- Footer -->
     <div class="px-4 py-2 border-t border-border">
-      <a :href="`${APP_URL}/boards`" target="_blank"
+      <a :href="`${config.appUrl}/boards`" target="_blank"
         class="block text-center text-xs text-primary hover:underline">
         Open Dashboard →
       </a>
