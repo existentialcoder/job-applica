@@ -12,6 +12,12 @@ onMounted(async () => {
   await useFeatureStore().load();
   await useAppStore().initTheme();
 
+  // Validate session on startup — redirects to /login if token expired and unrefreshable
+  const authStore = useAuthStore();
+  if (authStore.isAuthenticated) {
+    await authStore.fetchMe();
+  }
+
   // Extension → Web app SSO: apply token received from extension login/logout.
   // content-webapp.js re-dispatches APPLY_TOKEN messages as this custom event.
   window.addEventListener('ja:token-from-extension', async (e: Event) => {

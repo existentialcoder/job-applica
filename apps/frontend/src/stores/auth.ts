@@ -56,9 +56,34 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchMe(): Promise<void> {
     if (!accessToken.value) return
-    const response = await fetch(`${API_BASE}/auth/me`, {
+
+    let response = await fetch(`${API_BASE}/auth/me`, {
       headers: { Authorization: `Bearer ${accessToken.value}` },
     })
+
+    if (response.status === 401) {
+      // Access token expired — try to refresh before giving up
+      const storedRefresh = localStorage.getItem('refresh_token')
+      if (storedRefresh) {
+        try {
+          const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: storedRefresh }),
+          })
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json()
+            if (refreshData.access_token) {
+              setTokens(refreshData.access_token)
+              response = await fetch(`${API_BASE}/auth/me`, {
+                headers: { Authorization: `Bearer ${refreshData.access_token}` },
+              })
+            }
+          }
+        } catch { /* fall through */ }
+      }
+    }
+
     if (response.ok) {
       const data = await response.json()
       setUser({
@@ -71,6 +96,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
     } else {
       clearAuth()
+      router.replace('/login')
     }
   }
 

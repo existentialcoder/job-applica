@@ -34,10 +34,14 @@ if (VERSION) {
   manifest.version = VERSION.replace(/[^0-9.]/g, '').replace(/\.+$/, '');
 }
 
-// ── host_permissions: swap localhost → production ─────────────────────────────
-manifest.host_permissions = (manifest.host_permissions || [])
-  .filter(p => !p.includes('localhost'))
-  .concat([`${FRONTEND_URL}/*`, `${BACKEND_URL}/*`]);
+// ── host_permissions: swap localhost → production, deduplicate ───────────────
+const prodPerms = [`${FRONTEND_URL}/*`, `${BACKEND_URL}/*`];
+manifest.host_permissions = [
+  ...new Set([
+    ...(manifest.host_permissions || []).filter(p => !p.includes('localhost')),
+    ...prodPerms,
+  ]),
+];
 
 // ── content_scripts: swap localhost → production ──────────────────────────────
 if (manifest.content_scripts) {
@@ -49,15 +53,16 @@ if (manifest.content_scripts) {
   }));
 }
 
-// ── Firefox: inject gecko ID (preserve existing strict_min_version / data_collection_permissions) ──
+// ── Browser-specific manifest fields ─────────────────────────────────────────
 if (FOR_FIREFOX) {
+  // Inject gecko ID, preserve strict_min_version / data_collection_permissions
   const existing = manifest.browser_specific_settings?.gecko || {};
-  manifest.browser_specific_settings = {
-    gecko: {
-      ...existing,
-      id: GECKO_ID,
-    },
-  };
+  manifest.browser_specific_settings = { gecko: { ...existing, id: GECKO_ID } };
+  // Firefox MV3 needs scripts array; service_worker is ignored but harmless
+} else {
+  // Chrome: remove Firefox-only fields
+  delete manifest.browser_specific_settings;
+  if (manifest.background) delete manifest.background.scripts;
 }
 
 writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + '\n');

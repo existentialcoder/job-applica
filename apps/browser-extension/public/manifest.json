@@ -16,23 +16,8 @@
       "48": "icon-48.png"
     }
   },
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "extension@jobapplica.io",
-      "strict_min_version": "140.0",
-      "data_collection_permissions": {
-        "required": [
-          "none"
-        ],
-        "optional": []
-      }
-    }
-  },
   "background": {
-    "service_worker": "background.js",
-    "scripts": [
-      "background.js"
-    ]
+    "service_worker": "background.js"
   },
   "permissions": [
     "tabs",
@@ -53,10 +38,6 @@
     "https://ziprecruiter.com/*",
     "https://www.jobscan.co/*",
     "https://jobscan.co/*",
-    "https://app.jobapplica.io/*",
-    "https://api.jobapplica.io/*",
-    "https://app.jobapplica.io/*",
-    "https://api.jobapplica.io/*",
     "https://app.jobapplica.io/*",
     "https://api.jobapplica.io/*"
   ],
