@@ -94,7 +94,7 @@ class Job(Base):
     location_id: Mapped[int] = mapped_column(ForeignKey('locations.id'), nullable=True)
 
     board: Mapped['Board'] = relationship('Board')
-    board_id: Mapped[int | None] = mapped_column(ForeignKey('boards.id'), nullable=True)
+    board_id: Mapped[int | None] = mapped_column(ForeignKey('boards.id', ondelete='SET NULL'), nullable=True)
 
     def __repr__(self):
         return f'<Job id={self.id} title={self.title}>'

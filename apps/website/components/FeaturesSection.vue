@@ -1,6 +1,12 @@
 <script setup lang="ts">
+import { featureCards } from '~/config/sections'
+
 const t = useT()
 const f = t.features
+
+const visibleItems = computed(() =>
+  f.items.filter(item => featureCards[item.label.toLowerCase() as keyof typeof featureCards] ?? true)
+)
 </script>
 
 <template>
@@ -16,7 +22,7 @@ const f = t.features
 
       <div class="features-grid" role="list">
         <article
-          v-for="(item, i) in f.items"
+          v-for="(item, i) in visibleItems"
           :key="i"
           class="feature-cell"
           role="listitem"

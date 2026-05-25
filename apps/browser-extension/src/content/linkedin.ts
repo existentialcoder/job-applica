@@ -24,6 +24,11 @@ function parseDocTitle(): { jobTitle: string | null; company: string | null } {
 /** Returns the best container for the job detail panel. */
 function findPanel(): Element | Document {
   const candidates = [
+    // Collections / two-pane layout
+    '.jobs-job-detail-two-pane__detail-view',
+    '.scaffold-layout__detail-inner',
+    '[class*="job-detail-two-pane"]',
+    // Standard search / view layout
     '.job-details-jobs-unified-top-card__content-container',
     '.jobs-unified-top-card',
     '.scaffold-layout__detail',
@@ -65,10 +70,11 @@ function extract() {
     ], panel);
     if (el) jobTitle = el.textContent!.trim();
   }
+  // On collection/search pages LinkedIn updates document.title to the selected
+  // job's title — use it as a fallback unless it's still a generic listing page.
   if (
     !jobTitle &&
     !document.title.toLowerCase().includes('recommended') &&
-    !document.title.toLowerCase().includes('collection') &&
     !document.title.toLowerCase().includes('jobs | linkedin')
   ) {
     jobTitle = parseDocTitle().jobTitle;
@@ -163,11 +169,13 @@ try {
     sendMessage({ platform: 'LinkedIn', ...result });
   } else {
     // Side-panel may still be rendering — poll for up to 2 s
+    // Collections pages with discover=true load lazily — poll for up to 5 s
+    const maxAttempts = window.location.pathname.includes('/jobs/collections/') ? 20 : 8;
     let attempts = 0;
     const interval = setInterval(() => {
       attempts++;
       const r = extract();
-      if (r.jobTitle || attempts >= 8) {
+      if (r.jobTitle || attempts >= maxAttempts) {
         clearInterval(interval);
         sendMessage({ platform: 'LinkedIn', ...r });
       }

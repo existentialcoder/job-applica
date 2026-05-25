@@ -4,7 +4,7 @@ import { sections } from '~/config/sections'
 const t = useT()
 
 useSeoMeta({
-  title: 'JobApplica — AI-Powered Job Search Platform | Discover, Apply & Track',
+  title: 'JobApplica - AI-Powered Job Search Platform | Discover, Apply & Track',
   description: 'JobApplica is a complete AI-powered job search platform. Discover relevant jobs automatically, generate tailored CVs and cover letters, track your pipeline on visual Kanban boards, and let email intelligence handle follow-ups.',
   keywords: 'ai job search platform, job application tracker, job discovery ai, ats score match, cv generator, cover letter generator, kanban job tracker, job search automation, interview tracker, follow-up automation',
   robots: 'index, follow',

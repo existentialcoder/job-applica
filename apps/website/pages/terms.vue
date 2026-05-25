@@ -144,8 +144,7 @@ useHead({
           <div class="legal-contact">
             <h3>Questions about these Terms?</h3>
             <p>
-              Reach us at <a :href="`mailto:${p.contactEmail}`">{{ p.contactEmail }}</a>.
-              We're a small team and we'll get back to you within a few business days.
+              Reach me at <a :href="`mailto:${p.contactEmail}`">{{ p.contactEmail }}</a>.
             </p>
           </div>
         </div>

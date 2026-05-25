@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Breadcrumb from '@/components/core/Breadcrumb.vue';
-import { LogOut, User, Bell, Sun, MoonStar, Menu } from 'lucide-vue-next';
+import { LogOut, User, Bell, Sun, MoonStar, Menu, Github } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
@@ -51,6 +51,15 @@ async function handleLogout() {
     </Button>
 
     <div class="flex items-center">
+      <a
+        href="https://github.com/existentialcoder/job-applica"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-1.5 text-xs font-medium px-3 h-8 rounded-md border border-border bg-background hover:bg-muted transition-colors mr-2"
+      >
+        <Github class="w-4 h-4" />
+        <span class="hidden sm:inline">Star on GitHub</span>
+      </a>
       <Button variant="outline" class="border-0 p-[6px] w-8 h-8">
         <Bell />
       </Button>

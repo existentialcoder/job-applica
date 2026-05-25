@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from ..models.board import Board, DEFAULT_STAGES
+from ..models.job import Job
 from ..schemas.board import BoardBase, BoardCreate, BoardUpdate
 from ..schemas.user import UserBase
 
@@ -102,6 +103,7 @@ def delete_board(db: Session, user: UserBase, board_id: int) -> bool:
     ).first()
     if not board:
         return False
+    db.query(Job).filter(Job.board_id == board_id).update({'board_id': None})
     db.delete(board)
     db.commit()
     return True

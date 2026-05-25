@@ -169,9 +169,23 @@ button { font-family: inherit; }
   transition: color .12s;
 }
 .nav-link-login:hover { color: var(--text); }
+.nav-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255,255,255,.12);
+  text-decoration: none;
+  transition: color .12s, background .12s, border-color .12s;
+}
+.nav-github:hover { color: var(--text); background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.22); }
 
 @media (max-width: 860px) { .nav-links { display: none; } }
-@media (max-width: 560px) { .nav-link-login { display: none; } }
+@media (max-width: 560px) { .nav-link-login { display: none; } .nav-github span { display: none; } }
 
 /* ── Hero ──────────────────────────────────────────────── */
 .hero {
@@ -957,6 +971,7 @@ section { padding: 84px 0; }
   transition: color .12s;
 }
 .footer-links a:hover { color: var(--text-2); }
+.footer-github { display: inline-flex; align-items: center; gap: 5px; }
 .footer-sep {
   color: var(--border-mid);
 }
