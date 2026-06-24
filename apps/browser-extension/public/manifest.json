@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Job Applica Tracker",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "description": "JobApplica Browser Extension to detect and track jobs from the most popular job portals",
   "icons": {
     "16": "icon-16.png",

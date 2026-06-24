@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....schemas.connected_account import ConnectedAccountOut, ConnectUrlResponse
 from ....schemas.user import UserBase
@@ -15,11 +15,11 @@ VALID_FEATURES = {'gmail', 'calendar'}
 
 
 @router.get('', response_model=list[ConnectedAccountOut])
-def list_connected_accounts(
+async def list_connected_accounts(
     current_user: UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    return ca_service.list_for_user(db, current_user.id)
+    return await ca_service.list_for_user(db, current_user.id)
 
 
 @router.get('/google/connect', response_model=ConnectUrlResponse)
@@ -27,10 +27,6 @@ def get_google_connect_url(
     features: str = '',
     current_user: UserBase = Depends(get_current_user),
 ):
-    """
-    Returns a Google OAuth URL that adds the requested feature scopes.
-    features: comma-separated list from {gmail, calendar}
-    """
     requested = [f.strip() for f in features.split(',') if f.strip() in VALID_FEATURES]
     url = ca_service.google_auth_url(
         origin='web',
@@ -41,12 +37,12 @@ def get_google_connect_url(
 
 
 @router.delete('/{provider}', status_code=204)
-def disconnect_provider(
+async def disconnect_provider(
     provider: str,
     current_user: UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     if provider not in VALID_PROVIDERS:
         raise HTTPException(status_code=400, detail=f'Unknown provider: {provider}')
-    if not ca_service.disconnect(db, current_user.id, provider):
+    if not await ca_service.disconnect(db, current_user.id, provider):
         raise HTTPException(status_code=404, detail='Account not connected')

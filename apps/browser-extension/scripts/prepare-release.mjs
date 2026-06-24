@@ -23,7 +23,7 @@ const MANIFEST_PATH = resolve(__dirname, '../public/manifest.json');
 const VERSION       = process.env.VERSION;
 const FRONTEND_URL  = process.env.FRONTEND_URL || 'https://app.jobapplica.io';
 const BACKEND_URL   = process.env.BACKEND_URL  || 'https://api.jobapplica.io';
-const GECKO_ID      = process.env.FIREFOX_EXTENSION_ID || 'jobapplica@jobapplica.io';
+const GECKO_ID      = process.env.FIREFOX_EXTENSION_ID || 'extension@jobapplica.io';
 const FOR_FIREFOX   = process.argv.includes('--firefox');
 
 const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf-8'));
@@ -58,7 +58,11 @@ if (FOR_FIREFOX) {
   // Inject gecko ID, preserve strict_min_version / data_collection_permissions
   const existing = manifest.browser_specific_settings?.gecko || {};
   manifest.browser_specific_settings = { gecko: { ...existing, id: GECKO_ID } };
-  // Firefox MV3 needs scripts array; service_worker is ignored but harmless
+  // Firefox MV3 AMO linter requires background.scripts alongside service_worker
+  // as a Firefox-compatible fallback, otherwise submission is rejected.
+  if (manifest.background?.service_worker) {
+    manifest.background.scripts = [manifest.background.service_worker];
+  }
 } else {
   // Chrome: remove Firefox-only fields
   delete manifest.browser_specific_settings;

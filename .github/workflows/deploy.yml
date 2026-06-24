@@ -114,19 +114,34 @@ jobs:
 
           BUMP="${{ steps.resolve.outputs.bump }}"
 
-          # Derive new version from backend __version__.py
+          # Derive new version from backend __version__.py (backend/frontend/website)
           CURRENT=$(grep -oP '(?<=__version__ = ")[^"]+' apps/backend/src/__version__.py)
           NEW=$(bump_semver "$CURRENT" "$BUMP")
           echo "version=$NEW" >> $GITHUB_OUTPUT
           echo "Release: $CURRENT → $NEW ($BUMP)"
+
+          # Extension version is tracked independently in manifest.json
+          EXT_CURRENT=$(node -p "require('./apps/browser-extension/public/manifest.json').version")
+          EXT_NEW=$(bump_semver "$EXT_CURRENT" "$BUMP")
+          echo "ext_version=$EXT_NEW" >> $GITHUB_OUTPUT
+          echo "Extension: $EXT_CURRENT → $EXT_NEW ($BUMP)"
 
           if [[ "$BUMP" != "none" ]]; then
             [[ "${{ inputs.backend }}"   == "true" ]] && \
               sed -i "s/__version__ = \".*\"/__version__ = \"$NEW\"/" apps/backend/src/__version__.py
             [[ "${{ inputs.frontend }}"  == "true" ]] && set_pkg_version apps/frontend "$NEW"
             [[ "${{ inputs.website }}"   == "true" ]] && set_pkg_version apps/website "$NEW"
-            ([[ "${{ inputs.extension }}" == "true" ]] || [[ "${{ inputs.extension_firefox }}" == "true" ]]) && \
-              set_pkg_version apps/browser-extension "$NEW"
+
+            if [[ "${{ inputs.extension }}" == "true" ]] || [[ "${{ inputs.extension_firefox }}" == "true" ]]; then
+              set_pkg_version apps/browser-extension "$EXT_NEW"
+              # Bump manifest.json so the version commit reflects the real extension version
+              node -e "
+                const fs = require('fs');
+                const m = JSON.parse(fs.readFileSync('apps/browser-extension/public/manifest.json'));
+                m.version = '$EXT_NEW';
+                fs.writeFileSync('apps/browser-extension/public/manifest.json', JSON.stringify(m, null, 2) + '\n');
+              "
+            fi
           fi
 
       - name: Commit & tag
@@ -278,22 +293,33 @@ jobs:
         if: steps.ext_changed.outputs.changed == 'true'
         run: node apps/browser-extension/scripts/prepare-release.mjs
         env:
-          VERSION: ${{ needs.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.ext_version }}
           FRONTEND_URL: https://app.jobapplica.io
           BACKEND_URL: https://api.jobapplica.io
 
       - name: Build (Chrome)
         if: steps.ext_changed.outputs.changed == 'true'
-        run: yarn workspace jobapplica--extension build
+        run: yarn workspace jobapplica--extension build:prod
 
       - name: Package (Chrome)
         if: steps.ext_changed.outputs.changed == 'true'
         run: cd apps/browser-extension/dist && zip -r ../extension-chrome.zip .
 
+      # Secrets required in GitHub repo → Settings → Secrets:
+      #   CHROME_EXTENSION_ID  — the extension's ID from the Chrome Web Store URL
+      #   CHROME_CLIENT_ID     — OAuth client ID from Google Cloud Console
+      #   CHROME_CLIENT_SECRET — OAuth client secret from Google Cloud Console
+      #   CHROME_REFRESH_TOKEN — run locally to regenerate:
+      #                          npx chrome-webstore-upload-cli@4 get-refresh-token \
+      #                            --client-id <id> --client-secret <secret>
+      #                          Paste the printed token into the secret.
+      #                          Also ensure the OAuth consent screen is set to
+      #                          "Production" (not "Testing") in Google Cloud Console
+      #                          so tokens don't expire after 7 days.
       - name: Publish → Chrome Web Store
         if: steps.ext_changed.outputs.changed == 'true'
         run: |
-          npx chrome-webstore-upload-cli upload \
+          npx chrome-webstore-upload-cli@4 upload \
             --source apps/browser-extension/extension-chrome.zip \
             --extension-id ${{ secrets.CHROME_EXTENSION_ID }} \
             --auto-publish
@@ -301,14 +327,13 @@ jobs:
           CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-          PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
 
       # ── Save Chrome artifact ────────────────────────────────────────────────
       - name: Upload Chrome artifact
         if: steps.ext_changed.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: extension-chrome-v${{ needs.version.outputs.version }}
+          name: extension-chrome-v${{ needs.version.outputs.ext_version }}
           path: apps/browser-extension/extension-chrome.zip
           retention-days: 30
 
@@ -335,13 +360,13 @@ jobs:
       - name: Prepare manifest (Firefox)
         run: node apps/browser-extension/scripts/prepare-release.mjs --firefox
         env:
-          VERSION: ${{ needs.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.ext_version }}
           FRONTEND_URL: https://app.jobapplica.io
           BACKEND_URL: https://api.jobapplica.io
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
 
       - name: Build (Firefox)
-        run: yarn workspace jobapplica--extension build
+        run: yarn workspace jobapplica--extension build:prod
 
       - name: Publish → Firefox AMO
         run: |
@@ -355,6 +380,6 @@ jobs:
       - name: Upload Firefox artifact
         uses: actions/upload-artifact@v4
         with:
-          name: extension-firefox-v${{ needs.version.outputs.version }}
+          name: extension-firefox-v${{ needs.version.outputs.ext_version }}
           path: apps/browser-extension/dist/
           retention-days: 30

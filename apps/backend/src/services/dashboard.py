@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
-from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
 from src.models.job import Job
 from src.models.company import Company
@@ -13,33 +13,35 @@ GHOST_DAYS = 14
 STUCK_DAYS = 7
 
 # Terminal stages that don't count as "active" in the pipeline.
-# Jobs in these keys are excluded from stuck/ghosted metrics.
 TERMINAL_KEYS = {'Rejected', 'Withdrawn', 'Saved'}
 
 
-def _load_stages(db: Session, user_id: int, board_id: int | None) -> list[dict]:
-    """Return the ordered stage list for the given board (or the default board)."""
+async def _load_stages(db: AsyncSession, user_id: int, board_id: int | None) -> list[dict]:
     if board_id is not None:
-        board = db.query(Board).filter(Board.id == board_id, Board.user_id == user_id).first()
+        result = await db.execute(select(Board).where(Board.id == board_id, Board.user_id == user_id))
+        board = result.scalar_one_or_none()
         if board and board.stages:
             return board.stages
     else:
-        default = db.query(Board).filter(Board.user_id == user_id, Board.is_default == True).first()
+        result = await db.execute(select(Board).where(Board.user_id == user_id, Board.is_default == True))
+        default = result.scalar_one_or_none()
         if default and default.stages:
             return default.stages
     return DEFAULT_STAGES
 
 
-def get_dashboard_stats(db: Session, user_id: int, board_id: int | None = None) -> DashboardStats:
-    q = db.query(Job).filter(Job.user_id == user_id)
+async def get_dashboard_stats(db: AsyncSession, user_id: int, board_id: int | None = None) -> DashboardStats:
+    jobs_q = select(Job).where(Job.user_id == user_id)
     if board_id is not None:
-        q = q.filter(Job.board_id == board_id)
-    all_jobs = q.all()
+        jobs_q = jobs_q.where(Job.board_id == board_id)
 
-    raw_stages = _load_stages(db, user_id, board_id)
+    jobs_result = await db.execute(jobs_q)
+    all_jobs = jobs_result.scalars().all()
+
+    raw_stages = await _load_stages(db, user_id, board_id)
+
     stage_keys  = [s['key'] for s in raw_stages]
     active_keys = {s['key'] for s in raw_stages if s['key'] not in TERMINAL_KEYS}
-    # "First non-saved active stage" is used for ghosted detection
     applied_key = next((s['key'] for s in raw_stages if s['key'] not in TERMINAL_KEYS), 'Applied')
 
     now          = datetime.now(timezone.utc)
@@ -54,7 +56,6 @@ def get_dashboard_stats(db: Session, user_id: int, board_id: int | None = None) 
     total_withdrawn  = sum(1 for j in all_jobs if j.status == 'Withdrawn')
     total_active     = sum(1 for j in all_jobs if j.status in active_keys)
 
-    # Interviews = all active stages beyond the first entry stage
     interview_keys = active_keys - {applied_key}
     total_interviews = sum(1 for j in all_jobs if j.status in interview_keys)
 
@@ -77,7 +78,6 @@ def get_dashboard_stats(db: Session, user_id: int, board_id: int | None = None) 
     raw: dict[str, int] = {}
     for j in all_jobs:
         raw[j.status] = raw.get(j.status, 0) + 1
-
     by_stage = [StageCount(stage=k, count=raw.get(k, 0)) for k in stage_keys]
 
     # ── By week (last 12 weeks) ───────────────────────────────────────────────
@@ -94,7 +94,6 @@ def get_dashboard_stats(db: Session, user_id: int, board_id: int | None = None) 
         week_start = ref - timedelta(days=ref.weekday())
         key = week_start.isoformat()
         weekly[key] = weekly.get(key, 0) + 1
-
     by_week = [WeekCount(week=k, count=v) for k, v in sorted(weekly.items())]
 
     # ── By platform ──────────────────────────────────────────────────────────
@@ -103,7 +102,6 @@ def get_dashboard_stats(db: Session, user_id: int, board_id: int | None = None) 
         if j.source_platform:
             p = j.source_platform.value if hasattr(j.source_platform, 'value') else str(j.source_platform)
             plat[p] = plat.get(p, 0) + 1
-
     by_platform = [
         PlatformCount(platform=k, count=v)
         for k, v in sorted(plat.items(), key=lambda x: -x[1])
@@ -111,14 +109,16 @@ def get_dashboard_stats(db: Session, user_id: int, board_id: int | None = None) 
 
     # ── Top companies ─────────────────────────────────────────────────────────
     company_q = (
-        db.query(Company.name, func.count(Job.id).label('cnt'))
+        select(Company.name, func.count(Job.id).label('cnt'))
         .join(Job, Job.company_id == Company.id)
-        .filter(Job.user_id == user_id)
+        .where(Job.user_id == user_id)
     )
     if board_id is not None:
-        company_q = company_q.filter(Job.board_id == board_id)
-    rows = company_q.group_by(Company.name).order_by(func.count(Job.id).desc()).limit(8).all()
-    top_companies = [CompanyCount(company=name, count=cnt) for name, cnt in rows]
+        company_q = company_q.where(Job.board_id == board_id)
+    company_q = company_q.group_by(Company.name).order_by(func.count(Job.id).desc()).limit(8)
+
+    company_result = await db.execute(company_q)
+    top_companies = [CompanyCount(company=name, count=cnt) for name, cnt in company_result.all()]
 
     return DashboardStats(
         stages=[StageInfo(key=s['key'], label=s['label'], color=s['color']) for s in raw_stages],

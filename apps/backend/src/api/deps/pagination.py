@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from ...core.constants import Constants
 
 
-async def pagination_params(
+def pagination_params(
     page: Optional[int] = Query(1, ge=1, description='Page number (1-indexed)'),
     per_page: Optional[int] = Query(
         Constants.DEFAULT_PAGE_SIZE, ge=1, le=Constants.MAX_PAGE_SIZE, description='Items per page'

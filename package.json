@@ -15,6 +15,9 @@
     "dev:website": "yarn workspace website dev",
     "build:frontend": "yarn workspace frontend build",
     "build:extension": "yarn workspace jobapplica--extension build",
+    "release:extension": "yarn workspace jobapplica--extension release",
+    "release:extension:minor": "yarn workspace jobapplica--extension release:minor",
+    "release:extension:major": "yarn workspace jobapplica--extension release:major",
     "build:website": "yarn workspace website build",
     "generate:website": "yarn workspace website generate",
     "prepare": "husky"

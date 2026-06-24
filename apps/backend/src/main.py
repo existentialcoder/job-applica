@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -11,10 +12,16 @@ from .db.session import engine
 from .models import resume as _resume_model  # ensure table is created
 from .models import connected_account as _connected_account_model  # ensure table is created
 
-# Ensure tables are created
-Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title='JobApplica API')
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    await engine.dispose()
+
+
+app = FastAPI(title='JobApplica API', lifespan=lifespan)
 
 @app.get('/health', tags=['Health'], include_in_schema=False)
 def health():

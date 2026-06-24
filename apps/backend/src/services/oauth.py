@@ -1,6 +1,7 @@
 import httpx
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from ..core.config import settings
 from ..core.constants import Constants
@@ -36,7 +37,6 @@ def get_linkedin_auth_url(origin: str = 'web') -> str:
 
 
 async def exchange_google_code(code: str) -> dict:
-    """Exchange auth code → returns {access_token, refresh_token, expires_in, scope, user_info}."""
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(GOOGLE_TOKEN_URL, data={
             'code': code,
@@ -69,7 +69,6 @@ async def exchange_google_code(code: str) -> dict:
 
 
 async def exchange_linkedin_code(code: str) -> dict:
-    """Exchange auth code → returns {access_token, expires_in, scopes, user_info}."""
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(LINKEDIN_TOKEN_URL, data={
             'grant_type': 'authorization_code',
@@ -99,8 +98,8 @@ async def exchange_linkedin_code(code: str) -> dict:
     }
 
 
-def get_or_create_oauth_user(
-    db: Session,
+async def get_or_create_oauth_user(
+    db: AsyncSession,
     provider: str,
     provider_id: str,
     email: str,
@@ -112,20 +111,21 @@ def get_or_create_oauth_user(
     expires_in: int | None = None,
     scopes: list[str] | None = None,
 ) -> User:
-    # Look up by connected_accounts first
-    user = ca_service.get_user_by_provider(db, provider, provider_id)
+    user = await ca_service.get_user_by_provider(db, provider, provider_id)
 
     if not user:
-        # Fall back to email match (account merge)
         if email:
-            user = db.query(User).filter(User.email == email).first()
+            result = await db.execute(select(User).where(User.email == email))
+            user = result.scalar_one_or_none()
 
     if not user:
-        # New user — create
         base_username = (email.split('@')[0] if email else f'{first_name}{last_name}').lower()
         user_name = base_username
         suffix = 1
-        while db.query(User).filter(User.user_name == user_name).first():
+        while True:
+            result = await db.execute(select(User).where(User.user_name == user_name))
+            if not result.scalar_one_or_none():
+                break
             user_name = f'{base_username}{suffix}'
             suffix += 1
 
@@ -139,18 +139,17 @@ def get_or_create_oauth_user(
             avatar_url=avatar_url,
         )
         db.add(user)
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
     else:
         if avatar_url and not user.avatar_url:
             user.avatar_url = avatar_url
-            db.commit()
-            db.refresh(user)
+            await db.commit()
+            await db.refresh(user)
 
     display_name = f'{first_name} {last_name}'.strip() or email
 
-    # Always upsert the connected_account row — updates token + scopes on re-login
-    ca_service.upsert(
+    await ca_service.upsert(
         db=db,
         user_id=user.id,
         provider=provider,

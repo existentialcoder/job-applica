@@ -1,4 +1,5 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, update
 
 from ..models.board import Board, DEFAULT_STAGES
 from ..models.job import Job
@@ -6,27 +7,26 @@ from ..schemas.board import BoardBase, BoardCreate, BoardUpdate
 from ..schemas.user import UserBase
 
 
-def get_boards(db: Session, user: UserBase) -> list[BoardBase]:
-    boards = (
-        db.query(Board)
-        .filter(Board.user_id == user.id)
-        .order_by(Board.is_default.desc(), Board.created_at)
-        .all()
+async def get_boards(db: AsyncSession, user: UserBase) -> list[BoardBase]:
+    result = await db.execute(
+        select(Board).where(Board.user_id == user.id).order_by(Board.is_default.desc(), Board.created_at)
     )
-    return [BoardBase.model_validate(b) for b in boards]
+    return [BoardBase.model_validate(b) for b in result.scalars().all()]
 
 
-def get_board(db: Session, user: UserBase, board_id: int) -> BoardBase | None:
-    board = db.query(Board).filter(Board.user_id == user.id, Board.id == board_id).first()
+async def get_board(db: AsyncSession, user: UserBase, board_id: int) -> BoardBase | None:
+    result = await db.execute(select(Board).where(Board.user_id == user.id, Board.id == board_id))
+    board = result.scalar_one_or_none()
     return BoardBase.model_validate(board) if board else None
 
 
-def get_default_board_id(db: Session, user_id: int) -> int | None:
-    board = db.query(Board.id).filter(Board.user_id == user_id, Board.is_default == True).first()
-    return board[0] if board else None
+async def get_default_board_id(db: AsyncSession, user_id: int) -> int | None:
+    result = await db.execute(select(Board.id).where(Board.user_id == user_id, Board.is_default == True))
+    row = result.first()
+    return row[0] if row else None
 
 
-def create_board(db: Session, user: UserBase, board_in: BoardCreate) -> BoardBase:
+async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) -> BoardBase:
     stages = [s.model_dump() for s in board_in.stages] if board_in.stages else DEFAULT_STAGES
     board = Board(
         name=board_in.name,
@@ -37,73 +37,75 @@ def create_board(db: Session, user: UserBase, board_in: BoardCreate) -> BoardBas
         is_default=False,
     )
     db.add(board)
-    db.commit()
-    db.refresh(board)
+    await db.commit()
+    await db.refresh(board)
     return BoardBase.model_validate(board)
 
 
-def update_board(db: Session, user: UserBase, board_id: int, board_in: BoardUpdate) -> BoardBase | None:
-    from ..models.job import Job
-
-    board = db.query(Board).filter(Board.user_id == user.id, Board.id == board_id).first()
+async def update_board(db: AsyncSession, user: UserBase, board_id: int, board_in: BoardUpdate) -> BoardBase | None:
+    result = await db.execute(select(Board).where(Board.user_id == user.id, Board.id == board_id))
+    board = result.scalar_one_or_none()
     if not board:
         return None
+
     if board_in.name is not None:
         board.name = board_in.name
     if board_in.color is not None:
         board.color = board_in.color
     if board_in.description is not None:
         board.description = board_in.description
+
     if board_in.stages is not None:
         new_stages = [s.model_dump() for s in board_in.stages]
-        # Migrate jobs for renamed keys (old_key → new_key)
         renamed_old_keys: set[str] = set()
+
         if board_in.key_renames:
             for old_key, new_key in board_in.key_renames.items():
-                db.query(Job).filter(
-                    Job.board_id == board_id,
-                    Job.status == old_key,
-                ).update({'status': new_key}, synchronize_session=False)
+                await db.execute(
+                    update(Job).where(Job.board_id == board_id, Job.status == old_key).values(status=new_key)
+                )
             renamed_old_keys = set(board_in.key_renames.keys())
-        # Move jobs from completely removed stages to the first remaining stage
+
         new_keys = {s['key'] for s in new_stages}
         old_keys = {s['key'] for s in (board.stages or [])}
         removed_keys = (old_keys - new_keys) - renamed_old_keys
         if removed_keys and new_stages:
             first_stage = new_stages[0]['key']
-            db.query(Job).filter(
-                Job.board_id == board_id,
-                Job.status.in_(list(removed_keys)),
-            ).update({'status': first_stage}, synchronize_session=False)
+            await db.execute(
+                update(Job).where(Job.board_id == board_id, Job.status.in_(list(removed_keys))).values(status=first_stage)
+            )
+
         board.stages = new_stages
-    db.commit()
-    db.refresh(board)
+
+    await db.commit()
+    await db.refresh(board)
     return BoardBase.model_validate(board)
 
 
-def set_default_board(db: Session, user: UserBase, board_id: int) -> BoardBase | None:
-    board = db.query(Board).filter(Board.user_id == user.id, Board.id == board_id).first()
+async def set_default_board(db: AsyncSession, user: UserBase, board_id: int) -> BoardBase | None:
+    result = await db.execute(select(Board).where(Board.user_id == user.id, Board.id == board_id))
+    board = result.scalar_one_or_none()
     if not board:
         return None
-    # Unset any existing default
-    db.query(Board).filter(Board.user_id == user.id, Board.is_default == True).update(
-        {'is_default': False}, synchronize_session=False
+
+    await db.execute(
+        update(Board).where(Board.user_id == user.id, Board.is_default == True).values(is_default=False)
     )
     board.is_default = True
-    db.commit()
-    db.refresh(board)
+    await db.commit()
+    await db.refresh(board)
     return BoardBase.model_validate(board)
 
 
-def delete_board(db: Session, user: UserBase, board_id: int) -> bool:
-    board = db.query(Board).filter(
-        Board.user_id == user.id,
-        Board.id == board_id,
-        Board.is_default == False,
-    ).first()
+async def delete_board(db: AsyncSession, user: UserBase, board_id: int) -> bool:
+    result = await db.execute(
+        select(Board).where(Board.user_id == user.id, Board.id == board_id, Board.is_default == False)
+    )
+    board = result.scalar_one_or_none()
     if not board:
         return False
-    db.query(Job).filter(Job.board_id == board_id).update({'board_id': None})
-    db.delete(board)
-    db.commit()
+
+    await db.execute(update(Job).where(Job.board_id == board_id).values(board_id=None))
+    await db.delete(board)
+    await db.commit()
     return True

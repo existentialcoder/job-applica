@@ -4,7 +4,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/build-content.mjs",
-    "build:prod": "vite build --mode production && node scripts/build-content.mjs"
+    "build:prod": "vite build --mode production && node scripts/build-content.mjs",
+    "release": "node scripts/release.mjs",
+    "release:minor": "node scripts/release.mjs minor",
+    "release:major": "node scripts/release.mjs major"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

@@ -6,7 +6,8 @@ import secrets
 from datetime import datetime, timezone, timedelta
 from urllib.parse import urlencode
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from ..core.config import settings
 from ..core.crypto import encrypt, decrypt
@@ -53,8 +54,8 @@ def verify_state(state: str) -> dict | None:
 
 # ── Core service functions ────────────────────────────────────────────────────
 
-def upsert(
-    db: Session,
+async def upsert(
+    db: AsyncSession,
     user_id: int,
     provider: str,
     provider_user_id: str,
@@ -66,7 +67,10 @@ def upsert(
     expires_in: int | None,
     scopes: list[str],
 ) -> ConnectedAccount:
-    account = db.query(ConnectedAccount).filter_by(user_id=user_id, provider=provider).first()
+    result = await db.execute(
+        select(ConnectedAccount).where(ConnectedAccount.user_id == user_id, ConnectedAccount.provider == provider)
+    )
+    account = result.scalar_one_or_none()
 
     encrypted_access = encrypt(access_token) if access_token else None
     encrypted_refresh = encrypt(refresh_token) if refresh_token else None
@@ -85,13 +89,11 @@ def upsert(
             account.avatar_url = avatar_url
         if encrypted_access:
             account.access_token = encrypted_access
-        # Only overwrite refresh_token when a new one is issued
         if encrypted_refresh:
             account.refresh_token = encrypted_refresh
         if expires_at:
             account.token_expires_at = expires_at
-        # Merge scopes (never shrink — only expand)
-        merged = list({*( account.scopes or []), *scopes})
+        merged = list({*(account.scopes or []), *scopes})
         account.scopes = merged
         account.last_used_at = datetime.now(timezone.utc)
     else:
@@ -111,34 +113,44 @@ def upsert(
         )
         db.add(account)
 
-    db.commit()
-    db.refresh(account)
+    await db.commit()
+    await db.refresh(account)
     return account
 
 
-def get_by_provider_user_id(db: Session, provider: str, provider_user_id: str) -> ConnectedAccount | None:
-    return db.query(ConnectedAccount).filter_by(
-        provider=provider, provider_user_id=provider_user_id
-    ).first()
+async def get_by_provider_user_id(db: AsyncSession, provider: str, provider_user_id: str) -> ConnectedAccount | None:
+    result = await db.execute(
+        select(ConnectedAccount).where(ConnectedAccount.provider == provider, ConnectedAccount.provider_user_id == provider_user_id)
+    )
+    return result.scalar_one_or_none()
 
 
-def get_user_by_provider(db: Session, provider: str, provider_user_id: str) -> User | None:
-    account = get_by_provider_user_id(db, provider, provider_user_id)
-    if not account:
-        return None
-    return db.query(User).filter_by(id=account.user_id).first()
+async def get_user_by_provider(db: AsyncSession, provider: str, provider_user_id: str) -> User | None:
+    result = await db.execute(
+        select(User)
+            .join(ConnectedAccount, ConnectedAccount.user_id == User.id)
+            .where(
+                ConnectedAccount.provider_user_id == provider_user_id,
+                ConnectedAccount.provider == provider, 
+            )
+    )
+    return result.scalar_one_or_none()
 
 
-def list_for_user(db: Session, user_id: int) -> list[ConnectedAccount]:
-    return db.query(ConnectedAccount).filter_by(user_id=user_id).all()
+async def list_for_user(db: AsyncSession, user_id: int) -> list[ConnectedAccount]:
+    result = await db.execute(select(ConnectedAccount).where(ConnectedAccount.user_id == user_id))
+    return result.scalars().all()
 
 
-def disconnect(db: Session, user_id: int, provider: str) -> bool:
-    account = db.query(ConnectedAccount).filter_by(user_id=user_id, provider=provider).first()
+async def disconnect(db: AsyncSession, user_id: int, provider: str) -> bool:
+    result = await db.execute(
+        select(ConnectedAccount).where(ConnectedAccount.user_id == user_id, ConnectedAccount.provider == provider)
+    )
+    account = result.scalar_one_or_none()
     if not account:
         return False
-    db.delete(account)
-    db.commit()
+    await db.delete(account)
+    await db.commit()
     return True
 
 
@@ -172,7 +184,6 @@ def google_auth_url(origin: str = 'web', user_id: int | None = None, features: l
         'state': _sign_state(payload),
         'access_type': 'offline',
         'include_granted_scopes': 'true',
-        # Force consent so Google re-issues a refresh token on scope upgrades
         'prompt': 'consent' if purpose == 'upgrade' else 'select_account',
     }
     return f'{GOOGLE_AUTH_URL}?{urlencode(params)}'

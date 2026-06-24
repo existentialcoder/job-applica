@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....schemas import skill as schemas
 from ...deps.db import get_db
@@ -9,9 +9,9 @@ from ....services import skill as skills_service
 router = APIRouter(prefix='/skills')
 
 @router.get('', response_model=skills_service.PaginatedSkillsBase, description='List all skills')
-def list_skills(pagination: dict = Depends(pagination_params), db: Session = Depends(get_db)):
-    return skills_service.get_skills(db, pagination)
-    
+async def list_skills(pagination: dict = Depends(pagination_params), db: AsyncSession = Depends(get_db)):
+    return await skills_service.get_skills(db, pagination)
+
 @router.post('/', response_model=schemas.SkillBase, description='Create a new skill')
-def create_skill(skill_data: schemas.SkillCreate, db: Session = Depends(get_db)):
-    return skills_service.create_skill(db, skill_data)
+async def create_skill(skill_data: schemas.SkillCreate, db: AsyncSession = Depends(get_db)):
+    return await skills_service.create_skill(db, skill_data)

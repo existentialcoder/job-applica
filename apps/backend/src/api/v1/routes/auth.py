@@ -1,13 +1,14 @@
 import os
 import uuid
-import shutil
+import aiofiles
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from ....schemas import user as schemas
 from ....core.config import settings
@@ -55,13 +56,14 @@ def get_me(current_user: schemas.UserBase = Depends(get_current_user)):
 
 
 @router.post('/refresh', description='Exchange a refresh token for a new access token')
-def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
+async def refresh_token(payload: RefreshRequest, db: AsyncSession = Depends(get_db)):
     try:
         token_data = user_service.decode_token(payload.refresh_token)
     except HTTPException:
         raise HTTPException(status_code=401, detail='Invalid or expired refresh token')
 
-    user = db.query(User).filter(User.id == int(token_data.sub)).first()
+    result = await db.execute(select(User).where(User.id == int(token_data.sub)))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=401, detail='User not found')
 
@@ -82,36 +84,38 @@ def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
 
 
 @router.get('/settings', description='Get current user settings')
-def get_settings(current_user: schemas.UserBase = Depends(get_current_user), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == current_user.id).first()
+async def get_settings(current_user: schemas.UserBase = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
     return {'settings': user.settings if user else {}}
 
 
 @router.patch('/settings', description='Merge-update user settings')
-def update_settings(
+async def update_settings(
     payload: schemas.UserSettings,
     current_user: schemas.UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == current_user.id).first()
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail='User not found')
     user.settings = {**(user.settings or {}), **payload.settings}
-    db.commit()
-    db.refresh(user)
+    await db.commit()
+    await db.refresh(user)
     return {'settings': user.settings}
 
 
 @router.post('/signup', description='User signup API')
-def signup_user(user_data: schemas.UserSignup, db: Session = Depends(get_db)):
+async def signup_user(user_data: schemas.UserSignup, db: AsyncSession = Depends(get_db)):
     if not user_data.email and not user_data.user_name:
         raise HTTPException(status_code=400, detail='Either email or user_name must be provided')
-    return user_service.create_user(db, user_data)
+    return await user_service.create_user(db, user_data)
 
 
 @router.post('/login', response_model=schemas.UserLoginTokenResponse, description='User Login API')
-def login(response: Response, login_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    login_result = user_service.user_login(db, login_data)
+async def login(response: Response, login_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+    login_result = await user_service.user_login(db, login_data)
     response.set_cookie(
         key='refresh_token',
         value=login_result.refresh_token,
@@ -126,12 +130,13 @@ def login(response: Response, login_data: OAuth2PasswordRequestForm = Depends(),
 # ── Profile update ───────────────────────────────────────────────────────────
 
 @router.patch('/me', description='Update own profile')
-def update_me(
+async def update_me(
     payload: UpdateProfileRequest,
     current_user: schemas.UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == current_user.id).first()
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail='User not found')
     if payload.first_name is not None:
@@ -140,34 +145,35 @@ def update_me(
         user.last_name = payload.last_name
     if payload.avatar_url is not None:
         user.avatar_url = payload.avatar_url
-    db.commit()
-    db.refresh(user)
+    await db.commit()
+    await db.refresh(user)
     return user
 
 
 @router.post('/change-password', description='Change password (email/password users only)')
-def change_password(
+async def change_password(
     payload: ChangePasswordRequest,
     current_user: schemas.UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == current_user.id).first()
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
     if not user or not user.hashed_password:
         raise HTTPException(status_code=400, detail='Password change not available for OAuth accounts')
     if not verify_password(payload.current_password, user.hashed_password):
         raise HTTPException(status_code=400, detail='Current password is incorrect')
     user.hashed_password = hash_password(payload.new_password)
-    db.commit()
+    await db.commit()
     return {'message': 'Password updated'}
 
 
 # ── Avatar upload ─────────────────────────────────────────────────────────────
 
 @router.post('/avatar', description='Upload a profile avatar image (max 2 MB)')
-def upload_avatar(
+async def upload_avatar(
     file: UploadFile = File(...),
     current_user: schemas.UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(status_code=400, detail='Only JPEG, PNG, WebP and GIF images are accepted')
@@ -180,71 +186,79 @@ def upload_avatar(
     dest = os.path.join(user_dir, stored_name)
 
     size = 0
-    with open(dest, 'wb') as f:
-        for chunk in iter(lambda: file.file.read(1024 * 256), b''):
+    async with aiofiles.open(dest, 'wb') as f:
+        while chunk := await file.read(1024 * 256):
             size += len(chunk)
             if size > MAX_AVATAR_MB * 1024 * 1024:
-                f.close()
                 os.remove(dest)
                 raise HTTPException(status_code=413, detail=f'Image exceeds {MAX_AVATAR_MB} MB limit')
-            f.write(chunk)
+            await f.write(chunk)
 
     avatar_url = f'/uploads/avatars/{current_user.id}/{stored_name}'
-    user = db.query(User).filter(User.id == current_user.id).first()
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
     user.avatar_url = avatar_url
-    db.commit()
+    await db.commit()
     return {'avatar_url': avatar_url}
 
 
 # ── User skills ───────────────────────────────────────────────────────────────
 
 @router.get('/skills', description='Get skills linked to the current user')
-def get_user_skills(
+async def get_user_skills(
     current_user: schemas.UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == current_user.id).first()
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
     return user.skills if user else []
 
 
 @router.post('/skills/{skill_id}', description='Add a skill to the current user')
-def add_user_skill(
+async def add_user_skill(
     skill_id: int,
     current_user: schemas.UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == current_user.id).first()
-    skill = db.query(Skill).filter(Skill.id == skill_id).first()
+    user_result = await db.execute(select(User).where(User.id == current_user.id))
+    user = user_result.scalar_one_or_none()
+    skill_result = await db.execute(select(Skill).where(Skill.id == skill_id))
+    skill = skill_result.scalar_one_or_none()
     if not skill:
         raise HTTPException(status_code=404, detail='Skill not found')
     if skill not in user.skills:
         user.skills.append(skill)
-        db.commit()
+        await db.commit()
     return user.skills
 
 
 @router.delete('/skills/{skill_id}', description='Remove a skill from the current user')
-def remove_user_skill(
+async def remove_user_skill(
     skill_id: int,
     current_user: schemas.UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == current_user.id).first()
-    skill = db.query(Skill).filter(Skill.id == skill_id).first()
+    user_result = await db.execute(select(User).where(User.id == current_user.id))
+    user = user_result.scalar_one_or_none()
+    skill_result = await db.execute(select(Skill).where(Skill.id == skill_id))
+    skill = skill_result.scalar_one_or_none()
     if skill and skill in user.skills:
         user.skills.remove(skill)
-        db.commit()
+        await db.commit()
     return user.skills
 
 
 # ── Resumes ───────────────────────────────────────────────────────────────────
 
 @router.get('/resumes', description='List uploaded resumes')
-def list_resumes(
+async def list_resumes(
     current_user: schemas.UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    resumes = db.query(Resume).filter(Resume.user_id == current_user.id).order_by(Resume.id.desc()).all()
+    result = await db.execute(
+        select(Resume).where(Resume.user_id == current_user.id).order_by(Resume.id.desc())
+    )
+    resumes = result.scalars().all()
     return [
         {
             'id': r.id,
@@ -258,10 +272,10 @@ def list_resumes(
 
 
 @router.post('/resumes', description='Upload a resume (PDF or DOCX, max 10 MB)')
-def upload_resume(
+async def upload_resume(
     file: UploadFile = File(...),
     current_user: schemas.UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail='Only PDF and Word documents are accepted')
@@ -274,14 +288,13 @@ def upload_resume(
     dest = os.path.join(user_dir, stored_name)
 
     size = 0
-    with open(dest, 'wb') as f:
-        for chunk in iter(lambda: file.file.read(1024 * 256), b''):
+    async with aiofiles.open(dest, 'wb') as f:
+        while chunk := await file.read(1024 * 256):
             size += len(chunk)
             if size > MAX_SIZE_MB * 1024 * 1024:
-                f.close()
                 os.remove(dest)
                 raise HTTPException(status_code=413, detail=f'File exceeds {MAX_SIZE_MB} MB limit')
-            f.write(chunk)
+            await f.write(chunk)
 
     resume = Resume(
         user_id=current_user.id,
@@ -291,8 +304,8 @@ def upload_resume(
         file_size=size,
     )
     db.add(resume)
-    db.commit()
-    db.refresh(resume)
+    await db.commit()
+    await db.refresh(resume)
 
     return {
         'id': resume.id,
@@ -304,18 +317,21 @@ def upload_resume(
 
 
 @router.delete('/resumes/{resume_id}', description='Delete a resume')
-def delete_resume(
+async def delete_resume(
     resume_id: int,
     current_user: schemas.UserBase = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    resume = db.query(Resume).filter(Resume.id == resume_id, Resume.user_id == current_user.id).first()
+    result = await db.execute(
+        select(Resume).where(Resume.id == resume_id, Resume.user_id == current_user.id)
+    )
+    resume = result.scalar_one_or_none()
     if not resume:
         raise HTTPException(status_code=404, detail='Resume not found')
     if os.path.exists(resume.file_path):
         os.remove(resume.file_path)
-    db.delete(resume)
-    db.commit()
+    await db.delete(resume)
+    await db.commit()
     return {'deleted': resume_id}
 
 
@@ -328,7 +344,7 @@ def google_login(origin: str = 'web'):
 
 
 @router.get('/google/callback', description='Google OAuth callback — handles both login and scope upgrades')
-async def google_callback(code: str, state: str = '', db: Session = Depends(get_db)):
+async def google_callback(code: str, state: str = '', db: AsyncSession = Depends(get_db)):
     if not code:
         raise HTTPException(status_code=400, detail='Missing authorization code')
 
@@ -340,11 +356,10 @@ async def google_callback(code: str, state: str = '', db: Session = Depends(get_
     user_info = result['user_info']
 
     if purpose == 'upgrade':
-        # Scope upgrade for an already-authenticated user — just update the account row
         user_id = state_data.get('user_id')
         if not user_id:
             raise HTTPException(status_code=400, detail='Invalid upgrade state')
-        ca_service.upsert(
+        await ca_service.upsert(
             db=db,
             user_id=int(user_id),
             provider='google',
@@ -359,8 +374,7 @@ async def google_callback(code: str, state: str = '', db: Session = Depends(get_
         )
         return RedirectResponse(f'{settings.FRONTEND_URL}/plugins?connected=google')
 
-    # Normal login flow
-    user = oauth_service.get_or_create_oauth_user(
+    user = await oauth_service.get_or_create_oauth_user(
         db=db,
         provider='google',
         provider_id=user_info.get('sub', ''),
@@ -393,7 +407,7 @@ def linkedin_login(origin: str = 'web'):
 
 
 @router.get('/linkedin/callback', description='LinkedIn OAuth callback')
-async def linkedin_callback(code: str, state: str = '', db: Session = Depends(get_db)):
+async def linkedin_callback(code: str, state: str = '', db: AsyncSession = Depends(get_db)):
     if not code:
         raise HTTPException(status_code=400, detail='Missing authorization code')
 
@@ -402,7 +416,7 @@ async def linkedin_callback(code: str, state: str = '', db: Session = Depends(ge
     result = await oauth_service.exchange_linkedin_code(code)
     user_info = result['user_info']
 
-    user = oauth_service.get_or_create_oauth_user(
+    user = await oauth_service.get_or_create_oauth_user(
         db=db,
         provider='linkedin',
         provider_id=user_info.get('sub', ''),

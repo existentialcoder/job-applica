@@ -1,7 +1,8 @@
 fastapi
 uvicorn[standard]
 SQLAlchemy
-psycopg2-binary
+asyncpg
+aiofiles
 alembic
 pydantic[email]
 pydantic-settings
