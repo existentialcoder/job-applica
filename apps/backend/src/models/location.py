@@ -4,7 +4,6 @@ from ..db.base_class import Base
 
 class Location(Base):
     __tablename__ = 'locations'
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     city: Mapped[str] = mapped_column(String, index=True)
     state: Mapped[str] = mapped_column(String, index=True)
     country: Mapped[str] = mapped_column(String, index=True)

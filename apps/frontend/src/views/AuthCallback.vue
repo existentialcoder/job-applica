@@ -11,12 +11,17 @@ onMounted(async () => {
   const accessToken = route.query.access_token as string | undefined;
   const refreshToken = route.query.refresh_token as string | undefined;
 
-  if (accessToken) {
-    authStore.setTokens(accessToken, refreshToken);
-    await authStore.fetchMe();
-    router.replace('/applications');
-  } else {
+  if (!accessToken) {
     router.replace('/login');
+    return;
+  }
+
+  authStore.setTokens(accessToken, refreshToken);
+  await authStore.fetchMe();
+
+  // Only navigate if fetchMe didn't already redirect to /login
+  if (authStore.isAuthenticated) {
+    router.replace('/home');
   }
 });
 </script>

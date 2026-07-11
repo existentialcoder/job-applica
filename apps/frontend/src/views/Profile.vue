@@ -1,28 +1,33 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useAuthStore } from '@/stores/auth';
 import dataservice from '@/lib/dataservice';
 import type { SkillData, ResumeData } from '@/lib/types';
 
 const authStore = useAuthStore();
 const route = useRoute();
+const router = useRouter();
 
 const VALID_TABS = ['profile', 'skills', 'resumes', 'preferences', 'security'];
 const activeTab = ref(VALID_TABS.includes(route.query.tab as string) ? (route.query.tab as string) : 'profile');
 
+// Sync URL → tab (e.g. navigating here with ?tab=resumes)
 watch(() => route.query.tab, (tab) => {
   if (tab && VALID_TABS.includes(tab as string)) activeTab.value = tab as string;
 });
 
+// Sync tab → URL + lazy-load tab data
 watch(activeTab, (tab) => {
+  router.replace({ query: { ...route.query, tab } });
   if (tab === 'skills') loadSkills();
   if (tab === 'resumes') loadResumes();
-});
+}, { immediate: true });
 
 // ── Profile tab ───────────────────────────────────────────────────────────────
 const firstName      = ref(authStore.user?.first_name ?? '');
@@ -31,6 +36,8 @@ const avatarUrl      = ref(authStore.user?.avatar_url ?? '');
 const avatarUploading = ref(false);
 const savingProfile  = ref(false);
 const profileMsg     = ref('');
+const selectedResume = ref<ResumeData | null>(null);
+const isResumeOpen  = ref(false);
 
 const initials = computed(() => {
   return `${firstName.value[0] ?? ''}${lastName.value[0] ?? ''}`.toUpperCase() || '?';
@@ -74,12 +81,16 @@ const userSkills    = ref<SkillData[]>([]);
 const allSkills     = ref<SkillData[]>([]);
 const skillSearch   = ref('');
 const skillsLoaded  = ref(false);
+const skillDropdownOpen = ref(false);
+const addingSkillId = ref<number | null>(null);
+const removingSkillId = ref<number | null>(null);
 
 const filteredSkills = computed(() => {
-  const q = skillSearch.value.toLowerCase();
+  const q = skillSearch.value.toLowerCase().trim();
+  const addedIds = new Set(userSkills.value.map(u => u.id));
   return allSkills.value.filter(
-    s => !userSkills.value.find(u => u.id === s.id) &&
-         (s.label.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
+    s => !addedIds.has(s.id) &&
+         (!q || s.label.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
   );
 });
 
@@ -93,11 +104,30 @@ async function loadSkills() {
 }
 
 async function addSkill(skill: SkillData) {
-  userSkills.value = await dataservice.addUserSkill(skill.id);
+  addingSkillId.value = skill.id;
+  try {
+    userSkills.value = await dataservice.addUserSkill(skill.id);
+    skillSearch.value = '';
+  } finally {
+    addingSkillId.value = null;
+  }
 }
 
 async function removeSkill(skillId: number) {
-  userSkills.value = await dataservice.removeUserSkill(skillId);
+  removingSkillId.value = skillId;
+  try {
+    userSkills.value = await dataservice.removeUserSkill(skillId);
+  } finally {
+    removingSkillId.value = null;
+  }
+}
+
+function onSkillSearchFocus() {
+  skillDropdownOpen.value = true;
+}
+
+function onSkillSearchBlur() {
+  setTimeout(() => { skillDropdownOpen.value = false; }, 120);
 }
 
 // ── Resumes tab ───────────────────────────────────────────────────────────────
@@ -199,6 +229,11 @@ async function changePassword() {
   }
 }
 
+function viewResume(resume: ResumeData) {
+  selectedResume.value = resume;
+  isResumeOpen.value = true;
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 onMounted(() => {
   loadPreferences();
@@ -284,44 +319,110 @@ onMounted(() => {
             <p class="text-xs text-muted-foreground mt-0.5">Used to match against job requirements</p>
           </div>
 
-          <div v-if="userSkills.length" class="flex flex-wrap gap-2">
-            <div
-              v-for="skill in userSkills"
-              :key="skill.id"
-              class="flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 text-xs font-medium px-2.5 py-1 rounded-full"
-            >
-              <img v-if="skill.logo_url" :src="skill.logo_url" class="w-3.5 h-3.5 rounded-sm" />
-              {{ skill.label }}
-              <button @click="removeSkill(skill.id)" class="ml-0.5 opacity-60 hover:opacity-100">×</button>
-            </div>
-          </div>
-          <p v-else class="text-sm text-muted-foreground">No skills added yet.</p>
-
-          <div class="border-t pt-4 space-y-3">
-            <p class="text-sm font-medium">Add skills</p>
-            <Input v-model="skillSearch" placeholder="Search skills…" />
-            <div class="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
-              <button
-                v-for="skill in filteredSkills.slice(0, 40)"
+          <!-- Added skills chips -->
+          <div class="min-h-[2.5rem]">
+            <div v-if="userSkills.length" class="flex flex-wrap gap-2">
+              <span
+                v-for="skill in userSkills"
                 :key="skill.id"
-                @click="addSkill(skill)"
-                class="flex items-center gap-1.5 bg-muted hover:bg-muted/80 text-xs font-medium px-2.5 py-1 rounded-full transition-colors"
+                class="flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 text-xs font-medium px-2.5 py-1 rounded-full transition-opacity"
+                :class="removingSkillId === skill.id ? 'opacity-40' : ''"
               >
-                <img v-if="skill.logo_url" :src="skill.logo_url" class="w-3.5 h-3.5 rounded-sm" />
+                <img v-if="skill.logo_url" :src="skill.logo_url" class="w-3.5 h-3.5 rounded-sm object-contain" />
                 {{ skill.label }}
-              </button>
-              <p v-if="!filteredSkills.length" class="text-xs text-muted-foreground">No matching skills</p>
+                <button
+                  @click="removeSkill(skill.id)"
+                  :disabled="removingSkillId === skill.id"
+                  class="ml-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full opacity-50 hover:opacity-100 hover:bg-indigo-500/20 transition-all"
+                  aria-label="Remove skill"
+                >
+                  <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            </div>
+            <p v-else class="text-sm text-muted-foreground">No skills added yet. Search below to add.</p>
+          </div>
+
+          <!-- Searchable combobox -->
+          <div class="relative">
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+              </svg>
+              <input
+                v-model="skillSearch"
+                @focus="onSkillSearchFocus"
+                @blur="onSkillSearchBlur"
+                placeholder="Search skills to add…"
+                class="w-full h-9 pl-8 pr-3 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+              />
+              <span v-if="skillSearch" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                {{ filteredSkills.length }} result{{ filteredSkills.length !== 1 ? 's' : '' }}
+              </span>
+            </div>
+
+            <!-- Dropdown -->
+            <div
+              v-if="skillDropdownOpen && skillsLoaded"
+              class="absolute z-50 top-full mt-1 w-full rounded-md border bg-popover shadow-lg overflow-hidden"
+            >
+              <div class="max-h-60 overflow-y-auto">
+                <div
+                  v-if="filteredSkills.length === 0 && skillSearch"
+                  class="px-3 py-2.5 text-xs text-muted-foreground"
+                >
+                  No skills match "{{ skillSearch }}"
+                </div>
+                <div
+                  v-else-if="filteredSkills.length === 0"
+                  class="px-3 py-2.5 text-xs text-muted-foreground"
+                >
+                  All skills have been added
+                </div>
+                <button
+                  v-for="skill in filteredSkills.slice(0, 60)"
+                  :key="skill.id"
+                  @mousedown.prevent="addSkill(skill)"
+                  :disabled="addingSkillId === skill.id"
+                  class="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent transition-colors text-left"
+                >
+                  <img v-if="skill.logo_url" :src="skill.logo_url" class="w-4 h-4 rounded-sm object-contain flex-shrink-0" />
+                  <span v-else class="w-4 h-4 rounded-sm bg-muted flex-shrink-0" />
+                  <span class="truncate">{{ skill.label }}</span>
+                  <svg
+                    v-if="addingSkillId === skill.id"
+                    class="ml-auto w-3.5 h-3.5 animate-spin text-muted-foreground flex-shrink-0"
+                    fill="none" viewBox="0 0 24 24"
+                  >
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  </svg>
+                  <svg
+                    v-else
+                    class="ml-auto w-3.5 h-3.5 text-muted-foreground/40 flex-shrink-0"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+                <div v-if="filteredSkills.length > 60" class="px-3 py-1.5 text-xs text-muted-foreground border-t">
+                  Showing 60 of {{ filteredSkills.length }} — type to narrow
+                </div>
+              </div>
             </div>
           </div>
+
+          <p v-if="!skillsLoaded" class="text-xs text-muted-foreground">Loading skills…</p>
         </div>
       </TabsContent>
 
-      <!-- ── Resumes ─────────────────────────────────────────────────────── -->
       <TabsContent value="resumes">
         <div class="rounded-xl border bg-card p-6 space-y-5">
           <div>
             <p class="text-sm font-semibold">Uploaded CVs</p>
-            <p class="text-xs text-muted-foreground mt-0.5">PDF or Word documents — max 10 MB each. Link any CV to a job from the job detail panel.</p>
+            <p class="text-xs text-muted-foreground mt-0.5">PDF or Word documents - max 5 MB</p>
           </div>
 
           <!-- Upload -->
@@ -353,7 +454,7 @@ onMounted(() => {
                 <p class="text-sm font-medium truncate">{{ resume.original_name }}</p>
                 <p class="text-xs text-muted-foreground">{{ formatSize(resume.file_size) }}</p>
               </div>
-              <a :href="resume.url" target="_blank" class="text-xs text-indigo-400 hover:underline flex-shrink-0">View</a>
+              <button @click="viewResume(resume)" class="text-xs text-indigo-400 hover:underline flex-shrink-0">View</button>
               <button @click="deleteResume(resume.id)" class="text-xs text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">Delete</button>
             </div>
           </div>
@@ -437,4 +538,13 @@ onMounted(() => {
 
     </Tabs>
   </div>
+
+  <Dialog :open="isResumeOpen" @update:open="isResumeOpen = $event">
+    <DialogContent class="max-w-[75vw] w-[75vw] h-[90vh] !grid-rows-[auto_1fr] overflow-hidden p-0">
+      <div class="flex items-center justify-between px-5 pt-5 pb-3 border-b">
+        <DialogTitle class="text-sm font-semibold truncate pr-8">{{ selectedResume?.original_name }}</DialogTitle>
+      </div>
+      <iframe v-if="selectedResume" :src="selectedResume.url" class="w-full border-0 h-full" />
+    </DialogContent>
+  </Dialog>
 </template>

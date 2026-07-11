@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    APP_ENV: str
     DATABASE_URL: str
     AUTH_SECRET: str
     BACKEND_CORS_ORIGINS: list[str] = ['http://localhost:5173', 'http://localhost:8000']
@@ -17,6 +18,28 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = 'http://localhost:5173'
     BACKEND_URL: str = 'http://localhost:8000'
 
+    # LLM config — single JSON. Edit LLM_CONFIG in .env to change provider/model.
+    # Keys: default, ats, skills — each {provider, model}. Missing keys fall back to default.
+    # Providers: 'anthropic' | 'deepseek' | 'gemini'
+    LLM_CONFIG: dict = {
+        'default':        {'provider': 'anthropic', 'model': ''},
+        'ats':            {'provider': 'anthropic', 'model': ''},
+        'skills':         {'provider': 'anthropic', 'model': ''},
+        'deepseek_cache': True,
+    }
+
+    # Provider API keys
+    ANTHROPIC_API_KEY: str = ''
+    DEEPSEEK_API_KEY: str = ''
+    GEMINI_API_KEY: str = ''
+
+    # Cloudflare R2
+    CLOUDFLARE_ACCOUNT_ID: str = ''
+    CLOUDFLARE_R2_ACCESS_KEY_ID: str = ''
+    CLOUDFLARE_R2_SECRET_ACCESS_KEY: str = ''
+    CLOUDFLARE_R2_BUCKET_NAME: str = ''
+    CLOUDFLARE_R2_PUBLIC_URL: str = ''  # e.g. https://pub-xxx.r2.dev or custom domain
+
     # Feature flags — override via env vars (FEATURE_PLUGINS=false, etc.)
     FEATURE_DASHBOARD: bool = True
     FEATURE_BOARDS: bool = True
@@ -26,6 +49,21 @@ class Settings(BaseSettings):
     FEATURE_GOOGLE_OAUTH: bool = True
     FEATURE_LINKEDIN_OAUTH: bool = False
     FEATURE_BROWSER_EXTENSION: bool = True
+
+    PLAN_LIMITS: dict = {
+        'free': {
+            'max_resumes': 3,
+            'max_job_boards': 2,
+            'max_job_applications': 100,
+            'max_monthly_extractions': 100,
+        },
+        'pro': {
+            'max_resumes': 20,
+            'max_job_boards': -1,
+            'max_job_applications': -1,
+            'max_monthly_extractions': -1,
+        },
+    }
 
     class Config:
         env_file = '.env'

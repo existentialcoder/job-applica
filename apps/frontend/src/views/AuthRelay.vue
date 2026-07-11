@@ -11,12 +11,17 @@ onMounted(async () => {
   const accessToken = route.query.access_token as string | undefined;
   const refreshToken = route.query.refresh_token as string | undefined;
 
-  if (accessToken) {
-    authStore.setTokens(accessToken, refreshToken);
-    await authStore.fetchMe();
-    router.replace('/applications');
-  } else {
+  if (!accessToken) {
     router.replace('/login');
+    return;
+  }
+
+  // setTokens fires ja:auth → webapp.ts content script → SYNC_AUTH → extension storage
+  authStore.setTokens(accessToken, refreshToken);
+  await authStore.fetchMe();
+
+  if (authStore.isAuthenticated) {
+    router.replace('/home');
   }
 });
 </script>

@@ -8,6 +8,13 @@
  * suppressNextSync stops the echo loop when a token arrived from the extension.
  */
 
+// Guard against duplicate injections — background.js can call executeScript
+// multiple times and each run would register duplicate listeners.
+if ((window as any).__jaWebappInjected) {
+  throw new Error('[JobApplica] webapp.js already injected — skipping');
+}
+(window as any).__jaWebappInjected = true;
+
 let suppressNextSync = false;
 let contextValid = true;
 

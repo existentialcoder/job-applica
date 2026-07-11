@@ -1,11 +1,6 @@
-import os
-import uuid
-import aiofiles
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -13,41 +8,19 @@ from sqlalchemy import select
 from ....schemas import user as schemas
 from ....core.config import settings
 from ....core.constants import Constants
-from ....core.utils import create_token, hash_password, verify_password
+from ....core.utils import create_token
 from ...deps.auth import get_current_user
 from ...deps.db import get_db
 from ....services import user as user_service
 from ....services import oauth as oauth_service
 from ....services import connected_accounts as ca_service
 from ....models.user import User
-from ....models.skill import Skill
-from ....models.resume import Resume
-
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', 'uploads', 'resumes')
-ALLOWED_TYPES = {'application/pdf', 'application/msword',
-                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
-MAX_SIZE_MB = 10
-
-AVATAR_DIR = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..', 'uploads', 'avatars')
-ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}
-MAX_AVATAR_MB = 2
 
 router = APIRouter(prefix='/auth')
 
 
 class RefreshRequest(BaseModel):
     refresh_token: str
-
-
-class UpdateProfileRequest(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    avatar_url: Optional[str] = None
-
-
-class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str
 
 
 @router.get('/me', response_model=schemas.UserBase, description='Get current user profile')
@@ -83,29 +56,6 @@ async def refresh_token(payload: RefreshRequest, db: AsyncSession = Depends(get_
     return {'access_token': access_token, 'token_type': 'Bearer'}
 
 
-@router.get('/settings', description='Get current user settings')
-async def get_settings(current_user: schemas.UserBase = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.id == current_user.id))
-    user = result.scalar_one_or_none()
-    return {'settings': user.settings if user else {}}
-
-
-@router.patch('/settings', description='Merge-update user settings')
-async def update_settings(
-    payload: schemas.UserSettings,
-    current_user: schemas.UserBase = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(select(User).where(User.id == current_user.id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail='User not found')
-    user.settings = {**(user.settings or {}), **payload.settings}
-    await db.commit()
-    await db.refresh(user)
-    return {'settings': user.settings}
-
-
 @router.post('/signup', description='User signup API')
 async def signup_user(user_data: schemas.UserSignup, db: AsyncSession = Depends(get_db)):
     if not user_data.email and not user_data.user_name:
@@ -114,225 +64,8 @@ async def signup_user(user_data: schemas.UserSignup, db: AsyncSession = Depends(
 
 
 @router.post('/login', response_model=schemas.UserLoginTokenResponse, description='User Login API')
-async def login(response: Response, login_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    login_result = await user_service.user_login(db, login_data)
-    response.set_cookie(
-        key='refresh_token',
-        value=login_result.refresh_token,
-        httponly=True,
-        secure=False,
-        samesite='lax',
-        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-    )
-    return login_result
-
-
-# ── Profile update ───────────────────────────────────────────────────────────
-
-@router.patch('/me', description='Update own profile')
-async def update_me(
-    payload: UpdateProfileRequest,
-    current_user: schemas.UserBase = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(select(User).where(User.id == current_user.id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail='User not found')
-    if payload.first_name is not None:
-        user.first_name = payload.first_name
-    if payload.last_name is not None:
-        user.last_name = payload.last_name
-    if payload.avatar_url is not None:
-        user.avatar_url = payload.avatar_url
-    await db.commit()
-    await db.refresh(user)
-    return user
-
-
-@router.post('/change-password', description='Change password (email/password users only)')
-async def change_password(
-    payload: ChangePasswordRequest,
-    current_user: schemas.UserBase = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(select(User).where(User.id == current_user.id))
-    user = result.scalar_one_or_none()
-    if not user or not user.hashed_password:
-        raise HTTPException(status_code=400, detail='Password change not available for OAuth accounts')
-    if not verify_password(payload.current_password, user.hashed_password):
-        raise HTTPException(status_code=400, detail='Current password is incorrect')
-    user.hashed_password = hash_password(payload.new_password)
-    await db.commit()
-    return {'message': 'Password updated'}
-
-
-# ── Avatar upload ─────────────────────────────────────────────────────────────
-
-@router.post('/avatar', description='Upload a profile avatar image (max 2 MB)')
-async def upload_avatar(
-    file: UploadFile = File(...),
-    current_user: schemas.UserBase = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(status_code=400, detail='Only JPEG, PNG, WebP and GIF images are accepted')
-
-    user_dir = os.path.join(AVATAR_DIR, str(current_user.id))
-    os.makedirs(user_dir, exist_ok=True)
-
-    ext = os.path.splitext(file.filename or 'avatar')[1] or '.jpg'
-    stored_name = f'avatar{ext}'
-    dest = os.path.join(user_dir, stored_name)
-
-    size = 0
-    async with aiofiles.open(dest, 'wb') as f:
-        while chunk := await file.read(1024 * 256):
-            size += len(chunk)
-            if size > MAX_AVATAR_MB * 1024 * 1024:
-                os.remove(dest)
-                raise HTTPException(status_code=413, detail=f'Image exceeds {MAX_AVATAR_MB} MB limit')
-            await f.write(chunk)
-
-    avatar_url = f'/uploads/avatars/{current_user.id}/{stored_name}'
-    result = await db.execute(select(User).where(User.id == current_user.id))
-    user = result.scalar_one_or_none()
-    user.avatar_url = avatar_url
-    await db.commit()
-    return {'avatar_url': avatar_url}
-
-
-# ── User skills ───────────────────────────────────────────────────────────────
-
-@router.get('/skills', description='Get skills linked to the current user')
-async def get_user_skills(
-    current_user: schemas.UserBase = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(select(User).where(User.id == current_user.id))
-    user = result.scalar_one_or_none()
-    return user.skills if user else []
-
-
-@router.post('/skills/{skill_id}', description='Add a skill to the current user')
-async def add_user_skill(
-    skill_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    user_result = await db.execute(select(User).where(User.id == current_user.id))
-    user = user_result.scalar_one_or_none()
-    skill_result = await db.execute(select(Skill).where(Skill.id == skill_id))
-    skill = skill_result.scalar_one_or_none()
-    if not skill:
-        raise HTTPException(status_code=404, detail='Skill not found')
-    if skill not in user.skills:
-        user.skills.append(skill)
-        await db.commit()
-    return user.skills
-
-
-@router.delete('/skills/{skill_id}', description='Remove a skill from the current user')
-async def remove_user_skill(
-    skill_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    user_result = await db.execute(select(User).where(User.id == current_user.id))
-    user = user_result.scalar_one_or_none()
-    skill_result = await db.execute(select(Skill).where(Skill.id == skill_id))
-    skill = skill_result.scalar_one_or_none()
-    if skill and skill in user.skills:
-        user.skills.remove(skill)
-        await db.commit()
-    return user.skills
-
-
-# ── Resumes ───────────────────────────────────────────────────────────────────
-
-@router.get('/resumes', description='List uploaded resumes')
-async def list_resumes(
-    current_user: schemas.UserBase = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(
-        select(Resume).where(Resume.user_id == current_user.id).order_by(Resume.id.desc())
-    )
-    resumes = result.scalars().all()
-    return [
-        {
-            'id': r.id,
-            'original_name': r.original_name,
-            'file_size': r.file_size,
-            'url': f'/uploads/resumes/{current_user.id}/{r.stored_name}',
-            'created_at': r.created_at,
-        }
-        for r in resumes
-    ]
-
-
-@router.post('/resumes', description='Upload a resume (PDF or DOCX, max 10 MB)')
-async def upload_resume(
-    file: UploadFile = File(...),
-    current_user: schemas.UserBase = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(status_code=400, detail='Only PDF and Word documents are accepted')
-
-    user_dir = os.path.join(UPLOAD_DIR, str(current_user.id))
-    os.makedirs(user_dir, exist_ok=True)
-
-    ext = os.path.splitext(file.filename or 'resume')[1] or '.pdf'
-    stored_name = f'{uuid.uuid4().hex}{ext}'
-    dest = os.path.join(user_dir, stored_name)
-
-    size = 0
-    async with aiofiles.open(dest, 'wb') as f:
-        while chunk := await file.read(1024 * 256):
-            size += len(chunk)
-            if size > MAX_SIZE_MB * 1024 * 1024:
-                os.remove(dest)
-                raise HTTPException(status_code=413, detail=f'File exceeds {MAX_SIZE_MB} MB limit')
-            await f.write(chunk)
-
-    resume = Resume(
-        user_id=current_user.id,
-        original_name=file.filename or stored_name,
-        stored_name=stored_name,
-        file_path=dest,
-        file_size=size,
-    )
-    db.add(resume)
-    await db.commit()
-    await db.refresh(resume)
-
-    return {
-        'id': resume.id,
-        'original_name': resume.original_name,
-        'file_size': resume.file_size,
-        'url': f'/uploads/resumes/{current_user.id}/{stored_name}',
-        'created_at': resume.created_at,
-    }
-
-
-@router.delete('/resumes/{resume_id}', description='Delete a resume')
-async def delete_resume(
-    resume_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(
-        select(Resume).where(Resume.id == resume_id, Resume.user_id == current_user.id)
-    )
-    resume = result.scalar_one_or_none()
-    if not resume:
-        raise HTTPException(status_code=404, detail='Resume not found')
-    if os.path.exists(resume.file_path):
-        os.remove(resume.file_path)
-    await db.delete(resume)
-    await db.commit()
-    return {'deleted': resume_id}
+async def login(login_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+    return await user_service.user_login(db, login_data)
 
 
 # ── Google OAuth ──────────────────────────────────────────────────────────────

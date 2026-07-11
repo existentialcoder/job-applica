@@ -62,6 +62,10 @@ ext.storage.onChanged.addListener(async (changes, area) => {
   if (area !== 'local' || !('access_token' in changes)) return;
 
   const newToken = changes.access_token?.newValue || null;
+  const oldToken = changes.access_token?.oldValue || null;
+  // Skip if the token value didn't actually change — avoids spurious APPLY_TOKEN
+  // messages that would trigger redundant fetchMe() calls in the web app.
+  if (newToken === oldToken) return;
 
   const tabArrays = await Promise.all(
     WEBAPP_URL_PATTERNS.map(pattern => ext.tabs.query({ url: pattern }).catch(() => []))

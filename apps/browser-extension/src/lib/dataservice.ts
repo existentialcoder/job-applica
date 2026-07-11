@@ -32,6 +32,26 @@ export interface BoardData {
   is_default: boolean;
 }
 
+export interface JobExtractResult {
+  is_job_page: boolean;
+  title?: string | null;
+  company?: string | null;
+  location?: string | null;
+  description?: string | null;
+  salary_range?: string | null;
+  work_model?: string | null;
+  position?: string | null;
+  years_of_experience?: { min?: number; max?: number } | null;
+  required_skills?: string[];
+}
+
+export interface ATSReport {
+  score: number;
+  matched_skills: string[];
+  missing_skills: string[];
+  suggestions: string[];
+}
+
 export interface JobData {
   title: string;
   company_name?: string;
@@ -177,6 +197,14 @@ export default {
 
   // ── API calls ─────────────────────────────────────────────────────────────
 
+  async checkJobExistsByUrl(sourceUrl: string): Promise<number | null> {
+    const params = new URLSearchParams({ source_url: sourceUrl, per_page: '1' });
+    const response = await authedFetch(`${config.apiBase}/jobs?${params}`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data?.results?.[0]?.id ?? null;
+  },
+
   async checkJobExists(title: string, company?: string): Promise<number | null> {
     const params = new URLSearchParams({ title });
     if (company) params.set('company', company);
@@ -210,6 +238,33 @@ export default {
       }
     } catch { }
     return false;
+  },
+
+  async quickAtsScore(jobDescription: string, requiredSkills: string[] = []): Promise<ATSReport | 'no_resume' | null> {
+    try {
+      const response = await authedFetch(`${config.apiBase}/ats/quick-score`, {
+        method: 'POST',
+        body: JSON.stringify({ job_description: jobDescription, required_skills: requiredSkills }),
+      });
+      if (response.status === 422) return 'no_resume';
+      if (!response.ok) return null;
+      return response.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async extractJobFromPage(pageText: string, url: string): Promise<JobExtractResult | null> {
+    try {
+      const response = await authedFetch(`${config.apiBase}/jobs/extract-from-page`, {
+        method: 'POST',
+        body: JSON.stringify({ page_text: pageText, url }),
+      });
+      if (!response.ok) return null;
+      return response.json();
+    } catch {
+      return null;
+    }
   },
 
   async createJob(jobData: JobData): Promise<number | null> {

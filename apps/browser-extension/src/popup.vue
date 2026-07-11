@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import dataservice, { type BoardData } from './lib/dataservice';
+import dataservice, { type BoardData, type JobExtractResult, type ATSReport } from './lib/dataservice';
 import ext from './lib/ext';
 import { config, loadConfig, saveConfig, resetConfig } from './lib/config';
 import { Button } from '@job-applica/ui/components/ui/button';
@@ -41,7 +41,7 @@ async function toggleDark() {
 }
 
 // ── View state ──────────────────────────────────────────────────────────────
-const view = ref<'login' | 'setup' | 'job' | 'no-job' | 'settings'>('no-job');
+const view = ref<'loading' | 'login' | 'setup' | 'job' | 'no-job' | 'settings'>('loading');
 let preSettingsView: typeof view.value = 'no-job';
 
 // ── Settings ─────────────────────────────────────────────────────────────────
@@ -145,6 +145,9 @@ const existingJobId = ref<number | null>(null);
 const isSaveBtnLoading = ref(false);
 const saveError = ref('');
 const isFetchingData = ref(false);
+const atsReport = ref<ATSReport | null>(null);
+const isLoadingAts = ref(false);
+const noResume = ref(false);
 
 // ── Boards ────────────────────────────────────────────────────────────────────
 const boards = ref<BoardData[]>([]);
@@ -180,9 +183,19 @@ watch(statusOptions, (opts: string[]) => {
   }
 }, { immediate: true });
 
-let messageListenerAdded = false;
+let setupInProgress = false;
 
 async function setupData() {
+  if (setupInProgress) return;
+  setupInProgress = true;
+  try {
+    await _setupData();
+  } finally {
+    setupInProgress = false;
+  }
+}
+
+async function _setupData() {
   let loggedIn = await dataservice.isLoggedIn();
   if (!loggedIn) {
     // Try to pull the session from any open web app tab before showing login
@@ -195,19 +208,15 @@ async function setupData() {
 
   const url = await dataservice.getCurrentTabUrl();
   currentUrl.value = url;
-
-  if (!url || !dataservice.isJobPage(url)) {
-    view.value = 'no-job';
-    return;
-  }
+  if (!url) { view.value = 'no-job'; return; }
 
   platform.value = dataservice.detectPlatform(url);
-  view.value = 'job';
 
-  // Load boards and restore last-used board
-  const [fetchedBoards, cached] = await Promise.all([
+  // Load boards in parallel with page text extraction
+  const [fetchedBoards, cached, tabs] = await Promise.all([
     dataservice.getBoards(),
     ext.storage.local.get(['last_board_id']),
+    ext.tabs.query({ active: true, currentWindow: true }),
   ]);
   boards.value = fetchedBoards;
 
@@ -217,35 +226,73 @@ async function setupData() {
   }
 
   const lastId = cached.last_board_id as number | undefined;
-  const defaultBoard = fetchedBoards.find(b => b.is_default);
-  selectedBoardId.value = fetchedBoards.find(b => b.id === lastId)?.id ?? defaultBoard?.id ?? fetchedBoards[0]?.id ?? null;
+  const defaultBoard = fetchedBoards.find((b: BoardData) => b.is_default);
+  selectedBoardId.value = fetchedBoards.find((b: BoardData) => b.id === lastId)?.id ?? defaultBoard?.id ?? fetchedBoards[0]?.id ?? null;
 
-  if (!messageListenerAdded) {
-    messageListenerAdded = true;
-    ext.runtime.onMessage.addListener(async (msg: any) => {
-      if (msg.jobTitle) jobTitle.value = msg.jobTitle;
-      if (msg.company) company.value = msg.company;
-      if (msg.location) jobLocation.value = msg.location;
-      if (msg.jobDescription) jobDescription.value = msg.jobDescription;
-      if (msg.salaryRange) salaryRange.value = msg.salaryRange;
-      if (msg.workModel) workModel.value = msg.workModel;
-      isFetchingData.value = false;
+  const tabId = tabs[0]?.id;
+  const tabUrl = tabs[0]?.url || null;
+  if (!tabId) { view.value = 'no-job'; return; }
 
-      // Check by title + company once we have the data from the page
-      if (msg.jobTitle) {
-        existingJobId.value = await dataservice.checkJobExists(msg.jobTitle, msg.company || undefined);
-      }
-    });
-  }
-
+  view.value = 'job';
   isFetchingData.value = true;
+
   try {
-    await dataservice.fetchJobDataFromContentScript();
+    // Fast path: check if this URL is already saved before spending an LLM call
+    if (tabUrl) {
+      const savedId = await dataservice.checkJobExistsByUrl(tabUrl);
+      if (savedId !== null) {
+        existingJobId.value = savedId;
+        return;
+      }
+    }
+
+    const [scriptResult] = await ext.scripting.executeScript({
+      target: { tabId },
+      func: () => ({
+        pageText: (document.body.innerText || '').slice(0, 15000),
+        href: window.location.href,
+      }),
+    });
+
+    const extracted: JobExtractResult | null = scriptResult?.result?.pageText
+      ? await dataservice.extractJobFromPage(scriptResult.result.pageText, scriptResult.result.href)
+      : null;
+
+    if (!extracted?.is_job_page) {
+      view.value = 'no-job';
+    } else {
+      if (extracted.title) jobTitle.value = extracted.title;
+      if (extracted.company) company.value = extracted.company;
+      if (extracted.location) jobLocation.value = extracted.location;
+      if (extracted.description) jobDescription.value = extracted.description;
+      if (extracted.salary_range) salaryRange.value = extracted.salary_range;
+      if (extracted.work_model) workModel.value = extracted.work_model;
+
+      // Fallback duplicate check by title+company if URL lookup didn't match
+      if (jobTitle.value) {
+        existingJobId.value = await dataservice.checkJobExists(jobTitle.value, company.value || undefined);
+      }
+
+      // Fire ATS scoring in background — doesn't block form display
+      if (extracted.description && !existingJobId.value) {
+        isLoadingAts.value = true;
+        atsReport.value = null;
+        noResume.value = false;
+        dataservice.quickAtsScore(extracted.description, extracted.required_skills ?? []).then(result => {
+          if (result === 'no_resume') {
+            noResume.value = true;
+          } else {
+            atsReport.value = result;
+          }
+          isLoadingAts.value = false;
+        });
+      }
+    }
   } catch {
+    view.value = 'no-job';
+  } finally {
     isFetchingData.value = false;
   }
-  // Stop spinner after 4s even if message never arrives (e.g. CSP block)
-  setTimeout(() => { isFetchingData.value = false; }, 4000);
 }
 
 // Listen for storage changes written by background.js (OAuth + theme sync)
@@ -276,13 +323,51 @@ async function retryFetch() {
   jobLocation.value = '';
   jobDescription.value = null;
   salaryRange.value = null;
+  atsReport.value = null;
+  isLoadingAts.value = false;
+  noResume.value = false;
   isFetchingData.value = true;
+
   try {
-    await dataservice.fetchJobDataFromContentScript();
-  } catch {
+    const tabs = await ext.tabs.query({ active: true, currentWindow: true });
+    const tabId = tabs[0]?.id;
+    if (!tabId) return;
+
+    const [scriptResult] = await ext.scripting.executeScript({
+      target: { tabId },
+      func: () => ({
+        pageText: (document.body.innerText || '').slice(0, 15000),
+        href: window.location.href,
+      }),
+    });
+
+    const extracted: JobExtractResult | null = scriptResult?.result?.pageText
+      ? await dataservice.extractJobFromPage(scriptResult.result.pageText, scriptResult.result.href)
+      : null;
+
+    if (extracted?.is_job_page) {
+      if (extracted.title) jobTitle.value = extracted.title;
+      if (extracted.company) company.value = extracted.company;
+      if (extracted.location) jobLocation.value = extracted.location;
+      if (extracted.description) jobDescription.value = extracted.description;
+      if (extracted.salary_range) salaryRange.value = extracted.salary_range;
+      if (extracted.work_model) workModel.value = extracted.work_model;
+
+      if (extracted.description) {
+        isLoadingAts.value = true;
+        dataservice.quickAtsScore(extracted.description, extracted.required_skills ?? []).then(result => {
+          if (result === 'no_resume') {
+            noResume.value = true;
+          } else {
+            atsReport.value = result;
+          }
+          isLoadingAts.value = false;
+        });
+      }
+    }
+  } finally {
     isFetchingData.value = false;
   }
-  setTimeout(() => { isFetchingData.value = false; }, 4000);
 }
 
 async function saveJob() {
@@ -313,6 +398,20 @@ async function saveJob() {
     isSaveBtnLoading.value = false;
   }
 }
+
+const atsScoreColor = computed(() => {
+  const s = atsReport.value?.score ?? 0;
+  if (s >= 75) return 'text-green-600 dark:text-green-400';
+  if (s >= 50) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-red-500 dark:text-red-400';
+});
+
+const atsGaugeStroke = computed(() => {
+  const s = atsReport.value?.score ?? 0;
+  if (s >= 75) return '#22c55e';
+  if (s >= 50) return '#f59e0b';
+  return '#ef4444';
+});
 
 const platformBadgeVariant: Record<string, any> = {
   LinkedIn: 'default',
@@ -411,6 +510,43 @@ const platformBadgeVariant: Record<string, any> = {
       </div>
     </div>
 
+    <!-- Initial loading skeleton (shown while setupData runs) -->
+    <div v-else-if="view === 'loading'" class="p-4 flex flex-col gap-3">
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-1.5">
+          <div class="h-3 w-10 rounded bg-muted animate-pulse"></div>
+          <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <div class="h-3 w-14 rounded bg-muted animate-pulse"></div>
+          <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <div class="h-3 w-16 rounded bg-muted animate-pulse"></div>
+          <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <div class="h-3 w-14 rounded bg-muted animate-pulse"></div>
+          <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="flex flex-col gap-1.5">
+            <div class="h-3 w-10 rounded bg-muted animate-pulse"></div>
+            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <div class="h-3 w-20 rounded bg-muted animate-pulse"></div>
+            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          </div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <div class="h-3 w-9 rounded bg-muted animate-pulse"></div>
+          <div class="h-14 rounded-md bg-muted animate-pulse"></div>
+        </div>
+        <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+      </div>
+    </div>
+
     <!-- Login view -->
     <div v-else-if="view === 'login'" class="p-4 flex flex-col gap-3">
       <p class="text-sm text-muted-foreground text-center">Sign in to track jobs</p>
@@ -504,13 +640,16 @@ const platformBadgeVariant: Record<string, any> = {
 
     <!-- No job detected view -->
     <div v-else-if="view === 'no-job'" class="p-4 flex flex-col items-center gap-3 text-center">
-      <svg class="w-10 h-10 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
-      <p class="text-sm text-muted-foreground">
-        Navigate to a job listing on LinkedIn, Indeed, Glassdoor, Monster, ZipRecruiter, or Jobscan.
-      </p>
+      <div class="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+        <svg class="w-6 h-6 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M20.25 14.15v4.073a2.25 2.25 0 01-2.25 2.25h-12a2.25 2.25 0 01-2.25-2.25v-4.073M15.75 9.75L12 6m0 0L8.25 9.75M12 6v12" />
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm font-medium">Not a job listing</p>
+        <p class="text-xs text-muted-foreground mt-1">Open a job posting on any job board and click the extension to import it.</p>
+      </div>
     </div>
 
     <!-- Job capture view -->
@@ -534,18 +673,56 @@ const platformBadgeVariant: Record<string, any> = {
         </div>
       </template>
 
-      <!-- Save form (only when not already saved) -->
+      <!-- Skeleton loading state -->
+      <template v-else-if="isFetchingData || isLoadingAts">
+        <div class="flex flex-col gap-3">
+          <!-- Board -->
+          <div class="flex flex-col gap-1.5">
+            <div class="h-3 w-10 rounded bg-muted animate-pulse"></div>
+            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          </div>
+          <!-- Title -->
+          <div class="flex flex-col gap-1.5">
+            <div class="h-3 w-14 rounded bg-muted animate-pulse"></div>
+            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          </div>
+          <!-- Company -->
+          <div class="flex flex-col gap-1.5">
+            <div class="h-3 w-16 rounded bg-muted animate-pulse"></div>
+            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          </div>
+          <!-- Location -->
+          <div class="flex flex-col gap-1.5">
+            <div class="h-3 w-14 rounded bg-muted animate-pulse"></div>
+            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          </div>
+          <!-- Status + Work model -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="flex flex-col gap-1.5">
+              <div class="h-3 w-10 rounded bg-muted animate-pulse"></div>
+              <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="h-3 w-20 rounded bg-muted animate-pulse"></div>
+              <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+            </div>
+          </div>
+          <!-- Notes -->
+          <div class="flex flex-col gap-1.5">
+            <div class="h-3 w-9 rounded bg-muted animate-pulse"></div>
+            <div class="h-14 rounded-md bg-muted animate-pulse"></div>
+          </div>
+          <!-- Save button -->
+          <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          <p class="text-center text-xs text-muted-foreground">
+            {{ isFetchingData ? 'Analysing page…' : 'Scoring your CV…' }}
+          </p>
+        </div>
+      </template>
+
+      <!-- Save form -->
       <template v-else>
         <p v-if="saveError" class="text-xs text-destructive text-center">{{ saveError }}</p>
-
-        <!-- Fetching indicator -->
-        <div v-if="isFetchingData" class="flex items-center gap-2 text-xs text-muted-foreground">
-          <svg class="w-3 h-3 animate-spin flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-          </svg>
-          Auto-filling from page...
-        </div>
 
         <!-- Board selector -->
         <div v-if="boards.length > 0" class="flex flex-col gap-1.5">
@@ -601,23 +778,75 @@ const platformBadgeVariant: Record<string, any> = {
           <Textarea id="notes" v-model="notes" placeholder="Optional notes..." class="resize-none" rows="2" />
         </div>
 
-        <!-- Description & retry row -->
-        <div class="flex items-center justify-between">
-          <button v-if="!isFetchingData" @click="retryFetch"
-            class="text-xs text-primary hover:underline">
-            Re-fetch
-          </button>
+        <!-- ATS Score card -->
+        <div class="rounded-md border border-border bg-muted/30 p-3 flex items-center gap-3">
+          <!-- Circular gauge skeleton -->
+          <template v-if="isLoadingAts">
+            <div class="w-14 h-14 rounded-full bg-muted animate-pulse flex-shrink-0"></div>
+            <div class="flex flex-col gap-1.5 flex-1">
+              <div class="h-3 w-16 rounded bg-muted animate-pulse"></div>
+              <div class="h-2.5 w-24 rounded bg-muted/60 animate-pulse"></div>
+            </div>
+          </template>
+          <!-- Score gauge -->
+          <template v-else-if="atsReport">
+            <div class="relative w-14 h-14 flex-shrink-0">
+              <svg class="w-14 h-14 -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="10" class="text-muted/40" />
+                <circle
+                  cx="50" cy="50" r="42"
+                  fill="none"
+                  :stroke="atsGaugeStroke"
+                  stroke-width="10"
+                  stroke-linecap="round"
+                  :stroke-dasharray="263.9"
+                  :stroke-dashoffset="263.9 - (atsReport.score / 100) * 263.9"
+                  style="transition: stroke-dashoffset 0.6s ease"
+                />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-sm font-bold leading-none">{{ Math.round(atsReport.score) }}</span>
+              </div>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs font-semibold">ATS Match</span>
+              <span class="text-xs text-muted-foreground">Open dashboard for full report</span>
+            </div>
+          </template>
+          <!-- No resume uploaded -->
+          <template v-else-if="noResume">
+            <div class="w-14 h-14 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs font-semibold">No CV uploaded</span>
+              <a :href="`${config.appUrl}/settings?tab=resumes`" target="_blank"
+                class="text-xs text-primary hover:underline">Upload your CV →</a>
+            </div>
+          </template>
+          <!-- No description -->
+          <template v-else>
+            <div class="w-14 h-14 rounded-full bg-muted/40 flex-shrink-0"></div>
+            <span class="text-xs text-muted-foreground">No job description to score.</span>
+          </template>
         </div>
 
-        <!-- Save button -->
-        <Button @click="saveJob" :disabled="isSaveBtnLoading || !jobTitle" class="w-full">
-          <svg v-if="isSaveBtnLoading" class="w-4 h-4 animate-spin mr-2" xmlns="http://www.w3.org/2000/svg" fill="none"
-            viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-          </svg>
-          {{ isSaveBtnLoading ? 'Saving...' : 'Save Job' }}
-        </Button>
+        <!-- Save + Re-fetch -->
+        <div class="flex flex-col gap-2">
+          <Button @click="saveJob" :disabled="isSaveBtnLoading || !jobTitle" class="w-full">
+            <svg v-if="isSaveBtnLoading" class="w-4 h-4 animate-spin mr-2" xmlns="http://www.w3.org/2000/svg" fill="none"
+              viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            {{ isSaveBtnLoading ? 'Saving...' : 'Save Job' }}
+          </Button>
+          <button @click="retryFetch" class="text-xs text-muted-foreground hover:text-primary text-center transition">
+            Re-analyse page
+          </button>
+        </div>
       </template>
     </div>
 

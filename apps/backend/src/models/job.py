@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Enum, String, Integer, ForeignKey, JSON, Text, Date
+from sqlalchemy import Enum, String, Integer, ForeignKey, JSON, Text, Date, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..db.base_class import Base
 from .company import Company
@@ -73,6 +73,9 @@ class Job(Base):
     )
     applied_date: Mapped[Date] = mapped_column(Date, nullable=True)
     notes: Mapped[str] = mapped_column(Text, nullable=True)
+    ats_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ats_resume_id: Mapped[int | None] = mapped_column(ForeignKey('resumes.id', ondelete='SET NULL'), nullable=True)
+    ats_report: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     user: Mapped['User'] = relationship('User')
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)

@@ -57,46 +57,62 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchMe(): Promise<void> {
     if (!accessToken.value) return
 
-    let response = await fetch(`${API_BASE}/auth/me`, {
-      headers: { Authorization: `Bearer ${accessToken.value}` },
-    })
+    try {
+      let response = await fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${accessToken.value}` },
+      })
 
-    if (response.status === 401) {
-      // Access token expired — try to refresh before giving up
-      const storedRefresh = localStorage.getItem('refresh_token')
-      if (storedRefresh) {
+      if (response.status === 401) {
+        // Access token expired — attempt one silent refresh
+        const storedRefresh = localStorage.getItem('refresh_token')
+        if (!storedRefresh) {
+          clearAuth()
+          router.replace('/login')
+          return
+        }
         try {
           const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh_token: storedRefresh }),
           })
-          if (refreshRes.ok) {
-            const refreshData = await refreshRes.json()
-            if (refreshData.access_token) {
-              setTokens(refreshData.access_token)
-              response = await fetch(`${API_BASE}/auth/me`, {
-                headers: { Authorization: `Bearer ${refreshData.access_token}` },
-              })
-            }
+          if (!refreshRes.ok) {
+            // Refresh token rejected — genuine session expiry
+            clearAuth()
+            router.replace('/login')
+            return
           }
-        } catch { /* fall through */ }
+          const refreshData = await refreshRes.json()
+          if (refreshData.access_token) {
+            setTokens(refreshData.access_token)
+            response = await fetch(`${API_BASE}/auth/me`, {
+              headers: { Authorization: `Bearer ${refreshData.access_token}` },
+            })
+          }
+        } catch {
+          // Network error during refresh — stay logged in, retry later
+          return
+        }
       }
-    }
 
-    if (response.ok) {
-      const data = await response.json()
-      setUser({
-        id: data.id,
-        first_name: data.first_name,
-        last_name: data.last_name,
-        user_name: data.user_name,
-        email: data.email ?? null,
-        avatar_url: data.avatar_url ?? null,
-      })
-    } else {
-      clearAuth()
-      router.replace('/login')
+      if (response.ok) {
+        const data = await response.json()
+        setUser({
+          id: data.id,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          user_name: data.user_name,
+          email: data.email ?? null,
+          avatar_url: data.avatar_url ?? null,
+        })
+      } else if (response.status === 401) {
+        // Still 401 after refresh — session is truly expired
+        clearAuth()
+        router.replace('/login')
+      }
+      // 5xx or other server errors: don't clear auth — stay logged in
+    } catch {
+      // Network unreachable — don't wipe the session
     }
   }
 

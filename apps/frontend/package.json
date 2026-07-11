@@ -1,12 +1,11 @@
 {
   "name": "frontend",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Vue Shadcn Admin",
+  "description": "JobApplica",
   "author": {
-    "name": "Faturachman Dwi Putro",
-    "email": "faturachmanputro@gmail.com"
+    "name": "Shravan Balasubramanian"
   },
   "scripts": {
     "dev": "vite",

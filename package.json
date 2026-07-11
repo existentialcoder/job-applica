@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "dev:frontend": "yarn workspace frontend dev",
+    "dev:backend": "make run-local --file=apps/backend/Makefile",
     "dev:extension": "yarn workspace jobapplica--extension dev",
     "dev:website": "yarn workspace website dev",
     "build:frontend": "yarn workspace frontend build",

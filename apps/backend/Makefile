@@ -37,12 +37,13 @@ run-db:
 			-e POSTGRES_PASSWORD=password \
 			-p 5432:5432 \
 			-v $(DB_VOLUME):/var/lib/postgresql/data \
-			-d postgres; \
+			-d postgres:16; \
 		echo "✅ PostgreSQL container created with persistent volume '$(DB_VOLUME)'."; \
 	fi
 
 run-local: run-db build
 	@echo "🔹 Running the project locally..."
 	chmod +x ./run.sh
+	$(VENV_DIR)/bin/alembic upgrade head
 	$(VENV_DIR)/bin/python -m uvicorn src.main:app --reload
 

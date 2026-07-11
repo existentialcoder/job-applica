@@ -26,6 +26,15 @@ function authHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function currentUserId(): number | null {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export const useAppStore = defineStore('app', {
   state: () => <IAppStore>({
     themeMode: LIGHT,
@@ -76,9 +85,10 @@ export const useAppStore = defineStore('app', {
 
       // Try to load from API first; fall back to localStorage
       const token = localStorage.getItem('access_token');
-      if (token) {
+      const uid = currentUserId();
+      if (token && uid) {
         try {
-          const res = await fetch(`${API_BASE}/auth/settings`, {
+          const res = await fetch(`${API_BASE}/users/${uid}/settings`, {
             headers: { ...authHeader() },
           });
           if (res.ok) {
@@ -105,13 +115,16 @@ export const useAppStore = defineStore('app', {
 
       // Persist to API (best-effort) and localStorage as fallback
       localStorage.setItem('themeMode', this.themeMode);
-      try {
-        await fetch(`${API_BASE}/auth/settings`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', ...authHeader() },
-          body: JSON.stringify({ settings: { theme: this.themeMode } }),
-        });
-      } catch { /* ignore network errors */ }
+      const uid = currentUserId();
+      if (uid) {
+        try {
+          await fetch(`${API_BASE}/users/${uid}/settings`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...authHeader() },
+            body: JSON.stringify({ settings: { theme: this.themeMode } }),
+          });
+        } catch { /* ignore network errors */ }
+      }
     },
     setBreadcrumbs(items: BreadcrumbItem[]) {
       this.breadcrumbs = items;

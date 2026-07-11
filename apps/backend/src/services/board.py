@@ -1,10 +1,12 @@
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 
 from ..models.board import Board, DEFAULT_STAGES
 from ..models.job import Job
 from ..schemas.board import BoardBase, BoardCreate, BoardUpdate
 from ..schemas.user import UserBase
+from ..services import plan as plan_service
 
 
 async def get_boards(db: AsyncSession, user: UserBase) -> list[BoardBase]:
@@ -26,7 +28,17 @@ async def get_default_board_id(db: AsyncSession, user_id: int) -> int | None:
     return row[0] if row else None
 
 
-async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) -> BoardBase:
+async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) -> tuple[BoardBase, dict | None]:
+    warning = await plan_service.check_plan_limit(
+        db, user.id, user.plan, 'max_job_boards',
+        select(func.count(Board.id)).where(Board.user_id == user.id),
+    )
+
+    existing_count_result = await db.execute(
+        select(func.count(Board.id)).where(Board.user_id == user.id)
+    )
+    is_first = existing_count_result.scalar() == 0
+
     stages = [s.model_dump() for s in board_in.stages] if board_in.stages else DEFAULT_STAGES
     board = Board(
         name=board_in.name,
@@ -34,12 +46,12 @@ async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) 
         description=board_in.description,
         stages=stages,
         user_id=user.id,
-        is_default=False,
+        is_default=is_first,
     )
     db.add(board)
     await db.commit()
     await db.refresh(board)
-    return BoardBase.model_validate(board)
+    return BoardBase.model_validate(board), warning
 
 
 async def update_board(db: AsyncSession, user: UserBase, board_id: int, board_in: BoardUpdate) -> BoardBase | None:

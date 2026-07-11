@@ -14,6 +14,7 @@ class UserBase(BaseSchema):
     email: EmailStr | None = None
     signup_key: UserSignupKey
     avatar_url: str | None = None
+    plan: str = 'free'
     settings: dict[str, Any] = {}
 
 class UserSettings(BaseModel):

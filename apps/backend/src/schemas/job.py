@@ -72,6 +72,10 @@ class JobBase(BaseSchema):
     applied_date: Optional[date] = None
     notes: Optional[str] = None
 
+    ats_score: Optional[float] = None
+    ats_resume_id: Optional[int] = None
+    ats_report: Optional[dict] = None
+
     model_config = {'from_attributes': True}
 
 
@@ -121,6 +125,24 @@ class JobUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+class PageExtractRequest(BaseModel):
+    page_text: str
+    url: str
+
+
+class JobExtractResult(BaseModel):
+    is_job_page: bool
+    title: Optional[str] = None
+    company: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    salary_range: Optional[str] = None
+    work_model: Optional[str] = None
+    position: Optional[str] = None
+    years_of_experience: Optional[dict] = None
+    required_skills: List[str] = Field(default_factory=list)
+
+
 class JobFilterParams(BaseModel):
     query: Optional[str] = Field(None, description='Search query string')
     title: Optional[str] = Field(None, description='Job title filter')
@@ -128,4 +150,5 @@ class JobFilterParams(BaseModel):
     location: Optional[str] = Field(None, description='Location filter')
     status: Optional[str] = Field(None, description='Application status filter')
     source_platform: Optional[SourcePlatform] = Field(None, description='Source platform filter')
+    source_url: Optional[str] = Field(None, description='Exact source URL match')
     board_id: Optional[int] = Field(None, description='Board ID filter')
