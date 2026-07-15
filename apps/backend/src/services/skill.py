@@ -37,8 +37,9 @@ async def create_skill(db: AsyncSession, skill_data: SkillCreate, source: str = 
     skill_name = extract_skill_name_from_label(skill_data.label)
 
     result = await db.execute(select(Skill).where(Skill.name == skill_name))
-    if result.scalars().first():
-        raise HTTPException(status_code=409, detail='Skill already exists')
+    existing = result.scalars().first()
+    if existing:
+        return SkillBase.model_validate(existing) if source == 'api' else existing
 
     skill_obj = Skill(name=skill_name, **skill_data.model_dump(exclude_unset=True))
     db.add(skill_obj)

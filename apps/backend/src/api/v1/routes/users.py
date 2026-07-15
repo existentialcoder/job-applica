@@ -136,8 +136,6 @@ async def change_password(
     return {'message': 'Password updated'}
 
 
-# ── Settings ──────────────────────────────────────────────────────────────────
-
 @router.get('/{user_id}/settings')
 async def get_settings(
     user_id: int,

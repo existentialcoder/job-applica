@@ -25,6 +25,14 @@ from ..schemas.ats import ATSReport
 logger = logging.getLogger(__name__)
 
 
+def _parse_json(text: str):
+    text = text.strip()
+    if text.startswith('```'):
+        text = re.sub(r'^```(?:json)?\s*', '', text)
+        text = re.sub(r'\s*```$', '', text.strip())
+    return json.loads(text.strip())
+
+
 # ── Shared prompt templates ────────────────────────────────────────────────────
 
 _ATS_SYSTEM = (
@@ -38,45 +46,67 @@ _ATS_USER = """\
 Follow these steps in order, then return a single JSON object.
 
 STEP 1 — Extract resume skills:
-  List every technical skill, language, framework, tool, methodology, and technology that is \
-EXPLICITLY named in the resume text. Literal word match only — do NOT infer skills from context.
-  Also extract any explicitly stated human languages and proficiency levels \
-(e.g. "German C1", "English Native").
+  List every technical skill, programming language, framework, tool, methodology, and technology
+  EXPLICITLY named in the resume. Use the canonical common name (e.g. "Vue.js" not "Vue 3 framework",
+  "GitHub Actions" not "GH Actions"). Do NOT infer — literal match only.
+  Also extract explicitly stated human languages with proficiency (e.g. "German C1", "English Native").
 
-STEP 2 — Extract JD requirements (translate all terms to English):
-  2a. Technical: every programming language, framework, tool, platform required or strongly preferred.
-      For alternatives expressed as "X or Y", list each separately.
-  2b. Language: any human language requirements (e.g. "fluent German", "business English").
-      Mark mandatory language requirements with "(mandatory)".
-  2c. Experience: years of experience, seniority, domain knowledge requirements.
+STEP 2 — Extract JD requirements from the <job_description> block ONLY:
+  ⚠ STRICT RULE: Every item must be a direct quote or clear paraphrase of words that appear in the
+  <job_description> block. NEVER infer from the resume or from general industry assumptions.
 
-STEP 3 — Match:
-  matched_skills = resume items (Step 1) that directly satisfy a JD requirement (Step 2).
-    Rules:
-    • A skill covers an equivalent if the JD explicitly accepts it as an alternative
-      (e.g. resume has "Java" → covers JD requirement "Go or Java").
-    • Partial tool coverage counts: "GitHub Actions" covers "CI/CD pipelines".
-    • Language match: only count a human language as matched if the resume proficiency
-      meets or exceeds what the JD requires (A2 German does NOT match "fluent German").
-  missing_skills = Step 2 requirements not covered by any resume item.
-    • Include unmet mandatory language requirements (e.g. "Fluent German (mandatory)").
-    • Include missing technical skills even if they are "nice to have".
+  2a. Technical skills: every programming language, framework, tool, or platform the JD explicitly
+      requires or strongly prefers. List each separately ("Go or Java" → "Go", "Java").
+  2b. Human languages: ONLY if the JD text explicitly requires them ("fluent German required").
+      If the JD is silent on spoken/written language, leave this empty.
+  2c. Experience & domain: years of experience, seniority level, domain knowledge, or specific
+      platform familiarity the JD calls out (e.g. "2–4 years experience", "Workday or HR platform
+      familiarity", "enterprise SDLC/ITGC exposure").
 
-STEP 4 — Score 0-100:
-  Weight mandatory requirements (Go/Java backend, Kubernetes/Docker, fluent language) heavily.
-  A hard-requirement gap (e.g. mandatory language not met) should lower the score significantly.
-  Reflect experience depth and seniority alignment, not just skill checkbox coverage.
+STEP 3 — Match and gap analysis. Populate four arrays:
 
-STEP 5 — Write 3-8 specific, actionable suggestions in English:
-  Do not restate the missing skills list. Focus on how to reposition existing experience,
-  reword bullets, add quantified outcomes, or bridge gaps credibly.
+  matched_skills:
+    Skill/tool names from Step 1 that satisfy a Step 2a or 2b requirement.
+    ⚠ Rules:
+    • Skill names ONLY — no experience phrases (wrong: "API development experience", right: "FastAPI").
+    • One entry per distinct skill — no duplicates even if the JD names the same skill twice.
+    • Equivalents count if the JD explicitly accepts them (e.g. "Vue.js" covers "React/Vue").
+    • Partial coverage counts ("GitHub Actions" covers "CI/CD pipelines").
+    • Language only if explicitly required in Step 2b AND resume proficiency meets or exceeds it.
+
+  matched_experience:
+    Step 2c requirements the resume satisfies. Short descriptive phrases, not skill names.
+    (e.g. "5+ years full-stack experience", "API integration delivery", "cloud deployment experience")
+
+  missing_skills:
+    Step 2a/2b requirements NOT covered by the resume. Use the exact name from the JD.
+    Skill and tool names ONLY — no experience phrases. Do NOT include domain or seniority gaps here.
+    (e.g. "Workday", "Azure Pipelines", "PHP")
+
+  experience_gaps:
+    Step 2c requirements the resume does NOT satisfy. Include seniority mismatches in both directions
+    (overqualified or underqualified), missing domain knowledge, and platform-specific experience.
+    (e.g. "HR/workforce platform experience", "candidate has ~6 years vs JD's 2–4 year target")
+
+STEP 4 — Score 0–100:
+  Weight all Step 2 requirements: technical (2a), language (2b), and experience/domain (2c).
+  Penalise hard mandatory gaps heavily. Reward strong seniority and domain alignment.
+  Seniority mismatch in either direction should moderately reduce the score.
+
+STEP 5 — Write 3–8 specific, actionable suggestions in English:
+  • Reference specific resume items by name — actual project names, companies, metrics, technologies.
+  • Focus on repositioning existing experience, rewording bullets, adding quantified outcomes.
+  • Do NOT restate missing_skills or experience_gaps verbatim — suggest how to address them.
+  • If the candidate appears overqualified, advise how to frame the application for this role.
 
 Return a JSON object with EXACTLY these fields:
 {{
   "resume_skills": [...],
   "score": <integer>,
   "matched_skills": [...],
+  "matched_experience": [...],
   "missing_skills": [...],
+  "experience_gaps": [...],
   "suggestions": [...]
 }}
 
@@ -105,15 +135,57 @@ STEP 1 — Decide: is this a single job posting?
 STEP 2 — If is_job_page is true, extract every field below. All strings must be in English.
   title            — job title
   company          — company or organisation name
-  location         — city / region / country where the role is based (translate to English if needed)
+  location         — structured object with city, state (optional), country (see format below)
   description      — clean body of the job posting: responsibilities + requirements.
                      Remove navigation menus, cookie banners, "apply now" buttons, and other page chrome.
-  salary_range     — compensation if explicitly stated (e.g. "€50,000–€70,000/yr"), else null
-  work_model       — exactly one of: "On-site", "Remote", "Hybrid" — infer from context when not stated
-  position         — seniority: one of "Intern", "Junior", "Mid", "Senior", "Lead", "Manager" — infer when possible, else null
-  years_of_experience — {{ "min": <int>, "max": <int> }} when a range is mentioned, else null
-  required_skills  — array of technical skills, tools, languages, and frameworks explicitly required or strongly preferred
+  salary_range     — if ONE salary is stated, return it as-is (e.g. "€50,000/yr").
+                     If multiple location-based tiers are listed, return the tier that matches the
+                     extracted location. If no location match, return the lowest–highest as a range.
+                     Return null if no compensation is mentioned.
+  work_model       — exactly one of: "On-site", "Remote", "Hybrid" — infer from context when not stated.
+                     If the posting says "remote" anywhere in the location or role description, prefer "Remote".
+  position         — infer seniority from the job title AND stated experience requirements.
+                     Use these rules in order:
+                     1. Title contains "Intern", "Trainee", "Apprentice" → "Intern"
+                     2. Title contains "Junior", "Associate", "Entry" → "Junior"
+                     3. Title contains "Senior", "Sr.", "Principal", "Staff" → "Senior"
+                     4. Title contains "Lead", "Architect" → "Lead"
+                     5. Title contains "Manager", "Director", "Head of", "VP" → "Manager"
+                     6. No seniority prefix (e.g. "Account Executive", "Engineer", "Analyst") → "Mid";
+                        bump to "Senior" if the JD requires 5+ years of experience.
+                     Return null only if genuinely impossible to infer.
+  years_of_experience — extract from experience phrases:
+                     "3+ years" → {{"min": 3, "max": null}}
+                     "2–4 years" → {{"min": 2, "max": 4}}
+                     "up to 5 years" → {{"min": null, "max": 5}}
+                     "at least 2 years" → {{"min": 2, "max": null}}
+                     Return null if no experience requirement is mentioned.
+  required_skills  — array of technical skills, tools, programming languages, and frameworks explicitly required or strongly preferred.
+                     Do NOT include human/spoken languages (e.g. German, English) here — only software and technical skills.
 
+  For the extracted company make sure to extract these details as well - [name, website, email, size, industry, description, logo_url].
+  If any of these details are not present in the job posting, return them as null.
+  If on job portal like Linkedin or Indeed use the company name to fetch the details from the company page and return them in the response.
+  If not do a web search to extract the same. Return it as json in the company key itself
+
+  Example - {{
+    "name": "Acme Corp",
+    "website": "https://www.acme.com",
+    "email": "careers@acme.com",
+    "size": 100,
+    "industry": "Information Technology",
+    "description": "Acme Corp is a leading provider of innovative solutions in the tech industry.",
+    "logo_url": "https://www.acme.com/logo.png"
+  }}
+
+  For the extracted location, return a JSON object with these fields:
+    city    — city name, null if fully remote and not mentioned
+    state   — state or province, null if not mentioned
+    country — country name in English, always required (empty string if truly unknown)
+
+  Example 1 - {{ "city": "New York", "state": "NY", "country": "USA" }}
+  Example 2 - {{ "city": "Dusseldorf", "state": "North Rhine-Westphalia", "country": "Germany" }}
+  Example 3 - {{ "city": null, "state": null, "country": "United Kingdom" }}
 STEP 3 — If is_job_page is false, return all other fields as null / [].
 
 <page_url>{url}</page_url>
@@ -126,8 +198,8 @@ Return exactly this shape:
 {{
   "is_job_page": true,
   "title": "...",
-  "company": "...",
-  "location": "...",
+  "company": {{}},
+  "location": {{}},
   "description": "...",
   "salary_range": null,
   "work_model": "On-site",
@@ -197,22 +269,14 @@ class LLMProvider(ABC):
             user=_ATS_USER.format(jd=job_description, cv=resume_text, skills_hint=skills_hint),
             max_tokens=2048,
         )
-        data = json.loads(text)
-
-        def _in_resume_text(skill: str) -> bool:
-            """Word-boundary search against the raw resume text — the only reliable ground truth."""
-            try:
-                pattern = r'(?<![A-Za-z0-9])' + re.escape(skill) + r'(?![A-Za-z0-9])'
-                return bool(re.search(pattern, resume_text, re.IGNORECASE))
-            except re.error:
-                return skill.lower() in resume_text.lower()
-
-        matched = [s for s in data.get('matched_skills', []) if _in_resume_text(s)]
+        data = _parse_json(text)
 
         return ATSReport(
             score=float(data['score']),
-            matched_skills=matched,
+            matched_skills=data.get('matched_skills', []),
+            matched_experience=data.get('matched_experience', []),
             missing_skills=data.get('missing_skills', []),
+            experience_gaps=data.get('experience_gaps', []),
             suggestions=data.get('suggestions', []),
         )
 
@@ -223,7 +287,7 @@ class LLMProvider(ABC):
             user=_JOB_EXTRACT_USER.format(url=url, page=page_text[:14000]),
             max_tokens=2048,
         )
-        return json.loads(text)
+        return _parse_json(text)
 
     async def extract_skills_from_resume(self, resume_text: str) -> list[str]:
         try:
@@ -232,7 +296,7 @@ class LLMProvider(ABC):
                 user=_SKILL_USER.format(cv=resume_text),
                 max_tokens=512,
             )
-            return json.loads(text)
+            return _parse_json(text)
         except Exception:
             logger.exception('Skill extraction failed — skipping')
             return []

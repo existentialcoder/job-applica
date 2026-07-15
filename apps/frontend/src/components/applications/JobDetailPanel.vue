@@ -542,6 +542,26 @@ const statusVariantMap: Record<string, string> = {
                   </div>
                 </div>
 
+                <!-- Matched experience -->
+                <div v-if="atsReport.matched_experience?.length" class="space-y-2">
+                  <p class="text-xs font-semibold text-emerald-400/70 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Matched experience ({{ atsReport.matched_experience.length }})
+                  </p>
+                  <ul class="space-y-1">
+                    <li
+                      v-for="item in atsReport.matched_experience"
+                      :key="item"
+                      class="text-xs text-emerald-400/70 flex items-start gap-1.5"
+                    >
+                      <span class="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-400/50"></span>
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
+
                 <!-- Missing skills -->
                 <div v-if="atsReport.missing_skills.length" class="space-y-2">
                   <p class="text-xs font-semibold text-red-400 flex items-center gap-1.5">
@@ -557,6 +577,26 @@ const statusVariantMap: Record<string, string> = {
                       class="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-medium"
                     >{{ skill }}</span>
                   </div>
+                </div>
+
+                <!-- Experience gaps -->
+                <div v-if="atsReport.experience_gaps?.length" class="space-y-2">
+                  <p class="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    </svg>
+                    Experience gaps ({{ atsReport.experience_gaps.length }})
+                  </p>
+                  <ul class="space-y-1">
+                    <li
+                      v-for="gap in atsReport.experience_gaps"
+                      :key="gap"
+                      class="text-xs text-amber-400/80 flex items-start gap-1.5"
+                    >
+                      <span class="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400/50"></span>
+                      {{ gap }}
+                    </li>
+                  </ul>
                 </div>
 
                 <!-- Suggestions -->

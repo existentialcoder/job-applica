@@ -52,16 +52,8 @@ async def extract_job_from_page(
     current_user: UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Use LLM to extract structured job data from raw page text.
-
-    Free plan: limited to 100 successful job-page scans per calendar month.
-    The counter only increments when the LLM confirms is_job_page=True.
-    Returns is_job_page=false when the page is not a job posting.
-    """
     user_result = await db.execute(select(User).where(User.id == current_user.id))
     user = user_result.scalar_one_or_none()
-
-    # Enforce quota before spending LLM tokens
     plan_service.check_extraction_limit(user.plan, user.settings)
 
     try:

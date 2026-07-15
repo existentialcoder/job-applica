@@ -18,13 +18,11 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = 'http://localhost:5173'
     BACKEND_URL: str = 'http://localhost:8000'
 
-    # LLM config — single JSON. Edit LLM_CONFIG in .env to change provider/model.
-    # Keys: default, ats, skills — each {provider, model}. Missing keys fall back to default.
-    # Providers: 'anthropic' | 'deepseek' | 'gemini'
     LLM_CONFIG: dict = {
-        'default':        {'provider': 'anthropic', 'model': ''},
-        'ats':            {'provider': 'anthropic', 'model': ''},
-        'skills':         {'provider': 'anthropic', 'model': ''},
+        'default':        {'provider': 'deepseek',  'model': 'deepseek-chat'},
+        'ats':            {'provider': 'deepseek',  'model': 'deepseek-chat'},
+        'skills':         {'provider': 'deepseek',  'model': 'deepseek-chat'},
+        'extract':        {'provider': 'deepseek',  'model': 'deepseek-chat'},
         'deepseek_cache': True,
     }
 

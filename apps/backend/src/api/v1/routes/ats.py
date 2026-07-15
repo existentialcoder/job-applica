@@ -16,7 +16,7 @@ from ....models.user import User
 router = APIRouter(prefix='/jobs')
 
 
-_CACHE_VERSION = 3  # bump this to invalidate all stored ATS reports
+_CACHE_VERSION = 6  # bump this to invalidate all stored ATS reports
 
 def _content_hash(resume_text: str, jd: str) -> str:
     return hashlib.sha256(f'{resume_text}\x00{jd}'.encode()).hexdigest()[:24]

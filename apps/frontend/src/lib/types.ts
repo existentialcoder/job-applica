@@ -1,7 +1,9 @@
 export interface ATSReport {
   score: number
   matched_skills: string[]
+  matched_experience?: string[]
   missing_skills: string[]
+  experience_gaps?: string[]
   suggestions: string[]
   resume_id?: number | null
 }

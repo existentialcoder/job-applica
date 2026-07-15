@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import dataservice, { type BoardData, type JobExtractResult, type ATSReport } from './lib/dataservice';
+import dataservice, { type BoardData, type JobExtractResult, type CompanyResult, type ATSReport, type ExtractedLocation } from './lib/dataservice';
 import ext from './lib/ext';
 import { config, loadConfig, saveConfig, resetConfig } from './lib/config';
 import { Button } from '@job-applica/ui/components/ui/button';
@@ -9,6 +9,17 @@ import { Label } from '@job-applica/ui/components/ui/label';
 import { Badge } from '@job-applica/ui/components/ui/badge';
 import { NativeSelect } from '@job-applica/ui/components/ui/select';
 import { Textarea } from '@job-applica/ui/components/ui/textarea';
+
+function formatLocation(loc: JobExtractResult['location']): string {
+  if (!loc) return '';
+  return [loc.city, loc.state, loc.country].filter(Boolean).join(', ');
+}
+
+function parseLocationString(loc: string): ExtractedLocation | undefined {
+  if (!loc.trim()) return undefined;
+  const [city, state, country] = loc.split(',').map(p => p.trim());
+  return { city: city || null, state: state || null, country: country || null };
+}
 
 // ── Dark mode ────────────────────────────────────────────────────────────────
 const isDark = ref(false);
@@ -19,11 +30,11 @@ function applyDark(dark: boolean) {
 }
 
 async function initDarkMode() {
-  // Prefer cached value for instant render, then sync from API
   const cached = await ext.storage.local.get(['dark_mode']);
-  if (typeof cached.dark_mode === 'boolean') applyDark(cached.dark_mode);
+  if (typeof cached.dark_mode === 'boolean') {
+     applyDark(cached.dark_mode);
+  }
 
-  // Fetch authoritative value from API (may differ if user changed from web app)
   try {
     const settings = await dataservice.getSettings();
     const dark = settings.theme === 'dark';
@@ -134,8 +145,9 @@ async function handleCreateBoard() {
 const platform = ref<string | null>(null);
 const currentUrl = ref<string | null>(null);
 const jobTitle = ref('');
-const company = ref('');
+const company = ref<CompanyResult>({ name: '', website: '', email: '', size: null, industry: '', description: '', logo_url: '' });
 const jobLocation = ref('');
+const structuredLocation = ref<ExtractedLocation | null>(null);
 const jobDescription = ref<string | null>(null);
 const salaryRange = ref<string | null>(null);
 const workModel = ref('On-site');
@@ -148,6 +160,7 @@ const isFetchingData = ref(false);
 const atsReport = ref<ATSReport | null>(null);
 const isLoadingAts = ref(false);
 const noResume = ref(false);
+const extractedRequiredSkills = ref<string[]>([]);
 
 // ── Boards ────────────────────────────────────────────────────────────────────
 const boards = ref<BoardData[]>([]);
@@ -186,7 +199,9 @@ watch(statusOptions, (opts: string[]) => {
 let setupInProgress = false;
 
 async function setupData() {
-  if (setupInProgress) return;
+  if (setupInProgress) {
+    return;
+  }
   setupInProgress = true;
   try {
     await _setupData();
@@ -208,7 +223,10 @@ async function _setupData() {
 
   const url = await dataservice.getCurrentTabUrl();
   currentUrl.value = url;
-  if (!url) { view.value = 'no-job'; return; }
+  if (!url) { 
+    view.value = 'no-job';
+    return;
+  }
 
   platform.value = dataservice.detectPlatform(url);
 
@@ -231,27 +249,49 @@ async function _setupData() {
 
   const tabId = tabs[0]?.id;
   const tabUrl = tabs[0]?.url || null;
-  if (!tabId) { view.value = 'no-job'; return; }
+  if (!tabId) {
+    view.value = 'no-job';
+    return;
+  }
 
   view.value = 'job';
   isFetchingData.value = true;
 
   try {
-    // Fast path: check if this URL is already saved before spending an LLM call
-    if (tabUrl) {
-      const savedId = await dataservice.checkJobExistsByUrl(tabUrl);
-      if (savedId !== null) {
-        existingJobId.value = savedId;
-        return;
-      }
+    // Check if URL is already saved AND browser cache simultaneously
+    const [savedId, pageCache] = await Promise.all([
+      tabUrl ? dataservice.checkJobExistsByUrl(tabUrl) : Promise.resolve(null),
+      tabUrl ? dataservice.getCachedPage(tabUrl) : Promise.resolve(null),
+    ]);
+
+    if (savedId !== null) {
+      existingJobId.value = savedId;
+      return;
     }
 
+    if (pageCache) {
+      const { extraction, atsReport: cachedAts, noResume: cachedNoResume } = pageCache;
+      if (extraction.title) jobTitle.value = extraction.title;
+      if (extraction.company) company.value = extraction.company;
+      if (extraction.location) { jobLocation.value = formatLocation(extraction.location); structuredLocation.value = extraction.location; }
+      if (extraction.description) jobDescription.value = extraction.description;
+      if (extraction.salary_range) salaryRange.value = extraction.salary_range;
+      if (extraction.work_model) workModel.value = extraction.work_model;
+      extractedRequiredSkills.value = extraction.required_skills ?? [];
+      atsReport.value = cachedAts;
+      noResume.value = cachedNoResume;
+      return;
+    }
+
+    // Fresh extraction via LLM
     const [scriptResult] = await ext.scripting.executeScript({
       target: { tabId },
-      func: () => ({
-        pageText: (document.body.innerText || '').slice(0, 15000),
-        href: window.location.href,
-      }),
+      func: () => {
+        const clone = document.body.cloneNode(true) as Element;
+        clone.querySelectorAll('script, style, noscript, svg').forEach(el => el.remove());
+        const pageText = (clone.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 15000);
+        return { pageText, href: window.location.href };
+      },
     });
 
     const extracted: JobExtractResult | null = scriptResult?.result?.pageText
@@ -263,28 +303,36 @@ async function _setupData() {
     } else {
       if (extracted.title) jobTitle.value = extracted.title;
       if (extracted.company) company.value = extracted.company;
-      if (extracted.location) jobLocation.value = extracted.location;
+      if (extracted.location) { jobLocation.value = formatLocation(extracted.location); structuredLocation.value = extracted.location; }
       if (extracted.description) jobDescription.value = extracted.description;
       if (extracted.salary_range) salaryRange.value = extracted.salary_range;
       if (extracted.work_model) workModel.value = extracted.work_model;
+      extractedRequiredSkills.value = extracted.required_skills ?? [];
 
-      // Fallback duplicate check by title+company if URL lookup didn't match
+      // Fallback duplicate check by title+company
       if (jobTitle.value) {
-        existingJobId.value = await dataservice.checkJobExists(jobTitle.value, company.value || undefined);
+        existingJobId.value = await dataservice.checkJobExists(jobTitle.value, company.value.name || undefined);
       }
 
-      // Fire ATS scoring in background — doesn't block form display
+      // ATS scoring in background — same prompt/endpoint as dashboard (required_skills hint included)
       if (extracted.description && !existingJobId.value) {
         isLoadingAts.value = true;
         atsReport.value = null;
         noResume.value = false;
         dataservice.quickAtsScore(extracted.description, extracted.required_skills ?? []).then(result => {
-          if (result === 'no_resume') {
-            noResume.value = true;
-          } else {
-            atsReport.value = result;
-          }
+          const isNoResume = result === 'no_resume';
+          const report = isNoResume ? null : result;
+          atsReport.value = report;
+          noResume.value = isNoResume;
           isLoadingAts.value = false;
+          // Cache extraction + ATS so next popup open is instant
+          if (tabUrl) {
+            dataservice.setCachedPage(tabUrl, { 
+              extraction: extracted,
+              atsReport: report,
+              noResume: isNoResume
+            });
+          }
         });
       }
     }
@@ -319,13 +367,16 @@ onUnmounted(() => {
 
 async function retryFetch() {
   jobTitle.value = '';
-  company.value = '';
+  company.value = {} as CompanyResult;
   jobLocation.value = '';
+  structuredLocation.value = null;
   jobDescription.value = null;
   salaryRange.value = null;
   atsReport.value = null;
   isLoadingAts.value = false;
   noResume.value = false;
+  extractedRequiredSkills.value = [];
+  if (currentUrl.value) await dataservice.clearCachedPage(currentUrl.value);
   isFetchingData.value = true;
 
   try {
@@ -335,10 +386,12 @@ async function retryFetch() {
 
     const [scriptResult] = await ext.scripting.executeScript({
       target: { tabId },
-      func: () => ({
-        pageText: (document.body.innerText || '').slice(0, 15000),
-        href: window.location.href,
-      }),
+      func: () => {
+        const clone = document.body.cloneNode(true) as Element;
+        clone.querySelectorAll('script, style, noscript, svg').forEach(el => el.remove());
+        const pageText = (clone.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 15000);
+        return { pageText, href: window.location.href };
+      },
     });
 
     const extracted: JobExtractResult | null = scriptResult?.result?.pageText
@@ -348,20 +401,23 @@ async function retryFetch() {
     if (extracted?.is_job_page) {
       if (extracted.title) jobTitle.value = extracted.title;
       if (extracted.company) company.value = extracted.company;
-      if (extracted.location) jobLocation.value = extracted.location;
+      if (extracted.location) { jobLocation.value = formatLocation(extracted.location); structuredLocation.value = extracted.location; }
       if (extracted.description) jobDescription.value = extracted.description;
       if (extracted.salary_range) salaryRange.value = extracted.salary_range;
       if (extracted.work_model) workModel.value = extracted.work_model;
+      extractedRequiredSkills.value = extracted.required_skills ?? [];
 
       if (extracted.description) {
         isLoadingAts.value = true;
         dataservice.quickAtsScore(extracted.description, extracted.required_skills ?? []).then(result => {
-          if (result === 'no_resume') {
-            noResume.value = true;
-          } else {
-            atsReport.value = result;
-          }
+          const isNoResume = result === 'no_resume';
+          const report = isNoResume ? null : result;
+          atsReport.value = report;
+          noResume.value = isNoResume;
           isLoadingAts.value = false;
+          if (currentUrl.value) {
+            dataservice.setCachedPage(currentUrl.value, { extraction: extracted, atsReport: report, noResume: isNoResume });
+          }
         });
       }
     }
@@ -375,10 +431,11 @@ async function saveJob() {
   saveError.value = '';
 
   try {
+    const report = atsReport.value;
     const jobId = await dataservice.createJob({
       title: jobTitle.value,
-      company_name: company.value || undefined,
-      location: jobLocation.value || undefined,
+      company: company.value || undefined,
+      location: structuredLocation.value ?? parseLocationString(jobLocation.value),
       status: jobStatus.value,
       salary_range: salaryRange.value || undefined,
       description: jobDescription.value?.trim() || undefined,
@@ -387,10 +444,17 @@ async function saveJob() {
       source_platform: platform.value || undefined,
       notes: notes.value || undefined,
       board_id: selectedBoardId.value ?? undefined,
+      required_skills: extractedRequiredSkills.value,
+      ats_score: report?.score ?? undefined,
+      ats_report: report
+        ? { score: report.score, matched_skills: report.matched_skills, missing_skills: report.missing_skills, suggestions: report.suggestions, resume_id: report.resume_id }
+        : undefined,
+      ats_resume_id: report?.resume_id ?? undefined,
     });
 
     if (jobId !== null) {
       existingJobId.value = jobId;
+      if (currentUrl.value) dataservice.clearCachedPage(currentUrl.value);
     } else {
       saveError.value = 'Failed to save. Please try again.';
     }
@@ -487,7 +551,7 @@ const platformBadgeVariant: Record<string, any> = {
       </div>
 
       <div class="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-        Override these if you are self-hosting JobApplica. Leave as default for the cloud version.
+        Override these values on a self-hosted JobApplica version.
       </div>
 
       <div class="flex flex-col gap-1.5">
@@ -745,7 +809,8 @@ const platformBadgeVariant: Record<string, any> = {
         <!-- Company -->
         <div class="flex flex-col gap-1.5">
           <Label for="company">Company</Label>
-          <Input id="company" v-model="company" type="text" placeholder="e.g. Acme Corp" />
+          <Image :src="company.logo_url" :alt="company.name" />
+          <Input id="company" v-model="company.name" type="text" placeholder="e.g. Acme Corp" />
         </div>
 
         <!-- Location -->
@@ -780,16 +845,8 @@ const platformBadgeVariant: Record<string, any> = {
 
         <!-- ATS Score card -->
         <div class="rounded-md border border-border bg-muted/30 p-3 flex items-center gap-3">
-          <!-- Circular gauge skeleton -->
-          <template v-if="isLoadingAts">
-            <div class="w-14 h-14 rounded-full bg-muted animate-pulse flex-shrink-0"></div>
-            <div class="flex flex-col gap-1.5 flex-1">
-              <div class="h-3 w-16 rounded bg-muted animate-pulse"></div>
-              <div class="h-2.5 w-24 rounded bg-muted/60 animate-pulse"></div>
-            </div>
-          </template>
           <!-- Score gauge -->
-          <template v-else-if="atsReport">
+          <template v-if="atsReport">
             <div class="relative w-14 h-14 flex-shrink-0">
               <svg class="w-14 h-14 -rotate-90" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="10" class="text-muted/40" />
@@ -810,7 +867,7 @@ const platformBadgeVariant: Record<string, any> = {
             </div>
             <div class="flex flex-col">
               <span class="text-xs font-semibold">ATS Match</span>
-              <span class="text-xs text-muted-foreground">Open dashboard for full report</span>
+              <span class="text-xs text-muted-foreground">Score on how your CV matches with this JD</span>
             </div>
           </template>
           <!-- No resume uploaded -->
@@ -826,7 +883,7 @@ const platformBadgeVariant: Record<string, any> = {
                 class="text-xs text-primary hover:underline">Upload your CV →</a>
             </div>
           </template>
-          <!-- No description -->
+          <!-- No description to score -->
           <template v-else>
             <div class="w-14 h-14 rounded-full bg-muted/40 flex-shrink-0"></div>
             <span class="text-xs text-muted-foreground">No job description to score.</span>

@@ -5,7 +5,9 @@ from typing import Optional
 class ATSReport(BaseModel):
     score: float  # 0.0 – 100.0
     matched_skills: list[str]
+    matched_experience: list[str] = []
     missing_skills: list[str]
+    experience_gaps: list[str] = []
     suggestions: list[str]
     resume_id: Optional[int] = None
 

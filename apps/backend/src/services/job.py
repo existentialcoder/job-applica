@@ -1,10 +1,15 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
-from fastapi import HTTPException
+from fastapi import HTTPException, HttpUrl
+from urllib.parse import urlparse
+
+from apps.backend.src.core.constants import Constants
+
+from ..schemas.company import CompanyCreate
+from ..services.company import get_company_by_id, get_company_by_name, create_company
 
 from ..models.job import Job
-from ..models.skill import Skill
 from ..models.company import Company
 from ..models.location import Location
 from ..services import skill as skill_service
@@ -25,6 +30,12 @@ def _eager(q):
         selectinload(Job.location),
     )
 
+def _derive_logo_url(website: str | HttpUrl | None) -> str | None:
+    if not website:
+        return None
+    domain = urlparse(str(website)).netloc.lstrip('www.')
+    return f'{Constants.LOGO_URL_TEMPLATE.format(domain=domain)}' if domain else None
+
 
 async def get_job_with_id(db: AsyncSession, user: UserBase, job_id: int):
     result = await db.execute(_eager(select(Job).where(Job.user_id == user.id, Job.id == job_id)))
@@ -42,31 +53,50 @@ async def transform_required_skills(db: AsyncSession, required_skills: list[str]
             result.append(new_skill)
     return result
 
+async def _retrieve_company_in_request(db: AsyncSession, data: dict) -> Company | None:
+    if 'company_id' in data and isinstance(data['company_id'], int):
+        return await get_company_by_id(db, data['company_id'])
 
-async def get_or_create_company(db: AsyncSession, company_name: str) -> Company:
-    result = await db.execute(select(Company).where(Company.name.ilike(company_name)))
-    company = result.scalar_one_or_none()
-    if not company:
-        company = Company(name=company_name)
-        db.add(company)
-        await db.flush()
-    return company
+    if 'company_name' in data and isinstance(data['company_name'], str):
+        company = await get_company_by_name(db, data['company_name'])
+        if not company:
+            company = await create_company(db, CompanyCreate(name=data['company_name']))
+        return company
+
+    raw = data.get('company')
+    if raw:
+        company_data = CompanyCreate(**raw) if isinstance(raw, dict) else raw
+        company = await get_company_by_name(db, company_data.name)
+        if not company:
+            if not raw.get('logo_url'):
+                raw['logo_url'] = _derive_logo_url(raw.get('website'))
+
+            company = await create_company(db, company_data)
+        return company
+
+    return None
 
 
-async def get_or_create_location(db: AsyncSession, location_str: str) -> Location:
-    parts = [p.strip() for p in location_str.split(',')]
-    city = parts[0] if len(parts) > 0 else location_str
-    state = parts[1] if len(parts) > 1 else None
-    country = parts[2] if len(parts) > 2 else None
+async def get_or_create_location(db: AsyncSession, location_data: dict) -> Location:
+    city = (location_data.get('city') or '').strip()
+    state = (location_data.get('state') or '').strip()
+    country = (location_data.get('country') or '').strip()
 
-    q = select(Location).where(Location.city.ilike(city))
+    if not city and not state and not country:
+        raise HTTPException(status_code=400, detail='Invalid location')
+
+    q = select(Location)
+    if city:
+        q = q.where(Location.city.ilike(city))
     if state:
         q = q.where(Location.state.ilike(state))
+    if country:
+        q = q.where(Location.country.ilike(country))
 
     result = await db.execute(q)
     loc = result.scalar_one_or_none()
     if not loc:
-        loc = Location(city=city, state=state or '', country=country or '')
+        loc = Location(city=city, state=state, country=country)
         db.add(loc)
         await db.flush()
     return loc
@@ -132,23 +162,12 @@ async def get_transformed_job(db: AsyncSession, job_in: JobCreate | JobUpdate, u
     if 'board_id' not in data and isinstance(job_in, JobCreate):
         data['board_id'] = await get_default_board_id(db, user.id)
 
-    company_name = data.pop('company_name', None)
-    if isinstance(data.get('company_id'), int):
-        company_id = data.pop('company_id')
-        result = await db.execute(select(Company).where(Company.id == company_id))
-        company = result.scalar_one_or_none()
-        if not company:
-            raise HTTPException(status_code=400, detail='Invalid company_id')
-        data['company'] = company
-    elif company_name:
-        data.pop('company_id', None)
-        data['company'] = await get_or_create_company(db, company_name)
-    else:
-        data.pop('company_id', None)
+    data['company'] = await _retrieve_company_in_request(db, data)
 
-    location_str = data.pop('location', None)
-    if location_str:
-        data['location'] = await get_or_create_location(db, location_str)
+    location_raw = data.pop('location', None)
+    if location_raw:
+        location_dict = location_raw if isinstance(location_raw, dict) else location_raw.model_dump()
+        data['location'] = await get_or_create_location(db, location_dict)
 
     if job_in.required_skills and len(job_in.required_skills) > 0:
         data['required_skills'] = await transform_required_skills(db, job_in.required_skills)

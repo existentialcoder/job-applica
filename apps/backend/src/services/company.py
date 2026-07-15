@@ -9,6 +9,14 @@ from ..api.deps.pagination import build_paginated_response, get_paginated_respon
 
 PaginatedCompanies = get_paginated_response_model(CompanyBase)
 
+async def get_company_by_id(db: AsyncSession, company_id: int) -> Company | None:
+    result = await db.execute(select(Company).where(Company.id == company_id))
+    return result.scalar_one_or_none()
+
+async def get_company_by_name(db: AsyncSession, company_name: str) -> Company | None:
+    result = await db.execute(select(Company).where(Company.name.ilike(company_name)))
+    return result.scalar_one_or_none()
+
 
 async def get_companies(db: AsyncSession, pagination: dict) -> PaginatedCompanies:
     count_result = await db.execute(select(func.count()).select_from(Company))
@@ -25,9 +33,12 @@ async def create_company(db: AsyncSession, company_data: CompanyCreate) -> Compa
     if result.scalars().first():
         raise HTTPException(status_code=409, detail='Company already exists')
 
-    company_obj = Company(**company_data.model_dump(exclude_unset=True))
+    data = company_data.model_dump(exclude_unset=True)
+    company_obj = Company(**data)
     if isinstance(company_obj.website, HttpUrl):
         company_obj.website = str(company_obj.website)
+    if isinstance(company_obj.logo_url, HttpUrl):
+        company_obj.logo_url = str(company_obj.logo_url)
 
     db.add(company_obj)
     await db.commit()

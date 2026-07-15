@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { toast } from 'vue-sonner';
 import type { JobData, JobCreatePayload, StageData, ATSReport } from '@/lib/types';
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue,
@@ -123,7 +124,12 @@ async function handleSaveJob(payload: JobCreatePayload) {
 
 async function handleSaveEdit(jobId: number, payload: JobCreatePayload) {
   if (props.boardId) payload = { ...payload, board_id: props.boardId };
-  await dataservice.updateJob(jobId, payload);
+  const updatedJob = await dataservice.updateJob(jobId, payload);
+  if (updatedJob) {
+    toast.success('Job updated successfully');
+  } else {
+    toast.error('Failed to update job');
+  }
   isPanelOpen.value = false;
   await loadJobs();
 }
