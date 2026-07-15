@@ -1,10 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
-from fastapi import HTTPException, HttpUrl
+from fastapi import HTTPException
+from pydantic import HttpUrl
 from urllib.parse import urlparse
 
-from apps.backend.src.core.constants import Constants
+from ..core.constants import Constants
 
 from ..schemas.company import CompanyCreate
 from ..services.company import get_company_by_id, get_company_by_name, create_company

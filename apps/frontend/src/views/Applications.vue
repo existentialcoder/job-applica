@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { toast } from 'vue-sonner';
+import { toast } from '@/lib/toast';
 import type { JobData, JobCreatePayload, StageData, ATSReport } from '@/lib/types';
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue,
@@ -88,9 +88,15 @@ function onTableSelectionChange(val: JobData[]) {
 
 async function deleteSelectedJobs() {
   if (selectedJobs.value.length === 0) return;
-  await Promise.all(selectedJobs.value.map((job) => dataservice.deleteJob(job.id)));
-  selectedJobs.value = [];
-  await loadJobs();
+  const count = selectedJobs.value.length;
+  try {
+    await Promise.all(selectedJobs.value.map((job) => dataservice.deleteJob(job.id)));
+    selectedJobs.value = [];
+    await loadJobs();
+    toast.success(`${count} job${count > 1 ? 's' : ''} deleted`);
+  } catch {
+    toast.error('Failed to delete selected jobs');
+  }
 }
 
 function openAddModal() {
@@ -118,8 +124,13 @@ watch(isPanelOpen, (open) => {
 
 async function handleSaveJob(payload: JobCreatePayload) {
   if (props.boardId) payload = { ...payload, board_id: props.boardId };
-  await dataservice.createJob(payload);
-  await loadJobs();
+  try {
+    await dataservice.createJob(payload);
+    await loadJobs();
+    toast.success('Job added successfully');
+  } catch {
+    toast.error('Failed to add job');
+  }
 }
 
 async function handleSaveEdit(jobId: number, payload: JobCreatePayload) {
@@ -144,32 +155,56 @@ async function handleStatusChange(jobId: number, newStatus: string) {
   const idx = allJobs.value.findIndex(j => j.id === jobId);
   const prevStatus = allJobs.value[idx]?.status;
   if (idx !== -1) allJobs.value[idx] = { ...allJobs.value[idx], status: newStatus };
-  const updated = await dataservice.updateJob(jobId, { status: newStatus });
-  if (!updated && idx !== -1 && prevStatus !== undefined) {
-    allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus };
+  try {
+    const updated = await dataservice.updateJob(jobId, { status: newStatus });
+    if (!updated && idx !== -1 && prevStatus !== undefined) {
+      allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus };
+      toast.error('Failed to update status');
+    }
+  } catch {
+    if (idx !== -1 && prevStatus !== undefined) {
+      allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus };
+    }
+    toast.error('Failed to update status');
   }
 }
 
 async function handleDeleteJob(jobId: number) {
-  await dataservice.deleteJob(jobId);
-  await loadJobs();
+  try {
+    await dataservice.deleteJob(jobId);
+    await loadJobs();
+    toast.success('Job deleted');
+  } catch {
+    toast.error('Failed to delete job');
+  }
 }
 
 async function handleAddStage(stage: StageData) {
   if (!props.boardId || !props.stages) return;
   const newStages = [...props.stages, stage];
-  const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
-  if (updated) emit('stages-updated', updated.stages);
+  try {
+    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
+    if (updated) emit('stages-updated', updated.stages);
+    else toast.error('Failed to add stage');
+  } catch {
+    toast.error('Failed to add stage');
+  }
 }
 
 async function handleRemoveStage(key: string) {
   if (!props.boardId || !props.stages) return;
   const newStages = props.stages.filter(s => s.key !== key);
   if (newStages.length === 0) return;
-  const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
-  if (updated) {
-    emit('stages-updated', updated.stages);
-    await loadJobs();
+  try {
+    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
+    if (updated) {
+      emit('stages-updated', updated.stages);
+      await loadJobs();
+    } else {
+      toast.error('Failed to remove stage');
+    }
+  } catch {
+    toast.error('Failed to remove stage');
   }
 }
 
@@ -192,8 +227,13 @@ async function handleQuickAddJob(payload: { title: string; company_name?: string
     status: payload.status,
     board_id: props.boardId,
   };
-  await dataservice.createJob(fullPayload);
-  await loadJobs();
+  try {
+    await dataservice.createJob(fullPayload);
+    await loadJobs();
+    toast.success('Job added');
+  } catch {
+    toast.error('Failed to add job');
+  }
 }
 
 function clearFilters() {

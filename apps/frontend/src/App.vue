@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useAppStore } from '@/stores/app';
+
+const appStore = useAppStore();
+const toasterTheme = computed(() => appStore.isDark ? 'dark' : 'light');
 import { useAuthStore } from '@/stores/auth';
 import { useFeatureStore } from '@/stores/features';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -34,7 +37,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <Toaster position="top-right" rich-colors />
+  <Toaster position="top-right" rich-colors :theme="toasterTheme" />
   <ScrollArea class="h-screen">
     <router-view v-slot="{ Component }">
       <transition name="fade" mode="out-in">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { toast } from '@/lib/toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,6 @@ const lastName       = ref(authStore.user?.last_name ?? '');
 const avatarUrl      = ref(authStore.user?.avatar_url ?? '');
 const avatarUploading = ref(false);
 const savingProfile  = ref(false);
-const profileMsg     = ref('');
 const selectedResume = ref<ResumeData | null>(null);
 const isResumeOpen  = ref(false);
 
@@ -51,8 +51,9 @@ async function handleAvatarChange(e: Event) {
     const { avatar_url } = await dataservice.uploadAvatar(file);
     avatarUrl.value = avatar_url;
     authStore.setUser({ ...authStore.user!, avatar_url });
+    toast.success('Avatar updated');
   } catch {
-    // ignore upload error silently — avatar stays as-is
+    toast.error('Failed to upload avatar');
   } finally {
     avatarUploading.value = false;
     (e.target as HTMLInputElement).value = '';
@@ -61,16 +62,15 @@ async function handleAvatarChange(e: Event) {
 
 async function saveProfile() {
   savingProfile.value = true;
-  profileMsg.value = '';
   try {
     const updated = await dataservice.updateProfile({
       first_name: firstName.value,
       last_name: lastName.value,
     });
     authStore.setUser({ ...authStore.user!, ...updated });
-    profileMsg.value = 'Saved';
+    toast.success('Profile saved');
   } catch {
-    profileMsg.value = 'Failed to save';
+    toast.error('Failed to save profile');
   } finally {
     savingProfile.value = false;
   }
@@ -134,7 +134,6 @@ function onSkillSearchBlur() {
 const resumes       = ref<ResumeData[]>([]);
 const resumesLoaded = ref(false);
 const uploading     = ref(false);
-const uploadError   = ref('');
 
 async function loadResumes() {
   if (resumesLoaded.value) return;
@@ -146,12 +145,12 @@ async function handleFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (!file) return;
   uploading.value = true;
-  uploadError.value = '';
   try {
     const resume = await dataservice.uploadResume(file);
     resumes.value.unshift(resume);
+    toast.success('CV uploaded successfully');
   } catch (err: any) {
-    uploadError.value = err.message ?? 'Upload failed';
+    toast.error(err.message ?? 'Upload failed');
   } finally {
     uploading.value = false;
     (e.target as HTMLInputElement).value = '';
@@ -159,8 +158,13 @@ async function handleFileChange(e: Event) {
 }
 
 async function deleteResume(id: number) {
-  await dataservice.deleteResume(id);
-  resumes.value = resumes.value.filter(r => r.id !== id);
+  try {
+    await dataservice.deleteResume(id);
+    resumes.value = resumes.value.filter(r => r.id !== id);
+    toast.success('CV deleted');
+  } catch {
+    toast.error('Failed to delete CV');
+  }
 }
 
 function formatSize(bytes: number | null) {
@@ -174,7 +178,6 @@ function formatSize(bytes: number | null) {
 const ghostedDays   = ref(14);
 const stuckDays     = ref(7);
 const savingPrefs   = ref(false);
-const prefsMsg      = ref('');
 
 async function loadPreferences() {
   const s = await dataservice.getSettings();
@@ -184,12 +187,11 @@ async function loadPreferences() {
 
 async function savePreferences() {
   savingPrefs.value = true;
-  prefsMsg.value = '';
   try {
     await dataservice.updateSettings({ ghosted_days: ghostedDays.value, stuck_days: stuckDays.value });
-    prefsMsg.value = 'Saved';
+    toast.success('Preferences saved');
   } catch {
-    prefsMsg.value = 'Failed to save';
+    toast.error('Failed to save preferences');
   } finally {
     savingPrefs.value = false;
   }
@@ -201,29 +203,27 @@ const currentPw     = ref('');
 const newPw         = ref('');
 const confirmPw     = ref('');
 const savingPw      = ref(false);
-const pwMsg         = ref('');
-const pwError       = ref('');
+const pwValidationError = ref('');
 
 async function changePassword() {
-  pwError.value = '';
-  pwMsg.value = '';
+  pwValidationError.value = '';
   if (newPw.value !== confirmPw.value) {
-    pwError.value = 'New passwords do not match';
+    pwValidationError.value = 'New passwords do not match';
     return;
   }
   if (newPw.value.length < 8) {
-    pwError.value = 'Password must be at least 8 characters';
+    pwValidationError.value = 'Password must be at least 8 characters';
     return;
   }
   savingPw.value = true;
   try {
     await dataservice.changePassword({ current_password: currentPw.value, new_password: newPw.value });
-    pwMsg.value = 'Password updated';
+    toast.success('Password updated');
     currentPw.value = '';
     newPw.value = '';
     confirmPw.value = '';
   } catch (err: any) {
-    pwError.value = err.message ?? 'Failed to change password';
+    toast.error(err.message ?? 'Failed to change password');
   } finally {
     savingPw.value = false;
   }
@@ -304,9 +304,6 @@ onMounted(() => {
             <Button @click="saveProfile" :disabled="savingProfile">
               {{ savingProfile ? 'Saving…' : 'Save changes' }}
             </Button>
-            <span v-if="profileMsg" class="text-sm" :class="profileMsg === 'Saved' ? 'text-emerald-500' : 'text-destructive'">
-              {{ profileMsg }}
-            </span>
           </div>
         </div>
       </TabsContent>
@@ -438,8 +435,6 @@ onMounted(() => {
               <p class="text-xs text-muted-foreground">PDF, DOC, DOCX</p>
             </div>
           </label>
-          <p v-if="uploadError" class="text-sm text-destructive">{{ uploadError }}</p>
-
           <!-- List -->
           <div v-if="resumes.length" class="space-y-2">
             <div
@@ -487,9 +482,6 @@ onMounted(() => {
             <Button @click="savePreferences" :disabled="savingPrefs">
               {{ savingPrefs ? 'Saving…' : 'Save preferences' }}
             </Button>
-            <span v-if="prefsMsg" class="text-sm" :class="prefsMsg === 'Saved' ? 'text-emerald-500' : 'text-destructive'">
-              {{ prefsMsg }}
-            </span>
           </div>
         </div>
       </TabsContent>
@@ -529,8 +521,7 @@ onMounted(() => {
               <Button @click="changePassword" :disabled="savingPw">
                 {{ savingPw ? 'Updating…' : 'Update password' }}
               </Button>
-              <span v-if="pwMsg" class="text-sm text-emerald-500">{{ pwMsg }}</span>
-              <span v-if="pwError" class="text-sm text-destructive">{{ pwError }}</span>
+              <span v-if="pwValidationError" class="text-sm text-destructive">{{ pwValidationError }}</span>
             </div>
           </template>
         </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+import { toast } from '@/lib/toast';
 import type { JobData, JobCreatePayload, ATSReport, ResumeData } from '@/lib/types';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -77,7 +78,6 @@ const resumesLoaded = ref(false);
 const selectedResumeId = ref<string>('');
 const atsReport = ref<ATSReport | null>(null);
 const isScoring = ref(false);
-const scoringError = ref('');
 
 const selectedResumeName = computed(() => {
   if (!selectedResumeId.value) return '';
@@ -126,7 +126,6 @@ async function loadResumes() {
 async function calculateScore() {
   if (!props.job || !canScore.value) return;
   isScoring.value = true;
-  scoringError.value = '';
   try {
     const report = await dataservice.calculateAtsScore(
       props.job.id,
@@ -134,8 +133,9 @@ async function calculateScore() {
     );
     atsReport.value = report;
     emit('score-updated', props.job.id, { ats_score: report.score, ats_report: report });
+    toast.success(`ATS score: ${Math.round(report.score)}/100`);
   } catch (err: any) {
-    scoringError.value = err.message ?? 'Scoring failed';
+    toast.error(err.message ?? 'Scoring failed');
   } finally {
     isScoring.value = false;
   }
@@ -150,7 +150,6 @@ watch(() => props.open, (open) => {
   if (!open) {
     isEditingUrl.value = false;
     atsReport.value = null;
-    scoringError.value = '';
     resumesLoaded.value = false;
     selectedResumeId.value = '';
     return;
@@ -482,8 +481,6 @@ const statusVariantMap: Record<string, string> = {
               </svg>
               {{ isScoring ? 'Analysing…' : atsReport ? 'Recalculate ATS Score' : 'Calculate ATS Score' }}
             </Button>
-
-            <p v-if="scoringError" class="text-xs text-destructive">{{ scoringError }}</p>
 
             <!-- ── Score result ─────────────────────────────────────────────── -->
             <template v-if="atsReport">

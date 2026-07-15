@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+import dataservice from '@/lib/dataservice';
 
 export interface BreadcrumbItem {
   label: string
@@ -21,19 +20,6 @@ const DARK = 'dark';
 const EXPAND = 280;
 const SHRINKED = 72;
 
-function authHeader(): Record<string, string> {
-  const token = localStorage.getItem('access_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-function currentUserId(): number | null {
-  try {
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    return user?.id ?? null;
-  } catch {
-    return null;
-  }
-}
 
 export const useAppStore = defineStore('app', {
   state: () => <IAppStore>({
@@ -50,11 +36,14 @@ export const useAppStore = defineStore('app', {
     sidebarExpanded: (state) => state.sidebarExpand,
   },
   actions: {
-    toggleSidebar() {
+    async toggleSidebar() {
       this.sidebarExpand = !this.sidebarExpand;
       if (window.innerWidth > 1024) {
         this.initWrapper();
       }
+      try {
+        await dataservice.updateSettings({ sidebar_expanded: this.sidebarExpand });
+      } catch { /* ignore network errors */ }
     },
     initWrapper() {
       if (window.innerWidth > 1024) {
@@ -84,24 +73,20 @@ export const useAppStore = defineStore('app', {
       this.initWrapper();
 
       // Try to load from API first; fall back to localStorage
-      const token = localStorage.getItem('access_token');
-      const uid = currentUserId();
-      if (token && uid) {
-        try {
-          const res = await fetch(`${API_BASE}/users/${uid}/settings`, {
-            headers: { ...authHeader() },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const theme = data.settings?.theme as 'light' | 'dark' | undefined;
-            if (theme === LIGHT || theme === DARK) {
-              this.themeMode = theme;
-              this.applyTheme();
-              return;
-            }
-          }
-        } catch { /* network unavailable — fall through to localStorage */ }
-      }
+      try {
+        const settings = await dataservice.getSettings();
+        const theme = settings.theme as 'light' | 'dark' | undefined;
+        if (theme === LIGHT || theme === DARK) {
+          this.themeMode = theme;
+        }
+        const sidebar = settings.sidebar_expanded;
+        if (typeof sidebar === 'boolean') {
+          this.sidebarExpand = sidebar;
+        }
+        this.applyTheme();
+        this.initWrapper();
+        return;
+      } catch { /* network unavailable — fall through to localStorage */ }
 
       const cached = localStorage.getItem('themeMode');
       if (cached === LIGHT || cached === DARK) {
@@ -113,18 +98,10 @@ export const useAppStore = defineStore('app', {
       this.themeMode = this.themeMode === LIGHT ? DARK : LIGHT;
       this.applyTheme();
 
-      // Persist to API (best-effort) and localStorage as fallback
       localStorage.setItem('themeMode', this.themeMode);
-      const uid = currentUserId();
-      if (uid) {
-        try {
-          await fetch(`${API_BASE}/users/${uid}/settings`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', ...authHeader() },
-            body: JSON.stringify({ settings: { theme: this.themeMode } }),
-          });
-        } catch { /* ignore network errors */ }
-      }
+      try {
+        await dataservice.updateSettings({ theme: this.themeMode });
+      } catch { /* ignore network errors */ }
     },
     setBreadcrumbs(items: BreadcrumbItem[]) {
       this.breadcrumbs = items;

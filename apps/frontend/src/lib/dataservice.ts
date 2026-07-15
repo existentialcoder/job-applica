@@ -1,7 +1,7 @@
 import type { JobData, JobCreatePayload, JobUpdatePayload, BoardData, DashboardStats, SkillData, ResumeData, ConnectedAccount, ATSReport } from './types';
 import { useAuthStore } from '@/stores/auth';
 import router from '@/router';
-import { toast } from 'vue-sonner';
+import { toast } from '@/lib/toast';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
