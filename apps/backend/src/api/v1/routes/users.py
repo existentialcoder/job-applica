@@ -10,10 +10,12 @@ from ....core.config import settings
 from ....core.utils import verify_password, hash_password
 from ...deps.auth import get_current_user
 from ...deps.db import get_db
+from ...deps.plan import plan_gate
 from ....models.user import User
 from ....models.skill import Skill
+from ....models.resume import Resume
 from ....services import resume as resume_service
-from ....services import plan as plan_service
+from sqlalchemy import func
 from ....utils.file_uploader import FileUploader
 
 UPLOAD_BASE = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'uploads')
@@ -231,18 +233,19 @@ async def list_resumes(
     return [_resume_response(r, user_id) for r in resumes]
 
 
-@router.post('/{user_id}/resumes')
+@router.post(
+    '/{user_id}/resumes',
+    dependencies=[plan_gate('max_resumes', lambda uid: select(func.count(Resume.id)).where(Resume.user_id == uid))],
+)
 async def upload_resume(
     user_id: int,
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = None,
-    response: Response = None,
     current_user: schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
-    resume, warning = await resume_service.upload_resume(db, user_id, current_user.plan, file)
-    response.headers.update(plan_service.warning_header(warning))
+    resume = await resume_service.upload_resume(db, user_id, file)
     if background_tasks and resume.parsed_text:
         background_tasks.add_task(resume_service.sync_skills_background, user_id, resume.parsed_text)
     return _resume_response(resume, user_id)

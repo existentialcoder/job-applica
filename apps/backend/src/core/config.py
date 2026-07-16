@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = 'http://localhost:5173'
     BACKEND_URL: str = 'http://localhost:8000'
 
+    CHECK_PLAN_LIMIT: bool = True
+
     LLM_CONFIG: dict = {
         'default':        {'provider': 'deepseek',  'model': 'deepseek-chat'},
         'ats':            {'provider': 'deepseek',  'model': 'deepseek-chat'},

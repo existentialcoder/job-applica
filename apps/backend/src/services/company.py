@@ -28,7 +28,7 @@ async def get_companies(db: AsyncSession, pagination: dict) -> PaginatedCompanie
     return build_paginated_response(items=companies, total=total, **pagination)
 
 
-async def create_company(db: AsyncSession, company_data: CompanyCreate) -> CompanyBase:
+async def create_company(db: AsyncSession, company_data: CompanyCreate) -> Company:
     result = await db.execute(select(Company).where(Company.name == company_data.name))
     if result.scalars().first():
         raise HTTPException(status_code=409, detail='Company already exists')
@@ -43,4 +43,4 @@ async def create_company(db: AsyncSession, company_data: CompanyCreate) -> Compa
     db.add(company_obj)
     await db.commit()
     await db.refresh(company_obj)
-    return CompanyBase.model_validate(company_obj)
+    return company_obj

@@ -11,7 +11,6 @@ from ..models.skill import Skill
 from ..models.user import User
 from ..core.config import settings
 from ..utils.file_uploader import FileUploader
-from ..services import plan as plan_service
 from ..services.llm import extract_skills_from_resume
 
 UPLOAD_BASE = os.path.join(os.path.dirname(__file__), '..', '..', 'uploads')
@@ -42,16 +41,9 @@ async def list_resumes(db: AsyncSession, user_id: int) -> list[Resume]:
     return result.scalars().all()
 
 
-async def upload_resume(db: AsyncSession, user_id: int, plan: str, file: UploadFile) -> tuple[Resume, dict | None]:
+async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Resume:
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail='Only PDF and Word documents are accepted')
-
-    warning = None
-    if settings.APP_ENV != 'local':
-        warning = await plan_service.check_plan_limit(
-            db, user_id, plan, 'max_resumes',
-            select(func.count(Resume.id)).where(Resume.user_id == user_id),
-        )
 
     ext = os.path.splitext(file.filename or 'resume')[1] or '.pdf'
     stored_name = f'{uuid.uuid4().hex}{ext}'
@@ -90,7 +82,7 @@ async def upload_resume(db: AsyncSession, user_id: int, plan: str, file: UploadF
     await db.commit()
     await db.refresh(resume)
 
-    return resume, warning
+    return resume
 
 
 async def _sync_extracted_skills(db: AsyncSession, user_id: int, resume_text: str) -> None:

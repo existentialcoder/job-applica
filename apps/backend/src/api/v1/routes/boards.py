@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
 from ....schemas.board import BoardBase, BoardCreate, BoardUpdate
 from ....schemas.user import UserBase
+from ....models.board import Board
 from ...deps.auth import get_current_user
 from ...deps.db import get_db
+from ...deps.plan import plan_gate
 from ....services import board as board_service
-from ....services.plan import warning_header
 
 router = APIRouter(prefix='/boards')
 
@@ -25,10 +26,14 @@ async def get_board(board_id: int, user: UserBase = Depends(get_current_user), d
     return board
 
 
-@router.post('', response_model=BoardBase, status_code=201)
+@router.post(
+    '',
+    response_model=BoardBase,
+    status_code=201,
+    dependencies=[plan_gate('max_job_boards', lambda uid: select(func.count(Board.id)).where(Board.user_id == uid))],
+)
 async def create_board(board_in: BoardCreate, user: UserBase = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    board, warning = await board_service.create_board(db, user, board_in)
-    return JSONResponse(content=board.model_dump(mode='json'), status_code=201, headers=warning_header(warning))
+    return await board_service.create_board(db, user, board_in)
 
 
 @router.patch('/{board_id}', response_model=BoardBase)

@@ -6,7 +6,6 @@ from ..models.board import Board, DEFAULT_STAGES
 from ..models.job import Job
 from ..schemas.board import BoardBase, BoardCreate, BoardUpdate
 from ..schemas.user import UserBase
-from ..services import plan as plan_service
 
 
 async def get_boards(db: AsyncSession, user: UserBase) -> list[BoardBase]:
@@ -28,12 +27,7 @@ async def get_default_board_id(db: AsyncSession, user_id: int) -> int | None:
     return row[0] if row else None
 
 
-async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) -> tuple[BoardBase, dict | None]:
-    warning = await plan_service.check_plan_limit(
-        db, user.id, user.plan, 'max_job_boards',
-        select(func.count(Board.id)).where(Board.user_id == user.id),
-    )
-
+async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) -> BoardBase:
     existing_count_result = await db.execute(
         select(func.count(Board.id)).where(Board.user_id == user.id)
     )
@@ -51,7 +45,7 @@ async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) 
     db.add(board)
     await db.commit()
     await db.refresh(board)
-    return BoardBase.model_validate(board), warning
+    return BoardBase.model_validate(board)
 
 
 async def update_board(db: AsyncSession, user: UserBase, board_id: int, board_in: BoardUpdate) -> BoardBase | None:

@@ -14,7 +14,6 @@ from ..models.job import Job
 from ..models.company import Company
 from ..models.location import Location
 from ..services import skill as skill_service
-from ..services import plan as plan_service
 from ..services.board import get_default_board_id
 from ..schemas.skill import SkillCreate
 from ..schemas.user import UserBase
@@ -176,17 +175,13 @@ async def get_transformed_job(db: AsyncSession, job_in: JobCreate | JobUpdate, u
     return data
 
 
-async def create_job(db: AsyncSession, user: UserBase, job_in: JobCreate) -> tuple[JobBase, dict | None]:
-    warning = await plan_service.check_plan_limit(
-        db, user.id, user.plan, 'max_job_applications',
-        select(func.count(Job.id)).where(Job.user_id == user.id),
-    )
+async def create_job(db: AsyncSession, user: UserBase, job_in: JobCreate) -> JobBase:
     job_data = await get_transformed_job(db, job_in, user)
     db_job = Job(**job_data)
     db.add(db_job)
     await db.commit()
     result = await db.execute(_eager(select(Job).where(Job.id == db_job.id)))
-    return JobBase.model_validate(result.scalar_one()), warning
+    return JobBase.model_validate(result.scalar_one())
 
 
 async def update_job(db: AsyncSession, job_id: int, user: UserBase, job_in: JobUpdate) -> JobBase | None:
