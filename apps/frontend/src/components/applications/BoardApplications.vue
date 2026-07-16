@@ -267,7 +267,14 @@ function formatDate(dateStr?: string) {
               </DropdownMenu>
 
               <p class="text-sm font-medium leading-tight line-clamp-2 mb-1.5 pr-5">{{ job.title }}</p>
-              <p v-if="job.company" class="text-xs text-muted-foreground truncate mb-2">{{ job.company.name }}</p>
+              <div v-if="job.company" class="flex items-center gap-1.5 mb-2 min-w-0">
+                <img
+                  :src="job.company.logo_url || `https://icons.duckduckgo.com/ip3/${job.company.name.toLowerCase().replace(/\s+/g, '')}.com.ico`"
+                  class="w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted"
+                  @error="($event.target as HTMLImageElement).style.display = 'none'"
+                />
+                <p class="text-xs text-muted-foreground truncate">{{ job.company.name }}</p>
+              </div>
 
               <div class="flex flex-wrap gap-1 mb-2">
                 <Badge v-if="job.work_model" variant="outline" class="text-xs px-1.5 py-0">{{ job.work_model }}</Badge>

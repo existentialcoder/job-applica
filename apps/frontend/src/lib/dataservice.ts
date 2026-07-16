@@ -392,4 +392,13 @@ export default {
       headers: { ...authHeaders() },
     });
   },
+
+  async getCompanies(search?: string): Promise<{ id: number; name: string; logo_url?: string }[]> {
+    const params = new URLSearchParams({ limit: '50' });
+    if (search) params.set('search', search);
+    const response = await apiFetch(`${API_BASE}/companies?${params}`, { headers: { ...authHeaders() } });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.items ?? data.results ?? [];
+  },
 };

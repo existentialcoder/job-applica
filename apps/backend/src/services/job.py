@@ -68,8 +68,8 @@ async def _retrieve_company_in_request(db: AsyncSession, data: dict) -> Company 
         company_data = CompanyCreate(**raw) if isinstance(raw, dict) else raw
         company = await get_company_by_name(db, company_data.name)
         if not company:
-            if not raw.get('logo_url'):
-                raw['logo_url'] = _derive_logo_url(raw.get('website'))
+            if not company_data.logo_url:
+                company_data.logo_url = _derive_logo_url(company_data.website)
 
             company = await create_company(db, company_data)
         return company

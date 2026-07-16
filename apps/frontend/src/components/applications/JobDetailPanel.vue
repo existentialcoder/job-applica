@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import dataservice from '@/lib/dataservice';
+import CompanyCombobox from './CompanyCombobox.vue';
+import DatePickerInput from './DatePickerInput.vue';
 
 const router = useRouter();
 
@@ -51,6 +53,12 @@ const sourceUrl = ref('');
 const appliedDate = ref('');
 const description = ref('');
 const notes = ref('');
+
+watch(status, (newVal) => {
+  if (newVal === 'Applied' && !appliedDate.value) {
+    appliedDate.value = new Date().toISOString().slice(0, 10);
+  }
+});
 
 // ── Inline URL edit ──────────────────────────────────────────────────────────
 const isEditingUrl = ref(false);
@@ -212,6 +220,16 @@ const statusVariantMap: Record<string, string> = {
 
         <!-- ── Header ────────────────────────────────────────────────────────── -->
         <div class="flex items-start gap-3 px-5 pt-5 pb-4 border-b" style="flex-shrink:0;">
+
+          <!-- Company logo avatar -->
+          <div v-if="job?.company" class="flex-shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
+            <img
+              :src="job.company.logo_url || `https://icons.duckduckgo.com/ip3/${job.company.name.toLowerCase().replace(/\s+/g, '')}.com.ico`"
+              class="w-full h-full object-contain"
+              @error="($event.target as HTMLImageElement).style.display = 'none'"
+            />
+          </div>
+
           <div class="flex-1 min-w-0">
             <SheetTitle class="text-base font-semibold leading-snug truncate">
               {{ job?.title || 'Job Detail' }}
@@ -219,6 +237,7 @@ const statusVariantMap: Record<string, string> = {
 
             <div class="flex items-center gap-2 mt-0.5 flex-wrap">
               <span v-if="job?.company" class="text-sm text-muted-foreground">{{ job.company.name }}</span>
+              <span v-if="job?.company && job?.status" class="text-muted-foreground/40 text-sm">·</span>
               <Badge
                 v-if="job?.status"
                 :variant="(statusVariantMap[job.status] as any) || 'outline'"
@@ -255,7 +274,7 @@ const statusVariantMap: Record<string, string> = {
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
-                  Go to job posting
+                  Job URL
                 </a>
                 <button class="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors p-0.5" title="Edit link" @click="startEditUrl">
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -314,11 +333,11 @@ const statusVariantMap: Record<string, string> = {
             <div class="grid grid-cols-2 gap-3">
               <div class="space-y-1.5">
                 <Label>Company</Label>
-                <Input v-model="companyName" placeholder="e.g. Acme Corp" />
+                <CompanyCombobox v-model="companyName" placeholder="e.g. Acme Corp" />
               </div>
               <div class="space-y-1.5">
                 <Label>Location</Label>
-                <Input v-model="location" placeholder="e.g. New York, NY" />
+                <Input v-model="location" placeholder="e.g. New York, NY, USA" />
               </div>
             </div>
 
@@ -379,7 +398,7 @@ const statusVariantMap: Record<string, string> = {
               </div>
               <div class="space-y-1.5">
                 <Label>Applied Date</Label>
-                <Input v-model="appliedDate" type="date" />
+                <DatePickerInput v-model="appliedDate" placeholder="Pick a date" />
               </div>
             </div>
 

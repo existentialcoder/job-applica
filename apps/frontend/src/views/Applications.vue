@@ -11,6 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import dataservice, { type JobFilters } from '@/lib/dataservice';
 import { TableApplications, BoardApplications, AddJobModal, JobDetailPanel } from '@/components/applications';
+import { useCompaniesStore } from '@/stores/companies';
+
+const companiesStore = useCompaniesStore();
 
 const props = defineProps<{
   boardId?: number
@@ -22,15 +25,7 @@ const emit = defineEmits<{
   (e: 'stages-updated', stages: StageData[]): void
 }>();
 
-const STORAGE_KEY_VIEW = 'ja_view_mode';
-const savedView = localStorage.getItem(STORAGE_KEY_VIEW);
-const selectedLayout = ref<'table' | 'board'>(
-  savedView === 'board' || savedView === 'table' ? savedView : 'table'
-);
-
-watch(selectedLayout, (val) => {
-  localStorage.setItem(STORAGE_KEY_VIEW, val);
-});
+const selectedLayout = ref<'list' | 'board'>('list');
 
 const allJobs = ref<JobData[]>([]);
 const totalJobs = ref(0);
@@ -154,9 +149,11 @@ function handleScoreUpdated(jobId: number, update: { ats_score: number; ats_repo
 async function handleStatusChange(jobId: number, newStatus: string) {
   const idx = allJobs.value.findIndex(j => j.id === jobId);
   const prevStatus = allJobs.value[idx]?.status;
-  if (idx !== -1) allJobs.value[idx] = { ...allJobs.value[idx], status: newStatus };
+  const today = new Date().toISOString().slice(0, 10);
+  const autoDate = newStatus === 'Applied' && !allJobs.value[idx]?.applied_date ? today : undefined;
+  if (idx !== -1) allJobs.value[idx] = { ...allJobs.value[idx], status: newStatus, ...(autoDate ? { applied_date: autoDate } : {}) };
   try {
-    const updated = await dataservice.updateJob(jobId, { status: newStatus });
+    const updated = await dataservice.updateJob(jobId, { status: newStatus, ...(autoDate ? { applied_date: autoDate } : {}) });
     if (!updated && idx !== -1 && prevStatus !== undefined) {
       allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus };
       toast.error('Failed to update status');
@@ -220,11 +217,12 @@ async function handleUpdateStage(payload: { oldKey: string; stage: StageData }) 
   }
 }
 
-async function handleQuickAddJob(payload: { title: string; company_name?: string; status: string }) {
+async function handleQuickAddJob(payload: { title: string; company_name?: string; status: string; work_model?: string }) {
   const fullPayload: JobCreatePayload = {
     title: payload.title,
     company_name: payload.company_name,
     status: payload.status,
+    work_model: payload.work_model,
     board_id: props.boardId,
   };
   try {
@@ -252,6 +250,11 @@ const route = useRoute();
 const router = useRouter();
 
 onMounted(async () => {
+  const settings = await dataservice.getSettings();
+  if (settings.view_mode === 'board' || settings.view_mode === 'list') {
+    selectedLayout.value = settings.view_mode as 'list' | 'board';
+  }
+  companiesStore.fetch();
   if (route.query.query) {
     searchQuery.value = route.query.query as string;
   }
@@ -261,6 +264,10 @@ onMounted(async () => {
     const tab = route.query.tab === 'ats' ? 'ats' : 'details';
     if (job) openEditModal(job, tab);
   }
+});
+
+watch(selectedLayout, (val) => {
+  dataservice.updateSettings({ view_mode: val });
 });
 </script>
 
@@ -328,7 +335,7 @@ onMounted(async () => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="table">Table</SelectItem>
+                <SelectItem value="list">List</SelectItem>
                 <SelectItem value="board">Board</SelectItem>
               </SelectGroup>
             </SelectContent>
@@ -345,7 +352,7 @@ onMounted(async () => {
     <!-- Loading skeleton -->
     <div v-if="isLoading">
       <!-- Table skeleton -->
-      <div v-if="selectedLayout === 'table'" class="rounded-md border border-border overflow-hidden">
+      <div v-if="selectedLayout === 'list'" class="rounded-md border border-border overflow-hidden">
         <div class="bg-muted/40 px-4 py-2.5 grid grid-cols-[2rem_1fr_10rem_7rem_7rem_6rem] gap-3 border-b border-border">
           <div class="h-3 w-3 rounded bg-muted animate-pulse self-center"></div>
           <div class="h-3 w-24 rounded bg-muted animate-pulse"></div>
@@ -395,7 +402,7 @@ onMounted(async () => {
 
     <!-- Table view -->
     <TableApplications
-      v-else-if="selectedLayout === 'table'"
+      v-else-if="selectedLayout === 'list'"
       :jobs="allJobs"
       :status-options="statusOptions"
       @selection-change="onTableSelectionChange"
