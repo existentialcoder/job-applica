@@ -18,6 +18,7 @@ interface IAppStore {
   wrapperLeftOffset: number | string
   navWidth: number | string
   breadcrumbs: BreadcrumbItem[]
+  themeInitialized: boolean
 }
 
 const EXPAND = 280;
@@ -33,6 +34,7 @@ export const useAppStore = defineStore('app', {
     wrapperLeftOffset: 0,
     navWidth: '100%',
     breadcrumbs: [],
+    themeInitialized: false,
   }),
   getters: {
     theme: (state) => state.themeMode,
@@ -115,6 +117,15 @@ export const useAppStore = defineStore('app', {
       await this.setThemeMode(next);
     },
     async initTheme() {
+      // Guard: set flag synchronously before any await so concurrent calls (e.g. from
+      // layouts/app.vue remounting on every navigation) skip setup and just re-apply.
+      if (this.themeInitialized) {
+        this.applyTheme();
+        this.initWrapper();
+        return;
+      }
+      this.themeInitialized = true;
+
       window.addEventListener('resize', this.initWrapper);
       this.initWrapper();
 
@@ -134,13 +145,10 @@ export const useAppStore = defineStore('app', {
         if (lightBg && lightBg in BG_THEMES.light) this.lightBgTheme = lightBg;
         const darkBg = settings.dark_bg_theme as string | undefined;
         if (darkBg && darkBg in BG_THEMES.dark) this.darkBgTheme = darkBg;
-
-        this.applyTheme();
-        this.initWrapper();
-        return;
       } catch { /* offline — keep defaults */ }
 
       this.applyTheme();
+      this.initWrapper();
     },
     setBreadcrumbs(items: BreadcrumbItem[]) {
       this.breadcrumbs = items;

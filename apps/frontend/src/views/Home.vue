@@ -229,7 +229,7 @@ function stagePillClass(tailwindColor: string): string {
           </div>
           <div class="space-y-1">
             <p class="text-xs text-muted-foreground font-medium uppercase tracking-wide">Interviews</p>
-            <p class="text-3xl font-bold text-indigo-500">{{ stats.overview.total_interviews }}</p>
+            <p class="text-3xl font-bold text-primary">{{ stats.overview.total_interviews }}</p>
             <p class="text-xs text-muted-foreground">{{ stats.overview.interview_rate }}% interview rate</p>
           </div>
           <div class="space-y-1">
@@ -261,7 +261,7 @@ function stagePillClass(tailwindColor: string): string {
         </div>
         <div class="grid grid-cols-3 gap-4">
           <div class="flex items-center gap-3">
-            <div class="w-2 h-8 rounded-full bg-indigo-500 flex-shrink-0" />
+            <div class="w-2 h-8 rounded-full bg-primary flex-shrink-0" />
             <div>
               <p class="text-xs text-muted-foreground">Response Rate</p>
               <p class="text-lg font-semibold">{{ stats.overview.response_rate }}%</p>
@@ -344,7 +344,7 @@ function stagePillClass(tailwindColor: string): string {
                   {{ fmtWeek(week.week) }}: {{ week.count }}
                 </div>
                 <div
-                  class="w-full rounded-t bg-indigo-500 hover:bg-indigo-400 transition-colors"
+                  class="w-full rounded-t bg-primary hover:bg-primary/80 transition-colors"
                   :style="{ height: `${(week.count / weeklyMax) * (expanded ? 240 : 128)}px`, minHeight: '4px' }"
                 />
                 <span class="text-[9px] text-muted-foreground rotate-45 origin-left translate-x-1 hidden sm:block">
@@ -424,7 +424,7 @@ function stagePillClass(tailwindColor: string): string {
                 </div>
                 <div class="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
-                    class="h-full rounded-full bg-indigo-500 transition-all duration-500"
+                    class="h-full rounded-full bg-primary transition-all duration-500"
                     :style="{ width: `${(p.count / platformMax) * 100}%` }"
                   />
                 </div>
@@ -458,7 +458,7 @@ function stagePillClass(tailwindColor: string): string {
                   </div>
                   <div class="mt-1 h-1 rounded-full bg-muted overflow-hidden">
                     <div
-                      class="h-full rounded-full bg-violet-500 transition-all duration-500"
+                      class="h-full rounded-full bg-primary/60 transition-all duration-500"
                       :style="{ width: `${(c.count / (stats.top_companies[0]?.count || 1)) * 100}%` }"
                     />
                   </div>

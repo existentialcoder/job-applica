@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException
 from pydantic import HttpUrl
@@ -96,9 +97,14 @@ async def get_or_create_location(db: AsyncSession, location_data: dict) -> Locat
     result = await db.execute(q)
     loc = result.scalars().first()
     if not loc:
-        loc = Location(city=city, state=state, country=country)
-        db.add(loc)
-        await db.flush()
+        try:
+            async with db.begin_nested():
+                loc = Location(city=city, state=state, country=country)
+                db.add(loc)
+                await db.flush()
+        except IntegrityError:
+            result = await db.execute(q)
+            loc = result.scalars().first()
     return loc
 
 

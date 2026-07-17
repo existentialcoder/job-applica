@@ -63,7 +63,6 @@ async function handleLogout() {
       <Button variant="outline" class="border-0 p-[6px] w-8 h-8">
         <Bell />
       </Button>
-      <!-- Single cycling theme button: light → dark → system → light -->
       <Button
         variant="outline"
         class="border-0 p-[6px] ml-2 w-8 h-8"

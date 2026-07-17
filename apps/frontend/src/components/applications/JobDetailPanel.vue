@@ -98,10 +98,10 @@ const hasLinkedCv = computed(() => !!selectedResumeId.value);
 const canScore = computed(() => hasDescription.value && hasLinkedCv.value && !isScoring.value);
 
 function atsScoreColor(score: number) {
-  if (score >= 85) return '#22c55e';   // green
-  if (score >= 70) return '#6366f1';   // indigo
-  if (score >= 50) return '#f59e0b';   // amber
-  return '#ef4444';                     // red
+  if (score >= 85) return '#22c55e';
+  if (score >= 70) return 'hsl(var(--primary))';
+  if (score >= 50) return '#f59e0b';
+  return '#ef4444';
 }
 
 function atsTierLabel(score: number) {

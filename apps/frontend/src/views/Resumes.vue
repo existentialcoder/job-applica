@@ -137,7 +137,7 @@ function formatDate(iso: string | null) {
       <div class="flex items-center justify-between p-6 border-b">
         <div>
           <p class="text-sm font-semibold">Resumes</p>
-          <p class="text-xs text-muted-foreground mt-0.5">Skills are automatically extracted on upload and added to your profile</p>
+          <p class="text-xs text-muted-foreground mt-0.5">Upload and organize your resumes tailored to each job application.</p>
         </div>
         <label>
           <input type="file" class="sr-only" accept=".pdf,.doc,.docx" :disabled="uploading" @change="handleFileChange" />
@@ -212,7 +212,7 @@ function formatDate(iso: string | null) {
     <div class="rounded-xl border bg-card p-6 space-y-5">
       <div>
         <p class="text-sm font-semibold">Skills</p>
-        <p class="text-xs text-muted-foreground mt-0.5">Used to match against job requirements for ATS scoring</p>
+        <p class="text-xs text-muted-foreground mt-0.5">Auto-extracted from the resumes you uploaded. Know where you stand.</p>
       </div>
 
       <!-- Chip list -->

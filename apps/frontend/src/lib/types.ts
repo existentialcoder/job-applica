@@ -61,6 +61,7 @@ export interface BoardData {
   id: number
   name: string
   color?: string
+  number_of_jobs?: number
   description?: string
   stages: StageData[]
   is_default: boolean

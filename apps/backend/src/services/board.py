@@ -12,7 +12,13 @@ async def get_boards(db: AsyncSession, user: UserBase) -> list[BoardBase]:
     result = await db.execute(
         select(Board).where(Board.user_id == user.id).order_by(Board.is_default.desc(), Board.created_at)
     )
-    return [BoardBase.model_validate(b) for b in result.scalars().all()]
+    boards = [BoardBase.model_validate(b) for b in result.scalars().all()]
+    for board in boards:
+        job_count_result = await db.execute(
+            select(func.count(Job.id)).where(Job.board_id == board.id)
+        )
+        board.number_of_jobs = job_count_result.scalar()
+    return boards
 
 
 async def get_board(db: AsyncSession, user: UserBase, board_id: int) -> BoardBase | None:
