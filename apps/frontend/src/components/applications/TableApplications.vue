@@ -5,11 +5,14 @@ import { DataTable, type ColumnDef } from '@/components/ui/data-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import DataTableHeader from '@/components/ui/data-table/DataTableHeader.vue';
 import type { Column } from '@tanstack/vue-table';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+// DropdownMenu imports kept for the actions column
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import StatusDropdownCell from './StatusDropdownCell.vue';
 
 const props = defineProps<{
   jobs: JobData[]
@@ -59,6 +62,7 @@ interface RowData {
   id: number
   title: string
   company: string
+  company_logo?: string
   location: string
   status: string
   platform: string
@@ -116,7 +120,16 @@ const columns: ColumnDef<RowData>[] = [
   {
     accessorKey: 'company',
     header: 'Company',
-    cell: ({ row }) => h('span', { class: 'truncate max-w-[150px] block' }, row.original.company || '—'),
+    cell: ({ row }) => row.original.company
+      ? h('div', { class: 'flex items-center gap-1.5 max-w-[150px]' }, [
+          h('img', {
+            src: row.original.company_logo || `https://icons.duckduckgo.com/ip3/${row.original.company.toLowerCase().replace(/\s+/g, '')}.com.ico`,
+            class: 'w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted',
+            onError: (e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; },
+          }),
+          h('span', { class: 'truncate text-sm' }, row.original.company),
+        ])
+      : h('span', { class: 'text-muted-foreground text-sm' }, '—'),
     enableSorting: false,
   },
   {
@@ -136,9 +149,12 @@ const columns: ColumnDef<RowData>[] = [
   {
     accessorKey: 'status',
     header: 'Status',
-    cell: ({ row }) => h(Badge, {
-      variant: (statusVariants[row.original.status] as any) || 'outline',
-    }, () => row.original.status),
+    cell: ({ row }) => h(StatusDropdownCell, {
+      jobId: row.original.id,
+      status: row.original.status,
+      statusOptions: props.statusOptions ?? Object.keys(statusVariants),
+      onChange: (jobId: number, status: string) => emit('status-change', jobId, status),
+    }),
     enableSorting: false,
   },
   {
@@ -176,6 +192,7 @@ function transformRows(jobs: JobData[]): RowData[] {
     id: job.id,
     title: job.title,
     company: job.company?.name || '',
+    company_logo: job.company?.logo_url || undefined,
     location: [job.location?.city, job.location?.state].filter(Boolean).join(', '),
     status: job.status,
     platform: job.source_platform || '',
@@ -199,7 +216,7 @@ function transformRows(jobs: JobData[]): RowData[] {
         <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
         </svg>
-        New Application
+        New
       </button>
 
       <!-- Expanded inline form -->
@@ -219,12 +236,16 @@ function transformRows(jobs: JobData[]): RowData[] {
           @keyup.enter="submitAdd"
           @keyup.escape="cancelAdd"
         />
-        <select
-          v-model="addStatus"
-          class="w-36 rounded border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          <option v-for="s in (statusOptions ?? ['Saved'])" :key="s" :value="s">{{ s }}</option>
-        </select>
+        <Select v-model="addStatus">
+          <SelectTrigger class="h-8 w-28 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem v-for="s in (statusOptions ?? ['Saved'])" :key="s" :value="s">{{ s }}</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <button
           class="px-3 py-1.5 text-xs rounded bg-primary text-primary-foreground font-medium disabled:opacity-50 transition-colors"
           :disabled="!addTitle.trim()"

@@ -280,7 +280,6 @@ function handleSave() {
         <div v-else class="flex flex-col gap-2 p-3 rounded-md border border-border bg-muted/20">
           <div class="flex items-center gap-2">
             <div :class="['w-3 h-3 rounded-full flex-shrink-0', getNextColor()]" />
-            <span class="text-xs text-muted-foreground">Color auto-assigned</span>
           </div>
           <input
             ref="addInputRef"

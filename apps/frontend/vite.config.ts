@@ -32,6 +32,15 @@ export default defineConfig(({ mode }) => {
         '@': rootDir,
       }
     },
+    server: {
+      host: true,
+      proxy: {
+        '/uploads': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
+      },
+    },
     build: {
       minify: production,
       sourcemap: production,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { toast } from '@/lib/toast';
 import type { BoardData } from '@/lib/types';
 import dataservice from '@/lib/dataservice';
 import { Button } from '@/components/ui/button';
@@ -58,18 +59,26 @@ async function loadBoards() {
 async function createBoard() {
   if (!newBoardName.value.trim()) return;
   isSaving.value = true;
-  const board = await dataservice.createBoard({
-    name: newBoardName.value.trim(),
-    color: newBoardColor.value,
-    description: newBoardDesc.value.trim() || undefined,
-  });
-  isSaving.value = false;
-  if (board) {
-    isCreateOpen.value = false;
-    newBoardName.value = '';
-    newBoardDesc.value = '';
-    newBoardColor.value = 'bg-blue-500';
-    boards.value.push(board);
+  try {
+    const board = await dataservice.createBoard({
+      name: newBoardName.value.trim(),
+      color: newBoardColor.value,
+      description: newBoardDesc.value.trim() || undefined,
+    });
+    if (board) {
+      isCreateOpen.value = false;
+      newBoardName.value = '';
+      newBoardDesc.value = '';
+      newBoardColor.value = 'bg-blue-500';
+      boards.value.push(board);
+      toast.success('Board created');
+    } else {
+      toast.error('Failed to create board');
+    }
+  } catch {
+    toast.error('Failed to create board');
+  } finally {
+    isSaving.value = false;
   }
 }
 
@@ -89,24 +98,39 @@ function openEdit(board: BoardData, e: Event) {
 async function saveEdit() {
   if (!editingBoard.value || !editName.value.trim()) return;
   isSaving.value = true;
-  const updated = await dataservice.updateBoard(editingBoard.value.id, {
-    name: editName.value.trim(),
-    color: editColor.value,
-    description: editDesc.value.trim() || undefined,
-  });
-  isSaving.value = false;
-  if (updated) {
-    const idx = boards.value.findIndex(b => b.id === updated.id);
-    if (idx !== -1) boards.value[idx] = updated;
-    isEditOpen.value = false;
+  try {
+    const updated = await dataservice.updateBoard(editingBoard.value.id, {
+      name: editName.value.trim(),
+      color: editColor.value,
+      description: editDesc.value.trim() || undefined,
+    });
+    if (updated) {
+      const idx = boards.value.findIndex(b => b.id === updated.id);
+      if (idx !== -1) boards.value[idx] = updated;
+      isEditOpen.value = false;
+      toast.success('Board updated');
+    } else {
+      toast.error('Failed to update board');
+    }
+  } catch {
+    toast.error('Failed to update board');
+  } finally {
+    isSaving.value = false;
   }
 }
 
 async function makeDefault(board: BoardData, e: Event) {
   e.stopPropagation();
-  const updated = await dataservice.setDefaultBoard(board.id);
-  if (updated) {
-    boards.value = boards.value.map(b => ({ ...b, is_default: b.id === board.id }));
+  try {
+    const updated = await dataservice.setDefaultBoard(board.id);
+    if (updated) {
+      boards.value = boards.value.map(b => ({ ...b, is_default: b.id === board.id }));
+      toast.success(`"${board.name}" set as default`);
+    } else {
+      toast.error('Failed to set default board');
+    }
+  } catch {
+    toast.error('Failed to set default board');
   }
 }
 
@@ -119,12 +143,21 @@ function openDelete(board: BoardData, e: Event) {
 async function confirmDelete() {
   if (!deletingBoard.value) return;
   isDeleting.value = true;
-  const ok = await dataservice.deleteBoard(deletingBoard.value.id);
-  isDeleting.value = false;
-  if (ok) {
-    boards.value = boards.value.filter(b => b.id !== deletingBoard.value!.id);
-    isDeleteOpen.value = false;
-    deletingBoard.value = null;
+  const name = deletingBoard.value.name;
+  try {
+    const ok = await dataservice.deleteBoard(deletingBoard.value.id);
+    if (ok) {
+      boards.value = boards.value.filter(b => b.id !== deletingBoard.value!.id);
+      isDeleteOpen.value = false;
+      deletingBoard.value = null;
+      toast.success(`"${name}" deleted`);
+    } else {
+      toast.error('Failed to delete board');
+    }
+  } catch {
+    toast.error('Failed to delete board');
+  } finally {
+    isDeleting.value = false;
   }
 }
 
@@ -180,16 +213,14 @@ onUnmounted(() => {
       <div
         v-for="board in boards"
         :key="board.id"
-        class="group relative flex flex-col rounded-xl border border-border bg-card hover:shadow-md hover:border-primary/30 transition-all overflow-hidden cursor-pointer"
+        class="group relative flex flex-col rounded-xl border border-border bg-card hover:shadow-md hover:border-primary/30 transition-all cursor-pointer"
         @click="openBoard(board)"
       >
-        <!-- Color bar -->
-        <div :class="['h-1.5 w-full', board.color || 'bg-blue-500']" />
-
         <div class="p-4 flex flex-col gap-1.5 flex-1">
           <!-- Name row -->
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-2 min-w-0">
+              <span :class="['w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5', board.color || 'bg-blue-500']" />
               <h3 class="font-semibold text-base leading-tight truncate">{{ board.name }}</h3>
               <span v-if="board.is_default"
                 class="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded flex-shrink-0">
@@ -240,6 +271,7 @@ onUnmounted(() => {
         <!-- Footer: stage count + arrow -->
         <div class="px-4 py-2 border-t border-border/50 bg-muted/20 flex items-center justify-between">
           <span class="text-xs text-muted-foreground">{{ board.stages.length }} stages</span>
+          <span class="text-xs text-muted-foreground">{{ board.number_of_jobs }} job application{{ board.number_of_jobs !== 1 ? 's' : '' }}</span>
           <Icon name="ArrowRight" class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
         </div>
       </div>

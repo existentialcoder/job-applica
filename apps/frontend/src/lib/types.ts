@@ -1,3 +1,13 @@
+export interface ATSReport {
+  score: number
+  matched_skills: string[]
+  matched_experience?: string[]
+  missing_skills: string[]
+  experience_gaps?: string[]
+  suggestions: string[]
+  resume_id?: number | null
+}
+
 export interface ConnectedAccount {
   provider: 'google' | 'linkedin'
   provider_email: string | null
@@ -13,8 +23,10 @@ export interface ConnectedAccount {
 export interface ResumeData {
   id: number
   original_name: string
+  file_url: string
   file_size: number | null
   url: string
+  is_default: boolean
   created_at: string
 }
 
@@ -49,6 +61,7 @@ export interface BoardData {
   id: number
   name: string
   color?: string
+  number_of_jobs?: number
   description?: string
   stages: StageData[]
   is_default: boolean
@@ -74,6 +87,9 @@ export interface JobData {
   source_platform?: string
   applied_date?: string
   notes?: string
+  ats_score?: number | null
+  ats_resume_id?: number | null
+  ats_report?: ATSReport | null
   created_at?: string
   updated_at?: string
 }

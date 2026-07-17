@@ -101,13 +101,9 @@ def upgrade() -> None:
         op.create_index('ix_locations_state', 'locations', ['state'])
         op.create_index('ix_locations_country', 'locations', ['country'])
 
-    existing_types = _existing_types(conn)
-    if 'jobstatus' not in existing_types:
-        op.execute("CREATE TYPE jobstatus AS ENUM ('Open', 'Closed', 'Pending')")
-    if 'jobposition' not in existing_types:
-        op.execute("CREATE TYPE jobposition AS ENUM ('Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager')")
-    if 'jobworkmodel' not in existing_types:
-        op.execute("CREATE TYPE jobworkmodel AS ENUM ('On-site', 'Remote', 'Hybrid')")
+    op.execute("DO $$ BEGIN CREATE TYPE jobstatus AS ENUM ('Open', 'Closed', 'Pending'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE jobposition AS ENUM ('Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE jobworkmodel AS ENUM ('On-site', 'Remote', 'Hybrid'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;")
 
     if 'jobs' not in tables:
         op.create_table(

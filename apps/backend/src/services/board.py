@@ -1,5 +1,6 @@
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 
 from ..models.board import Board, DEFAULT_STAGES
 from ..models.job import Job
@@ -11,7 +12,13 @@ async def get_boards(db: AsyncSession, user: UserBase) -> list[BoardBase]:
     result = await db.execute(
         select(Board).where(Board.user_id == user.id).order_by(Board.is_default.desc(), Board.created_at)
     )
-    return [BoardBase.model_validate(b) for b in result.scalars().all()]
+    boards = [BoardBase.model_validate(b) for b in result.scalars().all()]
+    for board in boards:
+        job_count_result = await db.execute(
+            select(func.count(Job.id)).where(Job.board_id == board.id)
+        )
+        board.number_of_jobs = job_count_result.scalar()
+    return boards
 
 
 async def get_board(db: AsyncSession, user: UserBase, board_id: int) -> BoardBase | None:
@@ -27,6 +34,11 @@ async def get_default_board_id(db: AsyncSession, user_id: int) -> int | None:
 
 
 async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) -> BoardBase:
+    existing_count_result = await db.execute(
+        select(func.count(Board.id)).where(Board.user_id == user.id)
+    )
+    is_first = existing_count_result.scalar() == 0
+
     stages = [s.model_dump() for s in board_in.stages] if board_in.stages else DEFAULT_STAGES
     board = Board(
         name=board_in.name,
@@ -34,7 +46,7 @@ async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) 
         description=board_in.description,
         stages=stages,
         user_id=user.id,
-        is_default=False,
+        is_default=is_first,
     )
     db.add(board)
     await db.commit()

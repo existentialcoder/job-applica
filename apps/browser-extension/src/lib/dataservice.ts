@@ -32,10 +32,59 @@ export interface BoardData {
   is_default: boolean;
 }
 
+export interface CompanyResult {
+  name: string;
+  website: string;
+  email: string;
+  size: number | null;
+  industry: string;
+  description: string;
+  logo_url: string;
+}
+
+export interface ExtractedLocation {
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+}
+
+export interface JobExtractResult {
+  is_job_page: boolean;
+  title?: string | null;
+  company?: CompanyResult;
+  location?: ExtractedLocation | null;
+  description?: string | null;
+  salary_range?: string | null;
+  work_model?: string | null;
+  position?: string | null;
+  years_of_experience?: { min?: number; max?: number } | null;
+  required_skills?: string[];
+}
+
+export interface ATSReport {
+  score: number;
+  matched_skills: string[];
+  matched_experience?: string[];
+  missing_skills: string[];
+  experience_gaps?: string[];
+  suggestions: string[];
+  resume_id?: number | null;
+}
+
+interface PageCache {
+  extraction: JobExtractResult;
+  atsReport: ATSReport | null;
+  noResume: boolean;
+  cachedAt: number;
+}
+
+const PAGE_CACHE_KEY = '_page_cache';
+const PAGE_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
+
 export interface JobData {
   title: string;
-  company_name?: string;
-  location?: string;
+  company?: CompanyResult;
+  location?: ExtractedLocation;
   status: string;
   category?: string;
   salary_range?: string;
@@ -47,6 +96,9 @@ export interface JobData {
   applied_date?: string;
   notes?: string;
   board_id?: number;
+  ats_score?: number | null;
+  ats_report?: Record<string, any> | null;
+  ats_resume_id?: number | null;
 }
 
 export interface AuthTokens {
@@ -177,6 +229,14 @@ export default {
 
   // ── API calls ─────────────────────────────────────────────────────────────
 
+  async checkJobExistsByUrl(sourceUrl: string): Promise<number | null> {
+    const params = new URLSearchParams({ source_url: sourceUrl, per_page: '1' });
+    const response = await authedFetch(`${config.apiBase}/jobs?${params}`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data?.results?.[0]?.id ?? null;
+  },
+
   async checkJobExists(title: string, company?: string): Promise<number | null> {
     const params = new URLSearchParams({ title });
     if (company) params.set('company', company);
@@ -186,6 +246,41 @@ export default {
     return data?.results?.[0]?.id ?? null;
   },
 
+  async getCachedPage(url: string): Promise<{ extraction: JobExtractResult; atsReport: ATSReport | null; noResume: boolean } | null> {
+    try {
+      const result = await ext.storage.local.get([PAGE_CACHE_KEY]);
+      const all: Record<string, PageCache> = result[PAGE_CACHE_KEY] ?? {};
+      const entry = all[url];
+      if (!entry) return null;
+      if (Date.now() - entry.cachedAt > PAGE_CACHE_TTL) {
+        const { [url]: _, ...rest } = all;
+        await ext.storage.local.set({ [PAGE_CACHE_KEY]: rest });
+        return null;
+      }
+      return { extraction: entry.extraction, atsReport: entry.atsReport, noResume: entry.noResume };
+    } catch {
+      return null;
+    }
+  },
+
+  async setCachedPage(url: string, data: { extraction: JobExtractResult; atsReport: ATSReport | null; noResume: boolean }): Promise<void> {
+    try {
+      const result = await ext.storage.local.get([PAGE_CACHE_KEY]);
+      const all: Record<string, PageCache> = result[PAGE_CACHE_KEY] ?? {};
+      all[url] = { ...data, cachedAt: Date.now() };
+      await ext.storage.local.set({ [PAGE_CACHE_KEY]: all });
+    } catch { /* non-critical */ }
+  },
+
+  async clearCachedPage(url: string): Promise<void> {
+    try {
+      const result = await ext.storage.local.get([PAGE_CACHE_KEY]);
+      const all: Record<string, PageCache> = result[PAGE_CACHE_KEY] ?? {};
+      const { [url]: _, ...rest } = all;
+      await ext.storage.local.set({ [PAGE_CACHE_KEY]: rest });
+    } catch { /* non-critical */ }
+  },
+
   // Pull the web app's localStorage token into extension storage.
   // Called on popup open when no token is stored in the extension.
   async syncFromWebApp(): Promise<boolean> {
@@ -193,7 +288,9 @@ export default {
       
       const tabs = await ext.tabs.query({ url: `${config.appUrl}/*` });
       for (const tab of tabs || []) {
-        if (!tab.id) continue;
+        if (!tab.id) {
+          continue;
+        }
         const [result] = await ext.scripting.executeScript({
           target: { tabId: tab.id },
           func: () => ({
@@ -204,12 +301,41 @@ export default {
         const tokens = result?.result as { access_token: string | null; refresh_token: string | null } | undefined;
         if (tokens?.access_token) {
           await ext.storage.local.set({ access_token: tokens.access_token });
-          if (tokens.refresh_token) await ext.storage.local.set({ refresh_token: tokens.refresh_token });
+          if (tokens.refresh_token) {
+            await ext.storage.local.set({ refresh_token: tokens.refresh_token });
+          }
           return true;
         }
       }
     } catch { }
     return false;
+  },
+
+  async quickAtsScore(jobDescription: string, requiredSkills: string[] = []): Promise<ATSReport | 'no_resume' | null> {
+    try {
+      const response = await authedFetch(`${config.apiBase}/ats/quick-score`, {
+        method: 'POST',
+        body: JSON.stringify({ job_description: jobDescription, required_skills: requiredSkills }),
+      });
+      if (response.status === 422) return 'no_resume';
+      if (!response.ok) return null;
+      return response.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async extractJobFromPage(pageText: string, url: string): Promise<JobExtractResult | null> {
+    try {
+      const response = await authedFetch(`${config.apiBase}/jobs/extract-from-page`, {
+        method: 'POST',
+        body: JSON.stringify({ page_text: pageText, url }),
+      });
+      if (!response.ok) return null;
+      return response.json();
+    } catch {
+      return null;
+    }
   },
 
   async createJob(jobData: JobData): Promise<number | null> {
@@ -235,10 +361,23 @@ export default {
 
   // ── User settings ─────────────────────────────────────────────────────────
 
+  _extractUserIdFromToken(token: string): number | null {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload?.sub ?? null;
+    } catch {
+      return null;
+    }
+  },
+
   async getSettings(): Promise<Record<string, any>> {
     const token = await storage.get('access_token');
     if (!token) return {};
-    const response = await authedFetch(`${config.apiBase}/auth/settings`);
+    const userId = this._extractUserIdFromToken(token);
+    if (!userId) {
+      return {}
+    };
+    const response = await authedFetch(`${config.apiBase}/users/${userId}/settings`);
     if (!response.ok) return {};
     const data = await response.json();
     return data.settings ?? {};
@@ -247,7 +386,11 @@ export default {
   async updateSettings(patch: Record<string, any>): Promise<void> {
     const token = await storage.get('access_token');
     if (!token) return;
-    await authedFetch(`${config.apiBase}/auth/settings`, {
+    const userId = this._extractUserIdFromToken(token);
+    if (!userId) {
+      return;
+    };
+    await authedFetch(`${config.apiBase}/users/${userId}/settings`, {
       method: 'PATCH',
       body: JSON.stringify({ settings: patch }),
     });

@@ -1,5 +1,5 @@
 from typing import Any, TYPE_CHECKING
-from sqlalchemy import String, Integer, ForeignKey, Table, Column, text
+from sqlalchemy import String, Text, Integer, ForeignKey, Table, Column, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from ..db.base_class import Base
@@ -19,13 +19,14 @@ user_skill_table = Table(
 class User(Base):
     __tablename__ = 'users'
 
-    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    user_name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True, index=True)
-    signup_key: Mapped[str] = mapped_column(String(255), nullable=False)
-    hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    first_name: Mapped[str] = mapped_column(Text, nullable=False)
+    last_name: Mapped[str] = mapped_column(Text, nullable=False)
+    user_name: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    email: Mapped[str | None] = mapped_column(Text, nullable=True, unique=True, index=True)
+    signup_key: Mapped[str] = mapped_column(Text, nullable=False)
+    hashed_password: Mapped[str | None] = mapped_column(Text, nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    plan: Mapped[str] = mapped_column(String(50), nullable=False, default='free')
     settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb")
     )

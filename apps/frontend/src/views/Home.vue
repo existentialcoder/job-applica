@@ -6,11 +6,18 @@ import type { DashboardStats, BoardData } from '@/lib/types';
 import DashboardWidget from '@/components/core/DashboardWidget.vue';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const stats   = ref<DashboardStats | null>(null);
 const boards  = ref<BoardData[]>([]);
 const boardId = ref<number | null>(null);
 const loading = ref(true);
+
+// shadcn Select works with strings; bridge to number | null
+const boardIdStr = computed({
+  get: () => boardId.value == null ? '__all__' : String(boardId.value),
+  set: (v: string) => { boardId.value = v === '__all__' ? null : Number(v); },
+});
 
 // ── Widget visibility ─────────────────────────────────────────────────────────
 const WIDGET_DEFS = [
@@ -147,7 +154,7 @@ function stagePillClass(tailwindColor: string): string {
             <Button variant="outline" class="h-9 gap-2 text-sm">
               <LayoutDashboard class="w-4 h-4" />
               Widgets
-              <span v-if="hiddenCount" class="ml-0.5 text-xs bg-indigo-500/20 text-indigo-400 rounded-full px-1.5 py-0.5 font-medium">
+              <span v-if="hiddenCount" class="ml-0.5 text-xs bg-primary/20 text-primary rounded-full px-1.5 py-0.5 font-medium">
                 {{ hiddenCount }} off
               </span>
             </Button>
@@ -159,11 +166,11 @@ function stagePillClass(tailwindColor: string): string {
                 v-for="w in WIDGET_DEFS"
                 :key="w.id"
                 @click="toggleWidget(w.id)"
-                class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted transition-colors text-left"
+                class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors text-left"
               >
                 <div
                   class="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors"
-                  :class="isVisible(w.id) ? 'bg-indigo-500 border-indigo-500' : 'bg-transparent border-border'"
+                  :class="isVisible(w.id) ? 'bg-primary border-primary' : 'bg-transparent border-border'"
                 >
                   <svg v-if="isVisible(w.id)" class="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
                     <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -179,13 +186,17 @@ function stagePillClass(tailwindColor: string): string {
         </Popover>
 
         <!-- Board filter -->
-        <select
-          v-model="boardId"
-          class="h-9 rounded-lg border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option :value="null">All boards</option>
-          <option v-for="b in boards" :key="b.id" :value="b.id">{{ b.name }}</option>
-        </select>
+        <Select v-model="boardIdStr">
+          <SelectTrigger class="h-9 w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="__all__">All boards</SelectItem>
+              <SelectItem v-for="b in boards" :key="b.id" :value="String(b.id)">{{ b.name }}</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
     </div>
 
@@ -218,7 +229,7 @@ function stagePillClass(tailwindColor: string): string {
           </div>
           <div class="space-y-1">
             <p class="text-xs text-muted-foreground font-medium uppercase tracking-wide">Interviews</p>
-            <p class="text-3xl font-bold text-indigo-500">{{ stats.overview.total_interviews }}</p>
+            <p class="text-3xl font-bold text-primary">{{ stats.overview.total_interviews }}</p>
             <p class="text-xs text-muted-foreground">{{ stats.overview.interview_rate }}% interview rate</p>
           </div>
           <div class="space-y-1">
@@ -250,7 +261,7 @@ function stagePillClass(tailwindColor: string): string {
         </div>
         <div class="grid grid-cols-3 gap-4">
           <div class="flex items-center gap-3">
-            <div class="w-2 h-8 rounded-full bg-indigo-500 flex-shrink-0" />
+            <div class="w-2 h-8 rounded-full bg-primary flex-shrink-0" />
             <div>
               <p class="text-xs text-muted-foreground">Response Rate</p>
               <p class="text-lg font-semibold">{{ stats.overview.response_rate }}%</p>
@@ -333,7 +344,7 @@ function stagePillClass(tailwindColor: string): string {
                   {{ fmtWeek(week.week) }}: {{ week.count }}
                 </div>
                 <div
-                  class="w-full rounded-t bg-indigo-500 hover:bg-indigo-400 transition-colors"
+                  class="w-full rounded-t bg-primary hover:bg-primary/80 transition-colors"
                   :style="{ height: `${(week.count / weeklyMax) * (expanded ? 240 : 128)}px`, minHeight: '4px' }"
                 />
                 <span class="text-[9px] text-muted-foreground rotate-45 origin-left translate-x-1 hidden sm:block">
@@ -413,7 +424,7 @@ function stagePillClass(tailwindColor: string): string {
                 </div>
                 <div class="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
-                    class="h-full rounded-full bg-indigo-500 transition-all duration-500"
+                    class="h-full rounded-full bg-primary transition-all duration-500"
                     :style="{ width: `${(p.count / platformMax) * 100}%` }"
                   />
                 </div>
@@ -447,7 +458,7 @@ function stagePillClass(tailwindColor: string): string {
                   </div>
                   <div class="mt-1 h-1 rounded-full bg-muted overflow-hidden">
                     <div
-                      class="h-full rounded-full bg-violet-500 transition-all duration-500"
+                      class="h-full rounded-full bg-primary/60 transition-all duration-500"
                       :style="{ width: `${(c.count / (stats.top_companies[0]?.count || 1)) * 100}%` }"
                     />
                   </div>

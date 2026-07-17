@@ -14,7 +14,7 @@ const hasBreadcrumbs = computed(() => appStore.breadcrumbs.length > 0);
 </script>
 
 <template>
-  <div class="flex items-center gap-1 text-sm">
+  <div class="flex items-center gap-1 text-md">
     <!-- Dynamic multi-level breadcrumbs (set by views) -->
     <template v-if="hasBreadcrumbs">
       <template v-for="(crumb, i) in appStore.breadcrumbs" :key="i">

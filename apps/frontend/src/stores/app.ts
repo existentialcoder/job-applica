@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+import dataservice from '@/lib/dataservice';
+import { BG_THEMES } from '@job-applica/ui/theme';
+export type { BgThemePreview, BgThemeEntry } from '@job-applica/ui/theme';
+export { BG_THEMES } from '@job-applica/ui/theme';
 
 export interface BreadcrumbItem {
   label: string
@@ -8,110 +10,145 @@ export interface BreadcrumbItem {
 }
 
 interface IAppStore {
-  themeMode: 'light' | 'dark'
-  sidebarExpand: boolean
+  themeMode: 'light' | 'dark' | 'system'
+  lightBgTheme: string
+  darkBgTheme: string
+  sidebarExpanded: boolean
   wrapperWidth: number | string
   wrapperLeftOffset: number | string
   navWidth: number | string
   breadcrumbs: BreadcrumbItem[]
+  themeInitialized: boolean
 }
 
-const LIGHT = 'light';
-const DARK = 'dark';
 const EXPAND = 280;
 const SHRINKED = 72;
 
-function authHeader(): Record<string, string> {
-  const token = localStorage.getItem('access_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 export const useAppStore = defineStore('app', {
   state: () => <IAppStore>({
-    themeMode: LIGHT,
-    sidebarExpand: true,
+    themeMode: 'system',
+    lightBgTheme: 'white',
+    darkBgTheme: 'noir',
+    sidebarExpanded: true,
     wrapperWidth: 0,
     wrapperLeftOffset: 0,
     navWidth: '100%',
     breadcrumbs: [],
+    themeInitialized: false,
   }),
   getters: {
     theme: (state) => state.themeMode,
-    isDark: (state) => state.themeMode === DARK,
-    sidebarExpanded: (state) => state.sidebarExpand,
+    isDark: (state) => {
+      if (state.themeMode === 'system') return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return state.themeMode === 'dark';
+    },
   },
   actions: {
-    toggleSidebar() {
-      this.sidebarExpand = !this.sidebarExpand;
-      if (window.innerWidth > 1024) {
-        this.initWrapper();
-      }
+    async toggleSidebar() {
+      this.sidebarExpanded = !this.sidebarExpanded;
+      if (window.innerWidth > 1024) this.initWrapper();
+      try {
+        await dataservice.updateSettings({ sidebar_expanded: this.sidebarExpanded });
+      } catch { /* ignore */ }
     },
     initWrapper() {
       if (window.innerWidth > 1024) {
-        if (this.sidebarExpand) {
-          this.wrapperWidth = EXPAND;
-          this.wrapperLeftOffset = EXPAND;
-        } else {
-          this.wrapperWidth = SHRINKED;
-          this.wrapperLeftOffset = SHRINKED;
-        }
-        this.navWidth = `calc(100% - ${this.wrapperWidth}px)`
+        this.wrapperWidth = this.sidebarExpanded ? EXPAND : SHRINKED;
+        this.wrapperLeftOffset = this.sidebarExpanded ? EXPAND : SHRINKED;
+        this.navWidth = `calc(100% - ${this.wrapperWidth}px)`;
       } else {
         this.navWidth = '100%';
-        this.sidebarExpand = false;
+        this.sidebarExpanded = false;
         this.wrapperWidth = '100%';
         this.wrapperLeftOffset = '100%';
       }
     },
     applyTheme() {
-      document.documentElement.classList.remove(LIGHT, DARK);
-      document.body.classList.remove(LIGHT, DARK);
-      document.documentElement.classList.add(this.themeMode);
-      document.body.classList.add(this.themeMode);
+      const dark = this.isDark;
+      document.documentElement.classList.toggle('dark', dark);
+      document.documentElement.classList.toggle('light', !dark);
+      document.body.classList.toggle('dark', dark);
+      document.body.classList.toggle('light', !dark);
+      this.applyBgTheme();
+    },
+    applyBgTheme() {
+      const dark = this.isDark;
+      const key = dark ? this.darkBgTheme : this.lightBgTheme;
+      const palette = dark ? BG_THEMES.dark : BG_THEMES.light;
+      const t = palette[key] ?? (dark ? BG_THEMES.dark.noir : BG_THEMES.light.white);
+
+      let el = document.getElementById('__ja_bg__') as HTMLStyleElement | null;
+      if (!el) {
+        el = document.createElement('style');
+        el.id = '__ja_bg__';
+        document.head.appendChild(el);
+      }
+      el.textContent = [
+        // Background surface tokens
+        `:root { --background: ${t.bg}; --card: ${t.card}; --popover: ${t.card}; }`,
+        `.dark { --background: ${t.bg}; --card: ${t.card}; --popover: ${t.card}; }`,
+        // Paired accent + foreground — accentFg ensures readable text on filled buttons
+        `:root { --primary: ${t.accent}; --primary-foreground: ${t.accentFg}; --ring: ${t.accent}; }`,
+        `.dark { --primary: ${t.accent}; --primary-foreground: ${t.accentFg}; --ring: ${t.accent}; }`,
+        // body carries the gradient; sidebar is position:fixed so needs its own rule
+        `body { background: ${t.body}; background-attachment: fixed; }`,
+        `.sidebar { background: ${t.body}; background-attachment: local; background-size: 300% 300%; }`,
+      ].join('\n');
+    },
+    setLightBgTheme(key: string) {
+      this.lightBgTheme = key;
+      if (!this.isDark) this.applyBgTheme();
+      try { dataservice.updateSettings({ light_bg_theme: key }); } catch { /* ignore */ }
+    },
+    setDarkBgTheme(key: string) {
+      this.darkBgTheme = key;
+      if (this.isDark) this.applyBgTheme();
+      try { dataservice.updateSettings({ dark_bg_theme: key }); } catch { /* ignore */ }
+    },
+    async setThemeMode(mode: 'light' | 'dark' | 'system') {
+      this.themeMode = mode;
+      this.applyTheme();
+      try {
+        await dataservice.updateSettings({ theme: mode });
+      } catch { /* ignore */ }
+    },
+    async toggleTheme() {
+      const next = this.isDark ? 'light' : 'dark';
+      await this.setThemeMode(next);
     },
     async initTheme() {
+      // Guard: set flag synchronously before any await so concurrent calls (e.g. from
+      // layouts/app.vue remounting on every navigation) skip setup and just re-apply.
+      if (this.themeInitialized) {
+        this.applyTheme();
+        this.initWrapper();
+        return;
+      }
+      this.themeInitialized = true;
+
       window.addEventListener('resize', this.initWrapper);
       this.initWrapper();
 
-      // Try to load from API first; fall back to localStorage
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        try {
-          const res = await fetch(`${API_BASE}/auth/settings`, {
-            headers: { ...authHeader() },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const theme = data.settings?.theme as 'light' | 'dark' | undefined;
-            if (theme === LIGHT || theme === DARK) {
-              this.themeMode = theme;
-              this.applyTheme();
-              return;
-            }
-          }
-        } catch { /* network unavailable — fall through to localStorage */ }
-      }
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (this.themeMode === 'system') this.applyTheme();
+      });
 
-      const cached = localStorage.getItem('themeMode');
-      if (cached === LIGHT || cached === DARK) {
-        this.themeMode = cached;
-      }
-      this.applyTheme();
-    },
-    async toggleTheme() {
-      this.themeMode = this.themeMode === LIGHT ? DARK : LIGHT;
-      this.applyTheme();
-
-      // Persist to API (best-effort) and localStorage as fallback
-      localStorage.setItem('themeMode', this.themeMode);
       try {
-        await fetch(`${API_BASE}/auth/settings`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', ...authHeader() },
-          body: JSON.stringify({ settings: { theme: this.themeMode } }),
-        });
-      } catch { /* ignore network errors */ }
+        const settings = await dataservice.getSettings();
+        const theme = settings.theme as 'light' | 'dark' | 'system' | undefined;
+        if (theme === 'light' || theme === 'dark' || theme === 'system') {
+          this.themeMode = theme;
+        }
+        const sidebar = settings.sidebar_expanded;
+        if (typeof sidebar === 'boolean') this.sidebarExpanded = sidebar;
+        const lightBg = settings.light_bg_theme as string | undefined;
+        if (lightBg && lightBg in BG_THEMES.light) this.lightBgTheme = lightBg;
+        const darkBg = settings.dark_bg_theme as string | undefined;
+        if (darkBg && darkBg in BG_THEMES.dark) this.darkBgTheme = darkBg;
+      } catch { /* offline — keep defaults */ }
+
+      this.applyTheme();
+      this.initWrapper();
     },
     setBreadcrumbs(items: BreadcrumbItem[]) {
       this.breadcrumbs = items;

@@ -17,6 +17,7 @@ class BoardBase(BaseSchema):
     description: Optional[str] = None
     stages: List[StageSchema] = []
     is_default: bool = False
+    number_of_jobs: int = 0
 
     model_config = {'from_attributes': True}
 

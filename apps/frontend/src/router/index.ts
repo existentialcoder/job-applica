@@ -76,6 +76,11 @@ const router = createRouter({
           redirect: '/settings?tab=profile',
         },
         {
+          path: '/resumes',
+          component: () => import('@/views/Resumes.vue'),
+          meta: { title: 'JobApplica | Resumes' } as RouteMeta & IRouteMeta,
+        },
+        {
           path: '/plugins',
           component: () => import('@/views/Plugins.vue'),
           meta: { title: 'JobApplica | Plugins', flag: 'plugins' } as RouteMeta & IRouteMeta,

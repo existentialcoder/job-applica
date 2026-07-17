@@ -1,5 +1,5 @@
 from typing import Any
-from sqlalchemy import String, ForeignKey, Boolean, text
+from sqlalchemy import String, Text, ForeignKey, Boolean, text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import JSONB
 from ..db.base_class import Base
@@ -19,9 +19,9 @@ DEFAULT_STAGES = [
 class Board(Base):
     __tablename__ = 'boards'
 
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
     color: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     stages: Mapped[list[Any]] = mapped_column(
         JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
     )

@@ -33,7 +33,7 @@ const onSubmit = form.handleSubmit(async (values) => {
   isLoading.value = false;
 
   if (result.ok) {
-    router.push('/applications');
+    router.push('/home');
   } else {
     loginError.value = result.error || 'Login failed. Please check your credentials.';
   }

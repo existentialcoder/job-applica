@@ -12,8 +12,12 @@ const DEFAULTS = {
 
 export async function loadConfig(): Promise<void> {
   const stored = await ext.storage.local.get(['custom_api_url', 'custom_app_url']);
-  if (stored.custom_api_url) config.apiBase = stored.custom_api_url as string;
-  if (stored.custom_app_url) config.appUrl = stored.custom_app_url as string;
+  if (stored.custom_api_url) {
+    config.apiBase = stored.custom_api_url as string;
+  }
+  if (stored.custom_app_url) {
+    config.appUrl = stored.custom_app_url as string;
+  }
 }
 
 export async function saveConfig(apiBase: string, appUrl: string): Promise<void> {

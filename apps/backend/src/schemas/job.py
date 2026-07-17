@@ -1,10 +1,10 @@
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import date
 
 from .base import BaseSchema
-from .company import CompanyBase
+from .company import CompanyBase, CompanyCreate
 from .skill import SkillBaseLean
 
 
@@ -50,13 +50,27 @@ class LocationBase(BaseModel):
 
     model_config = {'from_attributes': True}
 
+    @field_validator('*', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        return None if v == '' else v
+
+    @classmethod
+    def from_string(cls, s: str) -> 'LocationBase':
+        parts = [p.strip() or None for p in s.split(',')]
+        return cls(
+            city=parts[0] if len(parts) > 0 else None,
+            state=parts[1] if len(parts) > 1 else None,
+            country=parts[2] if len(parts) > 2 else None,
+        )
+
 
 class JobBase(BaseSchema):
     title: str
     company: Optional[CompanyBase] = None
     location: Optional[LocationBase] = None
     status: str = 'Saved'
-    position: Optional[JobPosition] = JobPosition.Intern
+    position: Optional[JobPosition] = None
     category: Optional[str] = None
     salary_range: Optional[str] = None
     work_model: Optional[str] = None
@@ -72,16 +86,32 @@ class JobBase(BaseSchema):
     applied_date: Optional[date] = None
     notes: Optional[str] = None
 
+    ats_score: Optional[float] = None
+    ats_resume_id: Optional[int] = None
+    ats_report: Optional[dict] = None
+
     model_config = {'from_attributes': True}
+
+
+def _coerce_location(v):
+    if isinstance(v, str) and v.strip():
+        return LocationBase.from_string(v)
+    return v
 
 
 class JobCreate(BaseModel):
     title: str
     company_id: Optional[int] = None
     company_name: Optional[str] = None
-    location: Optional[str] = None
+    company: Optional[CompanyCreate] = None
+    location: Optional[LocationBase] = None
+
+    @field_validator('location', mode='before')
+    @classmethod
+    def coerce_location(cls, v):
+        return _coerce_location(v)
     status: str = 'Saved'
-    position: Optional[JobPosition] = JobPosition.Intern
+    position: Optional[JobPosition] = None
     category: Optional[str] = None
     salary_range: Optional[str] = None
     work_model: Optional[str] = 'On-site'
@@ -97,12 +127,21 @@ class JobCreate(BaseModel):
     applied_date: Optional[date] = None
     notes: Optional[str] = None
 
+    ats_score: Optional[float] = None
+    ats_report: Optional[dict] = None
+    ats_resume_id: Optional[int] = None
+
 
 class JobUpdate(BaseModel):
     title: Optional[str] = None
     company_id: Optional[int] = None
     company_name: Optional[str] = None
-    location: Optional[str] = None
+    location: Optional[LocationBase] = None
+
+    @field_validator('location', mode='before')
+    @classmethod
+    def coerce_location(cls, v):
+        return _coerce_location(v)
     status: Optional[str] = None
     position: Optional[JobPosition] = None
     category: Optional[str] = None
@@ -121,6 +160,24 @@ class JobUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+class PageExtractRequest(BaseModel):
+    page_text: str
+    url: str
+
+
+class JobExtractResult(BaseModel):
+    is_job_page: bool
+    title: Optional[str] = None
+    company: Optional[CompanyCreate] = None
+    location: Optional[LocationBase] = None
+    description: Optional[str] = None
+    salary_range: Optional[str] = None
+    work_model: Optional[str] = None
+    position: Optional[str] = None
+    years_of_experience: Optional[dict] = None
+    required_skills: List[str] = Field(default_factory=list)
+
+
 class JobFilterParams(BaseModel):
     query: Optional[str] = Field(None, description='Search query string')
     title: Optional[str] = Field(None, description='Job title filter')
@@ -128,4 +185,5 @@ class JobFilterParams(BaseModel):
     location: Optional[str] = Field(None, description='Location filter')
     status: Optional[str] = Field(None, description='Application status filter')
     source_platform: Optional[SourcePlatform] = Field(None, description='Source platform filter')
+    source_url: Optional[str] = Field(None, description='Exact source URL match')
     board_id: Optional[int] = Field(None, description='Board ID filter')

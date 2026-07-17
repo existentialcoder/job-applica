@@ -1,12 +1,18 @@
-import type { JobData, JobCreatePayload, JobUpdatePayload, BoardData, DashboardStats, SkillData, ResumeData, ConnectedAccount } from './types';
+import type { JobData, JobCreatePayload, JobUpdatePayload, BoardData, DashboardStats, SkillData, ResumeData, ConnectedAccount, ATSReport } from './types';
 import { useAuthStore } from '@/stores/auth';
 import router from '@/router';
-import { toast } from 'vue-sonner';
+import { toast } from '@/lib/toast';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 function authHeaders(): Record<string, string> {
   return useAuthStore().getAuthHeaders();
+}
+
+function userId(): number {
+  const id = useAuthStore().user?.id;
+  if (!id) throw new Error('Not authenticated');
+  return id;
 }
 
 // Singleton promise — if multiple requests fail with 401 simultaneously,
@@ -223,7 +229,8 @@ export default {
 
   // ── Profile ────────────────────────────────────────────────────────────────
   async updateProfile(payload: { first_name?: string; last_name?: string; avatar_url?: string }) {
-    const response = await apiFetch(`${API_BASE}/auth/me`, {
+    const uid = userId();
+    const response = await apiFetch(`${API_BASE}/users/${uid}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(payload),
@@ -233,9 +240,10 @@ export default {
   },
 
   async uploadAvatar(file: File): Promise<{ avatar_url: string }> {
+    const uid = userId();
     const form = new FormData();
     form.append('file', file);
-    const response = await apiFetch(`${API_BASE}/auth/avatar`, {
+    const response = await apiFetch(`${API_BASE}/users/${uid}/avatar`, {
       method: 'POST',
       headers: { ...authHeaders() },
       body: form,
@@ -248,7 +256,8 @@ export default {
   },
 
   async changePassword(payload: { current_password: string; new_password: string }) {
-    const response = await apiFetch(`${API_BASE}/auth/change-password`, {
+    const uid = userId();
+    const response = await apiFetch(`${API_BASE}/users/${uid}/change-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(payload),
@@ -261,14 +270,16 @@ export default {
   },
 
   async getSettings(): Promise<Record<string, unknown>> {
-    const response = await apiFetch(`${API_BASE}/auth/settings`, { headers: { ...authHeaders() } });
+    const uid = userId();
+    const response = await apiFetch(`${API_BASE}/users/${uid}/settings`, { headers: { ...authHeaders() } });
     if (!response.ok) return {};
     const data = await response.json();
     return data.settings ?? {};
   },
 
   async updateSettings(settings: Record<string, unknown>) {
-    const response = await apiFetch(`${API_BASE}/auth/settings`, {
+    const uid = userId();
+    const response = await apiFetch(`${API_BASE}/users/${uid}/settings`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ settings }),
@@ -286,13 +297,15 @@ export default {
 
   // ── User skills ────────────────────────────────────────────────────────────
   async getUserSkills(): Promise<SkillData[]> {
-    const response = await apiFetch(`${API_BASE}/auth/skills`, { headers: { ...authHeaders() } });
+    const uid = userId();
+    const response = await apiFetch(`${API_BASE}/users/${uid}/skills`, { headers: { ...authHeaders() } });
     if (!response.ok) return [];
     return response.json();
   },
 
   async addUserSkill(skillId: number): Promise<SkillData[]> {
-    const response = await apiFetch(`${API_BASE}/auth/skills/${skillId}`, {
+    const uid = userId();
+    const response = await apiFetch(`${API_BASE}/users/${uid}/skills/${skillId}`, {
       method: 'POST',
       headers: { ...authHeaders() },
     });
@@ -301,7 +314,8 @@ export default {
   },
 
   async removeUserSkill(skillId: number): Promise<SkillData[]> {
-    const response = await apiFetch(`${API_BASE}/auth/skills/${skillId}`, {
+    const uid = userId();
+    const response = await apiFetch(`${API_BASE}/users/${uid}/skills/${skillId}`, {
       method: 'DELETE',
       headers: { ...authHeaders() },
     });
@@ -311,15 +325,17 @@ export default {
 
   // ── Resumes ────────────────────────────────────────────────────────────────
   async getResumes(): Promise<ResumeData[]> {
-    const response = await apiFetch(`${API_BASE}/auth/resumes`, { headers: { ...authHeaders() } });
+    const uid = userId();
+    const response = await apiFetch(`${API_BASE}/users/${uid}/resumes`, { headers: { ...authHeaders() } });
     if (!response.ok) return [];
     return response.json();
   },
 
   async uploadResume(file: File): Promise<ResumeData> {
+    const uid = userId();
     const form = new FormData();
     form.append('file', file);
-    const response = await apiFetch(`${API_BASE}/auth/resumes`, {
+    const response = await apiFetch(`${API_BASE}/users/${uid}/resumes`, {
       method: 'POST',
       headers: { ...authHeaders() },
       body: form,
@@ -331,8 +347,30 @@ export default {
     return response.json();
   },
 
+  async setDefaultResume(resumeId: number): Promise<void> {
+    const uid = userId();
+    await apiFetch(`${API_BASE}/users/${uid}/resumes/${resumeId}/default`, {
+      method: 'PATCH',
+      headers: { ...authHeaders() },
+    });
+  },
+
+  async calculateAtsScore(jobId: number, resumeId?: number | null): Promise<ATSReport> {
+    const response = await apiFetch(`${API_BASE}/jobs/${jobId}/ats-score`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ resume_id: resumeId ?? null }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to calculate ATS score');
+    }
+    return response.json();
+  },
+
   async deleteResume(resumeId: number): Promise<void> {
-    await apiFetch(`${API_BASE}/auth/resumes/${resumeId}`, {
+    const uid = userId();
+    await apiFetch(`${API_BASE}/users/${uid}/resumes/${resumeId}`, {
       method: 'DELETE',
       headers: { ...authHeaders() },
     });
@@ -361,5 +399,14 @@ export default {
       method: 'DELETE',
       headers: { ...authHeaders() },
     });
+  },
+
+  async getCompanies(search?: string): Promise<{ id: number; name: string; logo_url?: string }[]> {
+    const params = new URLSearchParams({ limit: '50' });
+    if (search) params.set('search', search);
+    const response = await apiFetch(`${API_BASE}/companies?${params}`, { headers: { ...authHeaders() } });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.items ?? data.results ?? [];
   },
 };

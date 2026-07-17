@@ -11,6 +11,8 @@ import {
   Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import CompanyCombobox from './CompanyCombobox.vue';
+import DatePickerInput from './DatePickerInput.vue';
 
 const props = defineProps<{
   open: boolean
@@ -88,6 +90,9 @@ watch(() => props.open, (open) => {
 
 function handleSave() {
   if (!title.value.trim()) return;
+  const autoDate = status.value === 'Applied' && !appliedDate.value
+    ? new Date().toISOString().slice(0, 10)
+    : appliedDate.value || undefined;
   const payload: JobCreatePayload = {
     title: title.value.trim(),
     company_name: companyName.value.trim() || undefined,
@@ -98,7 +103,7 @@ function handleSave() {
     salary_range: salaryRange.value.trim() || undefined,
     source_platform: sourcePlatform.value || undefined,
     source_url: sourceUrl.value.trim() || undefined,
-    applied_date: appliedDate.value || undefined,
+    applied_date: autoDate,
     description: description.value.trim() || undefined,
     notes: notes.value.trim() || undefined,
   };
@@ -125,11 +130,11 @@ function handleSave() {
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
             <Label for="modal-company">Company</Label>
-            <Input id="modal-company" v-model="companyName" placeholder="e.g. Acme Corp" />
+            <CompanyCombobox v-model="companyName" placeholder="e.g. Acme Corp" />
           </div>
           <div class="flex flex-col gap-1.5">
             <Label for="modal-location">Location</Label>
-            <Input id="modal-location" v-model="location" placeholder="e.g. New York, NY" />
+            <Input id="modal-location" v-model="location" placeholder="e.g. New York, NY, USA" />
           </div>
         </div>
 
@@ -206,8 +211,8 @@ function handleSave() {
             </Select>
           </div>
           <div class="flex flex-col gap-1.5">
-            <Label for="modal-date">Applied Date</Label>
-            <Input id="modal-date" v-model="appliedDate" type="date" />
+            <Label>Applied Date</Label>
+            <DatePickerInput v-model="appliedDate" placeholder="Pick a date" />
           </div>
         </div>
 
