@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Breadcrumb from '@/components/core/Breadcrumb.vue';
-import { LogOut, User, Bell, Sun, MoonStar, Menu, Github } from 'lucide-vue-next';
+import { LogOut, User, Bell, Sun, MoonStar, Monitor, Menu, Github } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
@@ -63,9 +63,16 @@ async function handleLogout() {
       <Button variant="outline" class="border-0 p-[6px] w-8 h-8">
         <Bell />
       </Button>
-      <Button variant="outline" class="border-0 p-[6px] ml-2 w-8 h-8" @click="store.toggleTheme()">
-        <Sun v-if="store.isDark" />
-        <MoonStar v-else />
+      <!-- Single cycling theme button: light → dark → system → light -->
+      <Button
+        variant="outline"
+        class="border-0 p-[6px] ml-2 w-8 h-8"
+        :title="store.themeMode === 'light' ? 'Switch to Dark' : store.themeMode === 'dark' ? 'Switch to System' : 'Switch to Light'"
+        @click="store.setThemeMode(store.themeMode === 'light' ? 'dark' : store.themeMode === 'dark' ? 'system' : 'light')"
+      >
+        <Sun v-if="store.themeMode === 'light'" class="w-4 h-4" />
+        <MoonStar v-else-if="store.themeMode === 'dark'" class="w-4 h-4" />
+        <Monitor v-else class="w-4 h-4" />
       </Button>
       <div class="border-x-[1px] border-gray-300 h-[24px] w-[1px] mx-2" />
 

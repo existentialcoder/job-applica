@@ -94,7 +94,7 @@ async def get_or_create_location(db: AsyncSession, location_data: dict) -> Locat
         q = q.where(Location.country.ilike(country))
 
     result = await db.execute(q)
-    loc = result.scalar_one_or_none()
+    loc = result.scalars().first()
     if not loc:
         loc = Location(city=city, state=state, country=country)
         db.add(loc)

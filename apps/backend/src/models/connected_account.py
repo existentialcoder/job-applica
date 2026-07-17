@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, Integer, ForeignKey, DateTime, Text, UniqueConstraint, Index
+from sqlalchemy import String, Text, Integer, ForeignKey, DateTime, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -13,10 +13,10 @@ class ConnectedAccount(Base):
         Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True
     )
     provider: Mapped[str] = mapped_column(String(50), nullable=False)  # 'google' | 'linkedin'
-    provider_user_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    provider_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    provider_user_id: Mapped[str] = mapped_column(Text, nullable=False)
+    provider_email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    display_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Encrypted at rest via src/core/crypto.py
     access_token: Mapped[str | None] = mapped_column(Text, nullable=True)

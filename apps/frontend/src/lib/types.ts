@@ -26,6 +26,7 @@ export interface ResumeData {
   file_url: string
   file_size: number | null
   url: string
+  is_default: boolean
   created_at: string
 }
 

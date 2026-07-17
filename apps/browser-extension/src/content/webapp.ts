@@ -40,6 +40,7 @@ if (token) {
   trySend({ type: 'SYNC_AUTH', access_token: token });
 }
 
+
 function onAuth(e: Event): void {
   if (suppressNextSync) {
     suppressNextSync = false;

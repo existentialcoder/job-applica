@@ -11,6 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 // DropdownMenu imports kept for the actions column
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import StatusDropdownCell from './StatusDropdownCell.vue';
 
 const props = defineProps<{
@@ -235,12 +236,16 @@ function transformRows(jobs: JobData[]): RowData[] {
           @keyup.enter="submitAdd"
           @keyup.escape="cancelAdd"
         />
-        <select
-          v-model="addStatus"
-          class="w-28 rounded border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          <option v-for="s in (statusOptions ?? ['Saved'])" :key="s" :value="s">{{ s }}</option>
-        </select>
+        <Select v-model="addStatus">
+          <SelectTrigger class="h-8 w-28 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem v-for="s in (statusOptions ?? ['Saved'])" :key="s" :value="s">{{ s }}</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <button
           class="px-3 py-1.5 text-xs rounded bg-primary text-primary-foreground font-medium disabled:opacity-50 transition-colors"
           :disabled="!addTitle.trim()"

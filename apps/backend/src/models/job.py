@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Enum, String, Integer, ForeignKey, JSON, Text, Date, Float
+from sqlalchemy import Enum, Integer, ForeignKey, JSON, Text, Date, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..db.base_class import Base
 from .company import Company
@@ -52,16 +52,16 @@ class SourcePlatform(str, enum.Enum):
 
 class Job(Base):
     __tablename__ = 'jobs'
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
 
-    status: Mapped[str] = mapped_column(String(100), nullable=False, default='Saved')
+    status: Mapped[str] = mapped_column(Text, nullable=False, default='Saved')
     position: Mapped[JobPosition] = mapped_column(
         Enum(JobPosition),
         default=JobPosition.INTERN,
         nullable=True
     )
-    category: Mapped[str] = mapped_column(String(100), nullable=True)
-    salary_range: Mapped[str] = mapped_column(String(100), nullable=True)
+    category: Mapped[str] = mapped_column(Text, nullable=True)
+    salary_range: Mapped[str] = mapped_column(Text, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=True)
 
     years_of_experience: Mapped[dict] = mapped_column(JSON, nullable=True)

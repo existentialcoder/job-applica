@@ -23,6 +23,12 @@ export const ALL_MENU_ITEMS: AppMenu[] = [
     flag: 'boards',
   },
   {
+    title: 'Resumes',
+    icon: 'FileText',
+    path: '/resumes',
+    description: 'Manage CVs and extracted skills',
+  },
+  {
     title: 'Plugins',
     icon: 'Workflow',
     path: '/plugins',

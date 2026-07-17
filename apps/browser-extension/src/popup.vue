@@ -9,6 +9,7 @@ import { Label } from '@job-applica/ui/components/ui/label';
 import { Badge } from '@job-applica/ui/components/ui/badge';
 import { NativeSelect } from '@job-applica/ui/components/ui/select';
 import { Textarea } from '@job-applica/ui/components/ui/textarea';
+import { THEME_ACCENTS } from '@job-applica/ui/theme';
 
 function formatLocation(loc: JobExtractResult['location']): string {
   if (!loc) return '';
@@ -21,33 +22,51 @@ function parseLocationString(loc: string): ExtractedLocation | undefined {
   return { city: city || null, state: state || null, country: country || null };
 }
 
-// ── Dark mode ────────────────────────────────────────────────────────────────
+// ── Theme ─────────────────────────────────────────────────────────────────────
 const isDark = ref(false);
 
-function applyDark(dark: boolean) {
+function applyTheme(dark: boolean, themeKey: string) {
   isDark.value = dark;
   document.documentElement.classList.toggle('dark', dark);
+  const t = THEME_ACCENTS[themeKey] ?? (dark ? THEME_ACCENTS.noir : THEME_ACCENTS.white);
+  document.documentElement.style.setProperty('--primary', t.accent);
+  document.documentElement.style.setProperty('--primary-foreground', t.accentFg);
+  document.documentElement.style.setProperty('--ring', t.accent);
+}
+
+async function getThemeKey(dark: boolean): Promise<string> {
+  try {
+    const settings = await dataservice.getSettings();
+    return dark
+      ? ((settings.dark_bg_theme as string) || 'noir')
+      : ((settings.light_bg_theme as string) || 'white');
+  } catch {
+    return dark ? 'noir' : 'white';
+  }
 }
 
 async function initDarkMode() {
+  // Apply cached dark_mode immediately so the popup isn't unstyled while loading
   const cached = await ext.storage.local.get(['dark_mode']);
-  if (typeof cached.dark_mode === 'boolean') {
-     applyDark(cached.dark_mode);
-  }
+  const darkCached = typeof cached.dark_mode === 'boolean' ? cached.dark_mode : false;
+  applyTheme(darkCached, darkCached ? 'noir' : 'white');
 
   try {
     const settings = await dataservice.getSettings();
-    const dark = settings.theme === 'dark';
-    applyDark(dark);
-    ext.storage.local.set({ dark_mode: dark });
-  } catch { /* offline — keep cached value */ }
+    const themeVal = settings.theme as string | undefined;
+    const isDarkMode = themeVal === 'dark' || (themeVal === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const lightKey = (settings.light_bg_theme as string) || 'white';
+    const darkKey  = (settings.dark_bg_theme  as string) || 'noir';
+    applyTheme(isDarkMode, isDarkMode ? darkKey : lightKey);
+    ext.storage.local.set({ dark_mode: isDarkMode });
+  } catch { /* offline — keep cached dark_mode */ }
 }
 
 async function toggleDark() {
   const next = !isDark.value;
-  applyDark(next);
+  const key = await getThemeKey(next);
+  applyTheme(next, key);
   ext.storage.local.set({ dark_mode: next });
-  // Persist to API so web app picks it up on next load
   await dataservice.updateSettings({ theme: next ? 'dark' : 'light' });
 }
 
@@ -343,14 +362,11 @@ async function _setupData() {
   }
 }
 
-// Listen for storage changes written by background.js (OAuth + theme sync)
+// Listen for storage changes written by background.js (OAuth)
 function onStorageChange(changes: Record<string, { newValue?: any; oldValue?: any }>) {
   if (changes.access_token?.newValue) {
     isOAuthLoading.value = null;
     setupData();
-  }
-  if ('dark_mode' in changes) {
-    applyDark(changes.dark_mode.newValue === true);
   }
 }
 
@@ -673,8 +689,8 @@ const platformBadgeVariant: Record<string, any> = {
     <!-- First-run setup view -->
     <div v-else-if="view === 'setup'" class="p-4 flex flex-col gap-4">
       <div class="flex flex-col items-center gap-2 text-center pt-2">
-        <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-          <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
           </svg>

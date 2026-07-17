@@ -347,6 +347,14 @@ export default {
     return response.json();
   },
 
+  async setDefaultResume(resumeId: number): Promise<void> {
+    const uid = userId();
+    await apiFetch(`${API_BASE}/users/${uid}/resumes/${resumeId}/default`, {
+      method: 'PATCH',
+      headers: { ...authHeaders() },
+    });
+  },
+
   async calculateAtsScore(jobId: number, resumeId?: number | null): Promise<ATSReport> {
     const response = await apiFetch(`${API_BASE}/jobs/${jobId}/ats-score`, {
       method: 'POST',

@@ -84,7 +84,7 @@ const toggleSidebar = () => {
                   <Tooltip :delay-duration="0">
                     <TooltipTrigger class="w-full">
                       <Toggle
-                        class="w-full overflow-x-hidden justify-start duration-150"
+                        class="w-full overflow-x-hidden justify-start duration-150 hover:bg-primary/10 hover:text-primary data-[state=on]:bg-primary/15 data-[state=on]:text-primary"
                         :pressed="route.path.startsWith(menu.path)"
                         @click="handleNavigate(menu.path)"
                       >
@@ -118,7 +118,7 @@ const toggleSidebar = () => {
           <Tooltip :delay-duration="0">
             <TooltipTrigger class="w-full">
               <Toggle
-                class="w-full overflow-x-hidden justify-start duration-150"
+                class="w-full overflow-x-hidden justify-start duration-150 hover:bg-primary/10 hover:text-primary data-[state=on]:bg-primary/15 data-[state=on]:text-primary"
                 :pressed="route.path.startsWith(SETTINGS_MENU_ITEM.path)"
                 @click="handleNavigate(SETTINGS_MENU_ITEM.path)"
               >
