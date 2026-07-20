@@ -56,7 +56,7 @@ async function handleFileChange(e: Event) {
   try {
     const resume = await dataservice.uploadResume(file);
     resumes.value.unshift(resume);
-    toast.success('CV uploaded — skills are being extracted in the background');
+    toast.success('CV uploaded successfully');
   } catch (err: any) {
     toast.error(err.message ?? 'Upload failed');
   } finally {

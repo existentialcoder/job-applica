@@ -696,7 +696,7 @@ const platformBadgeVariant: Record<string, any> = {
           </svg>
         </div>
         <p class="text-sm font-semibold">Create your first job board</p>
-        <p class="text-xs text-muted-foreground">Give it a name — you can always add more boards from the dashboard.</p>
+        <p class="text-xs text-muted-foreground">Create your first board. You can edit the name on the dashboard later.</p>
       </div>
       <div class="flex flex-col gap-1.5">
         <Label for="board-name">Board name</Label>
@@ -896,7 +896,7 @@ const platformBadgeVariant: Record<string, any> = {
             <div class="flex flex-col gap-1">
               <span class="text-xs font-semibold">No CV uploaded</span>
               <a :href="`${config.appUrl}/settings?tab=resumes`" target="_blank"
-                class="text-xs text-primary hover:underline">Upload your CV →</a>
+                class="text-xs text-primary hover:underline">Upload your CV to link to this job and get a match score →</a>
             </div>
           </template>
           <!-- No description to score -->

@@ -1,0 +1,54 @@
+# Auto-loaded by `docker compose up` alongside docker-compose.yml.
+#
+# Frontend: NOT a vite dev server. `frontend-builder` runs `vite build --watch`,
+# which rebuilds apps/frontend/dist on every save — no dev server, no HMR
+# websocket. `frontend` (nginx) just serves whatever's currently in dist/ via
+# a shared volume. Refresh the browser after a save.
+#
+# Backend: uvicorn --reload does a full process restart on every .py change —
+# already a "hard reload," kept as-is from the base setup.
+#
+# To run the plain prod-style build instead: docker compose -f docker-compose.yml up
+
+services:
+  app:
+    volumes:
+      - ./apps/backend:/app
+    environment:
+      # inotify events from bind-mounted source frequently don't propagate across
+      # the Docker Desktop <-> WSL2 boundary — force watchfiles to poll instead.
+      WATCHFILES_FORCE_POLLING: "true"
+    command: sh -c "python scripts/db_init.py && uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend-builder:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile.dev
+    environment:
+      # same inotify-across-bind-mount issue as above, for rollup's chokidar watcher.
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "300"
+    volumes:
+      - ./apps/frontend:/repo/apps/frontend
+      - ./packages/ui:/repo/packages/ui
+      - root_node_modules:/repo/node_modules
+      - frontend_node_modules:/repo/apps/frontend/node_modules
+      - ui_node_modules:/repo/packages/ui/node_modules
+      - frontend_dist:/repo/apps/frontend/dist
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile.nginx
+    volumes:
+      - frontend_dist:/usr/share/nginx/html:ro
+    ports:
+      - "5173:80"
+    depends_on:
+      - frontend-builder
+
+volumes:
+  root_node_modules:
+  frontend_node_modules:
+  ui_node_modules:
+  frontend_dist:

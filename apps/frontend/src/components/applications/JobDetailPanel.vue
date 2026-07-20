@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { toast } from '@/lib/toast';
 import type { JobData, JobCreatePayload, ATSReport, ResumeData } from '@/lib/types';
+import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -224,7 +225,7 @@ const statusVariantMap: Record<string, string> = {
           <!-- Company logo avatar -->
           <div v-if="job?.company" class="flex-shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
             <img
-              :src="job.company.logo_url || `https://icons.duckduckgo.com/ip3/${job.company.name.toLowerCase().replace(/\s+/g, '')}.com.ico`"
+              :src="job.company.logo_url || DEFAULT_COMPANY_LOGO_URL"
               class="w-full h-full object-contain"
               @error="($event.target as HTMLImageElement).style.display = 'none'"
             />
@@ -426,7 +427,7 @@ const statusVariantMap: Record<string, string> = {
               </svg>
               <div class="text-xs text-amber-400 leading-relaxed">
                 <span class="font-medium">No job description found.</span>
-                Switch to the <button class="underline hover:no-underline" @click="activeTab = 'details'">Details tab</button> and paste the JD first — ATS scoring needs the job description to compare against your CV.
+                Switch to the <button class="underline hover:no-underline" @click="activeTab = 'details'">Details tab</button> and input the JD manually to enable ATS scoring.
               </div>
             </div>
 
@@ -436,7 +437,7 @@ const statusVariantMap: Record<string, string> = {
                 <Label class="text-sm">Link a CV</Label>
                 <button
                   class="text-xs text-primary hover:underline flex items-center gap-1"
-                  @click="router.push('/settings?tab=resumes')"
+                  @click="router.push('/resumes')"
                 >
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -452,9 +453,6 @@ const statusVariantMap: Record<string, string> = {
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   <p class="text-sm text-muted-foreground">No CVs uploaded yet</p>
-                  <Button size="sm" variant="outline" @click="router.push('/settings?tab=resumes')">
-                    Upload your CV
-                  </Button>
                 </div>
               </template>
               <Select v-else v-model="selectedResumeId">
@@ -477,16 +475,8 @@ const statusVariantMap: Record<string, string> = {
             </div>
 
             <!-- Calculate button / no-CV CTA -->
-            <template v-if="resumesLoaded && resumes.length === 0">
-              <Button class="w-full gap-2" variant="outline" @click="router.push('/settings?tab=resumes')">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                Upload your CV to score this job
-              </Button>
-            </template>
             <Button
-              v-else
+              v-if="!(resumesLoaded && resumes.length === 0)"
               class="w-full gap-2"
               :disabled="!canScore"
               @click="calculateScore"
@@ -498,7 +488,7 @@ const statusVariantMap: Record<string, string> = {
               <svg v-else class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              {{ isScoring ? 'Analysing…' : atsReport ? 'Recalculate ATS Score' : 'Calculate ATS Score' }}
+              {{ isScoring ? 'Analysing…' : atsReport ? 'Recalculate ATS Score' : 'Link & Calculate ATS Score' }}
             </Button>
 
             <!-- ── Score result ─────────────────────────────────────────────── -->

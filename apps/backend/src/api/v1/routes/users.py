@@ -18,7 +18,7 @@ from ....services import resume as resume_service
 from sqlalchemy import func
 from ....utils.file_uploader import FileUploader
 
-UPLOAD_BASE = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'uploads')
+UPLOAD_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'uploads'))
 ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}
 MAX_AVATAR_MB = 2
 
@@ -101,13 +101,13 @@ async def upload_avatar(
 
     ext = os.path.splitext(file.filename or 'avatar')[1] or '.jpg'
     stored_name = f'avatar{ext}'
-    r2_key = f'avatars/{user_id}/{stored_name}'
-    dest = os.path.join(UPLOAD_BASE, 'avatars', str(user_id), stored_name)
+    r2_key = f'{user_id}/avatars/{stored_name}'
+    dest = os.path.join(UPLOAD_BASE, 'users', str(user_id), 'avatars', stored_name)
 
     uploader = FileUploader(destination_path=dest, file=file, max_size_mb=MAX_AVATAR_MB)
     if settings.APP_ENV == 'local':
         await uploader.upload_local()
-        avatar_url = f'/uploads/avatars/{user_id}/{stored_name}'
+        avatar_url = f'/uploads/{user_id}/avatars/{stored_name}'
     else:
         await uploader.upload_to_cloudflare(bucket=settings.CLOUDFLARE_R2_BUCKET_NAME, key=r2_key)
         avatar_url = f'{settings.CLOUDFLARE_R2_PUBLIC_URL}/{r2_key}'

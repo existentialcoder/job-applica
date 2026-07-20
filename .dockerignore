@@ -1,0 +1,6 @@
+**/node_modules
+**/dist
+.git
+.claude
+apps/backend/api-backend-env
+apps/backend/uploads

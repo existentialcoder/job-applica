@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { Check, ChevronDown, Plus, X } from 'lucide-vue-next';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -8,6 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
 import dataservice from '@/lib/dataservice';
 
 const props = defineProps<{
@@ -25,6 +26,10 @@ const companies = ref<{ id: number; name: string; logo_url?: string }[]>([]);
 const addingNew = ref(false);
 const newName = ref('');
 const newNameRef = ref<HTMLInputElement | null>(null);
+
+onMounted(async () => {
+  companies.value = await dataservice.getCompanies();
+});
 
 watch(open, async (val) => {
   if (val) {
@@ -63,11 +68,9 @@ async function cancelAdd() {
   newName.value = '';
 }
 
-function logoSrc(name: string | null | undefined, logo?: string | null) {
-  if (logo) return logo;
-  if (!name) return '';
-  return `https://icons.duckduckgo.com/ip3/${name.toLowerCase().replace(/\s+/g, '')}.com.ico`;
-}
+const selectedLogo = computed(() => {
+  return companies.value.find(c => c.name === props.modelValue)?.logo_url || DEFAULT_COMPANY_LOGO_URL;
+});
 </script>
 
 <template>
@@ -85,7 +88,7 @@ function logoSrc(name: string | null | undefined, logo?: string | null) {
           <!-- Selected company logo -->
           <img
             v-if="modelValue"
-            :src="logoSrc(modelValue)"
+            :src="selectedLogo"
             class="h-5 w-5 rounded-full object-contain shrink-0 bg-muted"
             @error="($event.target as HTMLImageElement).style.display = 'none'"
           />
@@ -120,7 +123,7 @@ function logoSrc(name: string | null | undefined, logo?: string | null) {
         @click="select(c.name)"
       >
         <img
-          :src="logoSrc(c.name, c.logo_url)"
+          :src="c.logo_url || DEFAULT_COMPANY_LOGO_URL"
           class="h-5 w-5 rounded-full object-contain shrink-0 bg-muted"
           @error="($event.target as HTMLImageElement).style.display = 'none'"
         />

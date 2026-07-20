@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { h, ref, nextTick } from 'vue';
 import type { JobData } from '@/lib/types';
+import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
 import { DataTable, type ColumnDef } from '@/components/ui/data-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import DataTableHeader from '@/components/ui/data-table/DataTableHeader.vue';
@@ -123,7 +124,7 @@ const columns: ColumnDef<RowData>[] = [
     cell: ({ row }) => row.original.company
       ? h('div', { class: 'flex items-center gap-1.5 max-w-[150px]' }, [
           h('img', {
-            src: row.original.company_logo || `https://icons.duckduckgo.com/ip3/${row.original.company.toLowerCase().replace(/\s+/g, '')}.com.ico`,
+            src: row.original.company_logo || DEFAULT_COMPANY_LOGO_URL,
             class: 'w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted',
             onError: (e: Event) => { (e.target as HTMLImageElement).style.display = 'none'; },
           }),

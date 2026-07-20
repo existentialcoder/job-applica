@@ -305,17 +305,6 @@ jobs:
         if: steps.ext_changed.outputs.changed == 'true'
         run: cd apps/browser-extension/dist && zip -r ../extension-chrome.zip .
 
-      # Secrets required in GitHub repo → Settings → Secrets:
-      #   CHROME_EXTENSION_ID  — the extension's ID from the Chrome Web Store URL
-      #   CHROME_CLIENT_ID     — OAuth client ID from Google Cloud Console
-      #   CHROME_CLIENT_SECRET — OAuth client secret from Google Cloud Console
-      #   CHROME_REFRESH_TOKEN — run locally to regenerate:
-      #                          npx chrome-webstore-upload-cli@4 get-refresh-token \
-      #                            --client-id <id> --client-secret <secret>
-      #                          Paste the printed token into the secret.
-      #                          Also ensure the OAuth consent screen is set to
-      #                          "Production" (not "Testing") in Google Cloud Console
-      #                          so tokens don't expire after 7 days.
       - name: Publish → Chrome Web Store
         if: steps.ext_changed.outputs.changed == 'true'
         run: |
@@ -327,6 +316,7 @@ jobs:
           CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
 
       # ── Save Chrome artifact ────────────────────────────────────────────────
       - name: Upload Chrome artifact
@@ -368,14 +358,17 @@ jobs:
       - name: Build (Firefox)
         run: yarn workspace jobapplica--extension build:prod
 
+      # web-ext no longer accepts --id (see its own --help output) — the extension
+      # ID is instead read from browser_specific_settings.gecko.id in manifest.json,
+      # which "Prepare manifest (Firefox)" above already injects from
+      # FIREFOX_EXTENSION_ID.
       - name: Publish → Firefox AMO
         run: |
           npx web-ext sign \
             --source-dir apps/browser-extension/dist \
             --channel listed \
             --api-key ${{ secrets.FIREFOX_API_KEY }} \
-            --api-secret ${{ secrets.FIREFOX_API_SECRET }} \
-            --id ${{ secrets.FIREFOX_EXTENSION_ID }}
+            --api-secret ${{ secrets.FIREFOX_API_SECRET }}
 
       - name: Upload Firefox artifact
         uses: actions/upload-artifact@v4

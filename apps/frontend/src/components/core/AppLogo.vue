@@ -34,9 +34,8 @@ defineProps<{ collapsed?: boolean }>();
       "/>
     </svg>
 
-    <!-- Wordmark — only shown when sidebar is expanded -->
     <span v-if="!collapsed" class="text-[17px] font-semibold tracking-tight leading-none whitespace-nowrap">
-      <span class="text-foreground">Job</span><span class="text-primary">Applica</span>
+      <span class="text-foreground">Job</span><span class="text-[#5E42E7]">Applica</span>
     </span>
   </div>
 </template>

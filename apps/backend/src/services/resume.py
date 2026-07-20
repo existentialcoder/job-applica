@@ -13,7 +13,7 @@ from ..core.config import settings
 from ..utils.file_uploader import FileUploader
 from ..services.llm import extract_skills_from_resume
 
-UPLOAD_BASE = os.path.join(os.path.dirname(__file__), '..', '..', 'uploads')
+UPLOAD_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'uploads'))
 ALLOWED_TYPES = {
     'application/pdf',
     'application/msword',
@@ -47,7 +47,7 @@ async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Res
 
     ext = os.path.splitext(file.filename or 'resume')[1] or '.pdf'
     stored_name = f'{uuid.uuid4().hex}{ext}'
-    user_resume_dir = os.path.join(UPLOAD_BASE, str(user_id), 'resumes')
+    user_resume_dir = os.path.join(UPLOAD_BASE, 'users', str(user_id), 'resumes')
     dest = os.path.join(user_resume_dir, stored_name)
     r2_key = f'{user_id}/resumes/{stored_name}'
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { BoardData, JobData, JobCreatePayload } from '@/lib/types';
 import dataservice from '@/lib/dataservice';
@@ -22,6 +22,14 @@ const boardId = computed(() => Number(route.params.boardId));
 const board = ref<BoardData | null>(null);
 const isLoading = ref(true);
 const isNotFound = ref(false);
+
+const allBoards = ref<BoardData[]>([]);
+const isBoardSwitcherOpen = ref(false);
+
+function switchBoard(target: BoardData) {
+  isBoardSwitcherOpen.value = false;
+  if (target.id !== boardId.value) router.push(`/boards/${target.id}`);
+}
 
 const isSettingsOpen = ref(false);
 const isSaving = ref(false);
@@ -77,6 +85,8 @@ async function saveSettings(payload: { name: string; description: string; color:
   isSaving.value = false;
   if (updated) {
     board.value = updated;
+    const idx = allBoards.value.findIndex(b => b.id === updated.id);
+    if (idx !== -1) allBoards.value[idx] = updated;
     appStore.setBreadcrumbs([
       { label: 'Boards', path: '/boards' },
       { label: updated.name },
@@ -235,7 +245,11 @@ async function handleImport(event: Event) {
   }
 }
 
-onMounted(loadBoard);
+watch(boardId, loadBoard, { immediate: true });
+
+onMounted(async () => {
+  allBoards.value = await dataservice.getBoards();
+});
 
 onUnmounted(() => {
   appStore.setBreadcrumbs([]);
@@ -262,10 +276,45 @@ onUnmounted(() => {
     <template v-else-if="board">
       <!-- Board header -->
       <div class="flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3 min-w-0">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
           <div :class="['w-3 h-3 rounded-full flex-shrink-0', board.color || 'bg-blue-500']" />
           <div class="min-w-0">
-            <h1 class="text-xl font-semibold truncate">{{ board.name }}</h1>
+            <DropdownMenu v-model:open="isBoardSwitcherOpen">
+              <DropdownMenuTrigger as-child>
+                <button
+                  type="button"
+                  class="group -ml-1.5 px-1.5 py-0.5 rounded-md cursor-pointer text-left"
+                >
+                  <!-- Layout lives on this inner span, not the button — Radix's
+                       as-child trigger replaces the button's own class attribute
+                       when the menu opens, which was dropping `flex` and letting
+                       the chevron fall onto its own line. -->
+                  <span class="flex items-center gap-1.5">
+                    <h1 class="text-xl font-semibold truncate">{{ board.name }}</h1>
+                    <Icon
+                      name="ChevronDown"
+                      class="w-4 h-4 text-muted-foreground flex-shrink-0 transition-all opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+                      :class="{ 'rotate-180 opacity-100': isBoardSwitcherOpen }"
+                    />
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                class="w-56"
+              >
+                <DropdownMenuItem
+                  v-for="b in allBoards"
+                  :key="b.id"
+                  :class="{ 'bg-muted': b.id === board.id }"
+                  @click="switchBoard(b)"
+                >
+                  <span :class="['w-2 h-2 rounded-full mr-2 flex-shrink-0', b.color || 'bg-blue-500']" />
+                  <span class="truncate">{{ b.name }}</span>
+                  <Icon v-if="b.id === board.id" name="Check" class="w-3.5 h-3.5 ml-auto text-primary flex-shrink-0" />
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <p v-if="board.description" class="text-xs text-muted-foreground truncate">{{ board.description }}</p>
           </div>
         </div>

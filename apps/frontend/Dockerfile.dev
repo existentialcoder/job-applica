@@ -1,0 +1,16 @@
+# Dev image for the build-watcher — installs deps once, then relies on
+# bind-mounted source. Runs `vite build --watch`: no dev server, no HMR —
+# just a rebuild to dist/ on every save. Build context is the monorepo root
+# (same reasoning as the prod Dockerfile: packages/ui is consumed as source).
+
+FROM node:20
+WORKDIR /repo
+
+COPY package.json yarn.lock ./
+COPY apps/frontend/package.json apps/frontend/package.json
+COPY apps/browser-extension/package.json apps/browser-extension/package.json
+COPY apps/website/package.json apps/website/package.json
+COPY packages/ui/package.json packages/ui/package.json
+RUN yarn install --frozen-lockfile
+
+CMD ["yarn", "workspace", "frontend", "build", "--watch"]

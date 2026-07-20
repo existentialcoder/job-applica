@@ -2,6 +2,7 @@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
 import type { CompanyOption } from '@/stores/companies';
 
 const props = defineProps<{
@@ -14,10 +15,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'change', jobId: number, companyName: string): void
 }>();
-
-function logoSrc(name: string, logo?: string) {
-  return logo || `https://icons.duckduckgo.com/ip3/${name.toLowerCase().replace(/\s+/g, '')}.com.ico`;
-}
 </script>
 
 <template>
@@ -25,7 +22,7 @@ function logoSrc(name: string, logo?: string) {
     <DropdownMenuTrigger class="bg-transparent p-0 border-0 outline-none cursor-pointer text-left">
       <div v-if="company" class="flex items-center gap-1.5 max-w-[150px]">
         <img
-          :src="logoSrc(company, companyLogo)"
+          :src="companyLogo || DEFAULT_COMPANY_LOGO_URL"
           class="w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted"
           @error="($event.target as HTMLImageElement).style.display = 'none'"
         />
@@ -42,7 +39,7 @@ function logoSrc(name: string, logo?: string) {
         @click="emit('change', jobId, c.name)"
       >
         <img
-          :src="logoSrc(c.name, c.logo_url)"
+          :src="c.logo_url || DEFAULT_COMPANY_LOGO_URL"
           class="w-4 h-4 rounded-full object-contain flex-shrink-0 bg-muted"
           @error="($event.target as HTMLImageElement).style.display = 'none'"
         />

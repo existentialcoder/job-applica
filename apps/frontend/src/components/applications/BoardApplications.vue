@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, nextTick } from 'vue';
 import type { JobData, StageData } from '@/lib/types';
+import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -269,7 +270,7 @@ function formatDate(dateStr?: string) {
               <p class="text-sm font-medium leading-tight line-clamp-2 mb-1.5 pr-5">{{ job.title }}</p>
               <div v-if="job.company" class="flex items-center gap-1.5 mb-2 min-w-0">
                 <img
-                  :src="job.company.logo_url || `https://icons.duckduckgo.com/ip3/${job.company.name.toLowerCase().replace(/\s+/g, '')}.com.ico`"
+                  :src="job.company.logo_url || DEFAULT_COMPANY_LOGO_URL"
                   class="w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted"
                   @error="($event.target as HTMLImageElement).style.display = 'none'"
                 />

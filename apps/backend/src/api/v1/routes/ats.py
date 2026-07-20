@@ -42,8 +42,12 @@ async def calculate_ats_score(
         await ats_service.get_resume(db, user.id, payload.resume_id) if payload.resume_id
         else await ats_service.get_default_resume(db, user.id)
     )
-    if not resume or not resume.parsed_text or not job.description:
-        raise HTTPException(status_code=422, detail='Cannot score: missing resume text or job description')
+    if not resume:
+        raise HTTPException(status_code=404, detail='Resume not found')
+    if not resume.parsed_text:
+        raise HTTPException(status_code=422, detail='Resume has no extracted text — try re-uploading it')
+    if not job.description:
+        raise HTTPException(status_code=422, detail='Job has no description to score against')
 
     current_hash = _content_hash(resume.parsed_text, job.description)
     cached = job.ats_report or {}

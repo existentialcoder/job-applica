@@ -15,7 +15,10 @@ import src.models  # ensure all model files are imported
 config = context.config
 fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+_db_url = settings.DATABASE_URL
+if _db_url.startswith('postgresql://') or _db_url.startswith('postgres://'):
+    _db_url = _db_url.replace('://', '+asyncpg://', 1)
+config.set_main_option("sqlalchemy.url", _db_url)
 
 target_metadata = Base.metadata
 

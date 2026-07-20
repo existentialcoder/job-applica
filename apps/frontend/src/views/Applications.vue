@@ -133,11 +133,10 @@ async function handleSaveEdit(jobId: number, payload: JobCreatePayload) {
   const updatedJob = await dataservice.updateJob(jobId, payload);
   if (updatedJob) {
     toast.success('Job updated successfully');
+    await loadJobs();
   } else {
     toast.error('Failed to update job');
   }
-  isPanelOpen.value = false;
-  await loadJobs();
 }
 
 function handleScoreUpdated(jobId: number, update: { ats_score: number; ats_report: ATSReport }) {
