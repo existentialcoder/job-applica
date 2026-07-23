@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { FormControl, FormField, FormLabel, FormItem, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 
 const router = useRouter();
@@ -19,6 +20,11 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api
 const signupError = ref('');
 const isLoading = ref(false);
 
+const securityQuestions = ref<string[]>([]);
+onMounted(async () => {
+  securityQuestions.value = await authStore.getSecurityQuestions();
+});
+
 const formSchema = toTypedSchema(z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
@@ -26,14 +32,56 @@ const formSchema = toTypedSchema(z.object({
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirm_password: z.string().min(1, 'Please confirm your password'),
+  security_question: z.string().optional().or(z.literal('')),
+  security_answer: z.string().optional().or(z.literal('')),
 }).refine(data => data.password === data.confirm_password, {
   message: 'Passwords do not match',
   path: ['confirm_password'],
+}).refine(data => !!data.email || !!data.security_question, {
+  message: 'Required when not providing an email',
+  path: ['security_question'],
+}).refine(data => !!data.email || !!data.security_answer, {
+  message: 'Required when not providing an email',
+  path: ['security_answer'],
 }));
 
 const form = useForm({ validationSchema: formSchema });
 
+// ── Username availability ────────────────────────────────────────────────────
+const usernameStatus = ref<'idle' | 'checking' | 'available' | 'taken'>('idle');
+let usernameCheckTimer: ReturnType<typeof setTimeout> | null = null;
+let usernameCheckToken = 0; // guards against a stale response overwriting a newer check
+
+watch(() => form.values.user_name, (userName) => {
+  if (usernameCheckTimer) clearTimeout(usernameCheckTimer);
+  usernameStatus.value = 'idle';
+
+  // Don't bother checking until it's at least plausibly valid — matches the zod rule.
+  if (!userName || userName.length < 3 || /\s/.test(userName)) return;
+
+  usernameCheckTimer = setTimeout(async () => {
+    usernameStatus.value = 'checking';
+    const myToken = ++usernameCheckToken;
+    const isAvailable = await authStore.checkUsernameAvailability(userName);
+    if (myToken !== usernameCheckToken) return;
+
+    if (isAvailable === null) {
+      usernameStatus.value = 'idle';
+      return;
+    }
+    usernameStatus.value = isAvailable ? 'available' : 'taken';
+    if (!isAvailable) {
+      form.setFieldError('user_name', 'Username is already taken');
+    }
+  }, 500);
+});
+
 const onSubmit = form.handleSubmit(async (values) => {
+  if (usernameStatus.value === 'taken') {
+    form.setFieldError('user_name', 'Username is already taken');
+    return;
+  }
+
   signupError.value = '';
   isLoading.value = true;
 
@@ -43,7 +91,9 @@ const onSubmit = form.handleSubmit(async (values) => {
     user_name: values.user_name,
     email: values.email || undefined,
     password: values.password,
-    signup_key: 'USER_NAME',
+    signup_key: values.email ? 'EMAIL' : 'USER_NAME',
+    security_question: values.security_question || undefined,
+    security_answer: values.security_answer || undefined,
   });
 
   isLoading.value = false;
@@ -142,6 +192,8 @@ function loginWithLinkedIn() {
               <FormControl>
                 <Input type="text" placeholder="johndoe" v-bind="componentField" />
               </FormControl>
+              <p v-if="usernameStatus === 'checking'" class="text-xs text-muted-foreground">Checking availability…</p>
+              <p v-else-if="usernameStatus === 'available'" class="text-xs text-emerald-600 dark:text-emerald-400">✓ Username is available</p>
               <FormMessage />
             </FormItem>
           </FormField>
@@ -151,6 +203,44 @@ function loginWithLinkedIn() {
               <FormLabel>Email <span class="text-muted-foreground font-normal">(optional)</span></FormLabel>
               <FormControl>
                 <Input type="email" placeholder="john@example.com" v-bind="componentField" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+
+          <FormField v-slot="{ componentField }" name="security_question">
+            <FormItem>
+              <FormLabel>
+                Security question
+                <span v-if="!form.values.email" class="text-destructive">*</span>
+                <span v-else class="text-muted-foreground font-normal">(optional)</span>
+              </FormLabel>
+              <FormControl>
+                <Select v-bind="componentField">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a security question" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem v-for="q in securityQuestions" :key="q" :value="q">{{ q }}</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <p class="text-xs text-muted-foreground">Used to recover your account if you don't provide an email.</p>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+
+          <FormField v-if="form.values.security_question" v-slot="{ componentField }" name="security_answer">
+            <FormItem>
+              <FormLabel>
+                Answer
+                <span v-if="!form.values.email" class="text-destructive">*</span>
+                <span v-else class="text-muted-foreground font-normal">(optional)</span>
+              </FormLabel>
+              <FormControl>
+                <Input type="text" placeholder="Your answer" v-bind="componentField" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -181,7 +271,7 @@ function loginWithLinkedIn() {
       </CardContent>
 
       <CardFooter class="flex flex-col gap-3">
-        <Button class="w-full" @click="onSubmit" :disabled="isLoading">
+        <Button class="w-full" @click="onSubmit" :disabled="isLoading || usernameStatus === 'checking'">
           <svg v-if="isLoading" class="w-4 h-4 animate-spin mr-2" xmlns="http://www.w3.org/2000/svg" fill="none"
             viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />

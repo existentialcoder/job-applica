@@ -20,6 +20,13 @@ class Settings(BaseSettings):
 
     CHECK_PLAN_LIMIT: bool = True
 
+    SMTP_HOST: str = 'localhost'
+    SMTP_PORT: int = 1025
+    SMTP_USERNAME: str = ''
+    SMTP_PASSWORD: str = ''
+    SMTP_FROM_EMAIL: str = 'no-reply@example.com'
+    SMTP_USE_TLS: bool = False
+
     LLM_CONFIG: dict = {
         'default':        {'provider': 'deepseek',  'model': 'deepseek-chat'},
         'ats':            {'provider': 'deepseek',  'model': 'deepseek-chat'},
@@ -38,7 +45,7 @@ class Settings(BaseSettings):
     CLOUDFLARE_R2_ACCESS_KEY_ID: str = ''
     CLOUDFLARE_R2_SECRET_ACCESS_KEY: str = ''
     CLOUDFLARE_R2_BUCKET_NAME: str = ''
-    CLOUDFLARE_R2_PUBLIC_URL: str = ''  # e.g. https://pub-xxx.r2.dev or custom domain
+    CLOUDFLARE_R2_PUBLIC_URL: str = ''
 
     # Feature flags — override via env vars (FEATURE_PLUGINS=false, etc.)
     FEATURE_DASHBOARD: bool = True

@@ -70,7 +70,7 @@ async function saveProfile() {
 
 
 // ── Security ──────────────────────────────────────────────────────────────────
-const isOAuthUser   = computed(() => authStore.user?.signup_key !== 'EMAIL');
+const passwordChangeEnabled   = computed(() => authStore.user?.has_password ?? false);
 const currentPw     = ref('');
 const newPw         = ref('');
 const confirmPw     = ref('');
@@ -158,7 +158,7 @@ onMounted(() => {
             </div>
 
             <div class="space-y-1.5">
-              <label class="text-sm font-medium">Email</label>
+              <label class="text-sm font-medium">{{authStore.user?.email ? 'Email' : 'Username'}}</label>
               <Input :model-value="authStore.user?.email ?? authStore.user?.user_name ?? ''" disabled />
             </div>
 
@@ -173,8 +173,7 @@ onMounted(() => {
               <p class="text-sm font-semibold">Security</p>
               <p class="text-xs text-muted-foreground mt-0.5">Manage your password</p>
             </div>
-
-            <div v-if="isOAuthUser" class="flex items-start gap-3 text-sm text-muted-foreground">
+            <div v-if="!passwordChangeEnabled" class="flex items-start gap-2 text-sm text-muted-foreground">
               <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
@@ -198,7 +197,7 @@ onMounted(() => {
               </div>
               <div class="flex items-center gap-3">
                 <Button @click="changePassword" :disabled="savingPw">
-                  {{ savingPw ? 'Updating…' : 'Update password' }}
+                  {{ savingPw ? 'Updating…' : 'Update' }}
                 </Button>
                 <span v-if="pwError" class="text-sm text-destructive">{{ pwError }}</span>
               </div>
