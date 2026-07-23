@@ -60,7 +60,7 @@ function loginWithLinkedIn() {
             </svg>
           </div>
         </div>
-        <CardTitle class="text-center">Welcome to Job Applica</CardTitle>
+        <CardTitle class="text-center">Welcome to JobApplica</CardTitle>
         <p class="text-sm text-muted-foreground text-center">Sign in to track your applications</p>
       </CardHeader>
 
@@ -127,6 +127,10 @@ function loginWithLinkedIn() {
         <p class="text-sm text-muted-foreground text-center">
           Don't have an account?
           <router-link to="/signup" class="text-primary hover:underline font-medium">Sign up</router-link>
+        </p>
+        <p class="text-sm text-muted-foreground text-center">
+          Forgot your password?
+          <router-link to="/reset-password" class="text-primary hover:underline font-medium">Reset</router-link>
         </p>
       </CardFooter>
     </Card>

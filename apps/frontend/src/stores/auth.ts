@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import router from '@/router'
+import { useAppStore } from '@/stores/app'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
 
@@ -9,6 +10,7 @@ interface UserProfile {
   first_name: string
   last_name: string
   user_name: string
+  has_password?: boolean
   email: string | null
   avatar_url: string | null
 }
@@ -20,6 +22,8 @@ interface SignupPayload {
   email?: string
   password: string
   signup_key: 'USER_NAME' | 'EMAIL'
+  security_question?: string
+  security_answer?: string
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -52,6 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('user')
     window.dispatchEvent(new CustomEvent('ja:auth', { detail: { token: null } }))
+    useAppStore().resetTheme()
   }
 
   async function fetchMe(): Promise<void> {
@@ -102,9 +107,11 @@ export const useAuthStore = defineStore('auth', () => {
           first_name: data.first_name,
           last_name: data.last_name,
           user_name: data.user_name,
+          has_password: data.has_password,
           email: data.email ?? null,
           avatar_url: data.avatar_url ?? null,
         })
+        await useAppStore().syncSettingsFromServer()
       } else if (response.status === 401) {
         // Still 401 after refresh — session is truly expired
         clearAuth()
@@ -154,6 +161,101 @@ export const useAuthStore = defineStore('auth', () => {
     return { ok: true }
   }
 
+  async function checkUsernameAvailability(userName: string): Promise<boolean | null> {
+    try {
+      const response = await fetch(`${API_BASE}/users/check-user-name`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_name: userName }),
+      })
+      if (!response.ok) return null
+      const data = await response.json()
+      return data.is_available as boolean
+    } catch {
+      return null
+    }
+  }
+
+  async function getSecurityQuestions(): Promise<string[]> {
+    try {
+      const response = await fetch(`${API_BASE}/users/security-questions`)
+      if (!response.ok) return []
+      return await response.json()
+    } catch {
+      return []
+    }
+  }
+  type ResetMechanismResult =
+    | { ok: true; mechanism: 'otp' }
+    | { ok: true; mechanism: 'security_question'; securityQuestion: string }
+    | { ok: false; error: string }
+
+  async function getResetMechanism(identifier: string): Promise<ResetMechanismResult> {
+    const query = new URLSearchParams({ user_identifier: identifier })
+    const response = await fetch(`${API_BASE}/auth/get-reset-mechanism?${query.toString()}`)
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      return { ok: false, error: err.detail || 'We could not find an account matching that username or email' }
+    }
+
+    const data = await response.json()
+    if (data.mechanism === 'security_question') {
+      return { ok: true, mechanism: 'security_question', securityQuestion: data.context?.security_question }
+    }
+    return { ok: true, mechanism: 'otp' }
+  }
+
+  async function requestResetOtp(identifier: string): Promise<{ ok: boolean; error?: string }> {
+    const query = new URLSearchParams({ user_identifier: identifier })
+    const response = await fetch(`${API_BASE}/auth/request-reset-otp?${query.toString()}`)
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      return { ok: false, error: err.detail || 'Failed to send code' }
+    }
+
+    return { ok: true }
+  }
+
+  async function verifyResetMechanism(
+    identifier: string,
+    mechanism: 'otp' | 'security_question',
+    question: string,
+    answer: string,
+  ): Promise<{ ok: boolean; error?: string; token?: string }> {
+    const response = await fetch(`${API_BASE}/auth/verify-reset-mechanism`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_identifier: identifier, mechanism, question, answer }),
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      return { ok: false, error: err.detail || 'Verification failed' }
+    }
+
+    const data = await response.json()
+    return data.is_valid
+      ? { ok: true, token: data.token }
+      : { ok: false, error: mechanism === 'otp' ? 'Incorrect or expired code' : 'Incorrect answer' }
+  }
+
+  async function resetPassword(token: string, newPassword: string): Promise<{ ok: boolean; error?: string }> {
+    const response = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, new_password: newPassword }),
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      return { ok: false, error: err.detail || 'Password reset failed' }
+    }
+
+    return { ok: true }
+  }
+
   async function logout() {
     clearAuth()
     router.replace('/login')
@@ -166,7 +268,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     accessToken, user, isAuthenticated, displayName,
-    login, signup, logout, fetchMe,
-    setTokens, setUser, getAuthHeaders,
+    login, signup, logout, fetchMe, checkUsernameAvailability, getSecurityQuestions,
+    getResetMechanism, requestResetOtp, verifyResetMechanism, resetPassword,
+    setTokens, setUser, getAuthHeaders, clearAuth,
   }
 })

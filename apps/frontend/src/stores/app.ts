@@ -133,6 +133,10 @@ export const useAppStore = defineStore('app', {
         if (this.themeMode === 'system') this.applyTheme();
       });
 
+      this.applyTheme();
+      this.initWrapper();
+    },
+    async syncSettingsFromServer() {
       try {
         const settings = await dataservice.getSettings();
         const theme = settings.theme as 'light' | 'dark' | 'system' | undefined;
@@ -145,10 +149,16 @@ export const useAppStore = defineStore('app', {
         if (lightBg && lightBg in BG_THEMES.light) this.lightBgTheme = lightBg;
         const darkBg = settings.dark_bg_theme as string | undefined;
         if (darkBg && darkBg in BG_THEMES.dark) this.darkBgTheme = darkBg;
-      } catch { /* offline — keep defaults */ }
+      } catch { /* offline / unauthenticated — keep current values */ }
 
       this.applyTheme();
       this.initWrapper();
+    },
+    resetTheme() {
+      this.themeMode = 'system';
+      this.lightBgTheme = 'white';
+      this.darkBgTheme = 'noir';
+      this.applyTheme();
     },
     setBreadcrumbs(items: BreadcrumbItem[]) {
       this.breadcrumbs = items;

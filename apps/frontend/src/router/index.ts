@@ -29,6 +29,12 @@ const router = createRouter({
       meta: { title: 'JobApplica | Sign Up' } as RouteMeta & IRouteMeta,
     },
     {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('@/views/ResetPassword.vue'),
+      meta: { title: 'JobApplica | Reset Password' } as RouteMeta & IRouteMeta
+    },
+    {
       path: '/auth/callback',
       name: 'auth-callback',
       component: () => import('@/views/AuthCallback.vue'),
@@ -108,7 +114,7 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   document.title = to.meta.title as string;
   const authStore = useAuthStore();
-  const publicRoutes = ['login', 'signup', 'not-found', 'auth-callback', 'auth-relay'];
+  const publicRoutes = ['login', 'signup', 'reset-password', 'not-found', 'auth-callback', 'auth-relay'];
 
   if (!authStore.isAuthenticated && !publicRoutes.includes(to.name as string) && to.path !== '/login') {
     return next('/login');

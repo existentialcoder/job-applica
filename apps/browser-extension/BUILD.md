@@ -1,4 +1,4 @@
-# Build Instructions — Job Applica Tracker (Firefox Extension)
+# Build Instructions — JobApplica Tracker (Firefox Extension)
 
 ## Requirements
 

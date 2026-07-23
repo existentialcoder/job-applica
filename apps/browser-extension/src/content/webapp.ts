@@ -1,5 +1,5 @@
 /**
- * Runs on the Job Applica web app (localhost:5173).
+ * Runs on the JobApplica web app (localhost:5173).
  *
  * Web app → Extension: forwards ja:auth events as SYNC_AUTH to background.
  * Extension → Web app: receives APPLY_TOKEN and re-dispatches as
