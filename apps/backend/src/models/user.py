@@ -25,6 +25,8 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(Text, nullable=True, unique=True, index=True)
     signup_key: Mapped[str] = mapped_column(Text, nullable=False)
     hashed_password: Mapped[str | None] = mapped_column(Text, nullable=True)
+    security_question: Mapped[str | None] = mapped_column(Text, nullable=True)
+    hashed_security_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     plan: Mapped[str] = mapped_column(String(50), nullable=False, default='free')
     settings: Mapped[dict[str, Any]] = mapped_column(

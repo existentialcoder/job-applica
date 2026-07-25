@@ -1,28 +1,20 @@
-import os
 from typing import Optional
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from ....schemas import user as schemas
 from ....core.config import settings
-from ....core.utils import verify_password, hash_password
 from ...deps.auth import get_current_user
 from ...deps.db import get_db
 from ...deps.plan import plan_gate
-from ....models.user import User
-from ....models.skill import Skill
 from ....models.resume import Resume
-from ....services import resume as resume_service
-from sqlalchemy import func
-from ....utils.file_uploader import FileUploader
-
-UPLOAD_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'uploads'))
-ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}
-MAX_AVATAR_MB = 2
+from ....services import resume as resume_service, user as user_service
 
 router = APIRouter(prefix='/users')
+public_router = APIRouter(prefix='/users')
+
 class UpdateProfileRequest(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -53,8 +45,18 @@ def _resume_response(r, user_id: int) -> dict:
         'created_at': r.created_at.isoformat() if r.created_at else None,
     }
 
+@public_router.post('/check-user-name', response_model=schemas.UserNameCheckResponse)
+async def check_user_name_availability(
+    payload: schemas.UserNameCheckRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await user_service.check_user_name_availability(db, payload.user_name)
 
-# ── Profile ───────────────────────────────────────────────────────────────────
+
+@public_router.get('/security-questions', response_model=list[str])
+async def get_security_questions():
+    return [q.value for q in schemas.SecurityQuestion]
+
 
 @router.get('/{user_id}', response_model=schemas.UserBase)
 async def get_user(
@@ -73,19 +75,12 @@ async def update_user(
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail='User not found')
-    if payload.first_name is not None:
-        user.first_name = payload.first_name
-    if payload.last_name is not None:
-        user.last_name = payload.last_name
-    if payload.avatar_url is not None:
-        user.avatar_url = payload.avatar_url
-    await db.commit()
-    await db.refresh(user)
-    return user
+    return await user_service.update_profile(
+        db, user_id,
+        first_name=payload.first_name,
+        last_name=payload.last_name,
+        avatar_url=payload.avatar_url,
+    )
 
 
 @router.post('/{user_id}/avatar')
@@ -96,26 +91,7 @@ async def upload_avatar(
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(status_code=400, detail='Only JPEG, PNG, WebP and GIF images are accepted')
-
-    ext = os.path.splitext(file.filename or 'avatar')[1] or '.jpg'
-    stored_name = f'avatar{ext}'
-    r2_key = f'{user_id}/avatars/{stored_name}'
-    dest = os.path.join(UPLOAD_BASE, 'users', str(user_id), 'avatars', stored_name)
-
-    uploader = FileUploader(destination_path=dest, file=file, max_size_mb=MAX_AVATAR_MB)
-    if settings.APP_ENV == 'local':
-        await uploader.upload_local()
-        avatar_url = f'/uploads/{user_id}/avatars/{stored_name}'
-    else:
-        await uploader.upload_to_cloudflare(bucket=settings.CLOUDFLARE_R2_BUCKET_NAME, key=r2_key)
-        avatar_url = f'{settings.CLOUDFLARE_R2_PUBLIC_URL}/{r2_key}'
-
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    user.avatar_url = avatar_url
-    await db.commit()
+    avatar_url = await user_service.upload_avatar(db, user_id, file)
     return {'avatar_url': avatar_url}
 
 
@@ -127,16 +103,8 @@ async def change_password(
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user or not user.hashed_password:
-        raise HTTPException(status_code=400, detail='Password change not available for OAuth accounts')
-    if not verify_password(payload.current_password, user.hashed_password):
-        raise HTTPException(status_code=400, detail='Current password is incorrect')
-    user.hashed_password = hash_password(payload.new_password)
-    await db.commit()
+    await user_service.change_password(db, user_id, payload.current_password, payload.new_password)
     return {'message': 'Password updated'}
-
 
 @router.get('/{user_id}/settings')
 async def get_settings(
@@ -145,9 +113,7 @@ async def get_settings(
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    return {'settings': user.settings if user else {}}
+    return {'settings': await user_service.get_settings(db, user_id)}
 
 
 @router.patch('/{user_id}/settings')
@@ -158,17 +124,8 @@ async def update_settings(
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail='User not found')
-    user.settings = {**(user.settings or {}), **payload.settings}
-    await db.commit()
-    await db.refresh(user)
-    return {'settings': user.settings}
+    return {'settings': await user_service.update_settings(db, user_id, payload.settings)}
 
-
-# ── Skills ────────────────────────────────────────────────────────────────────
 
 @router.get('/{user_id}/skills')
 async def get_user_skills(
@@ -177,9 +134,7 @@ async def get_user_skills(
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    return user.skills if user else []
+    return await user_service.get_skills(db, user_id)
 
 
 @router.post('/{user_id}/skills/{skill_id}')
@@ -190,16 +145,7 @@ async def add_user_skill(
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user = user_result.scalar_one_or_none()
-    skill_result = await db.execute(select(Skill).where(Skill.id == skill_id))
-    skill = skill_result.scalar_one_or_none()
-    if not skill:
-        raise HTTPException(status_code=404, detail='Skill not found')
-    if skill not in user.skills:
-        user.skills.append(skill)
-        await db.commit()
-    return user.skills
+    return await user_service.add_skill(db, user_id, skill_id)
 
 
 @router.delete('/{user_id}/skills/{skill_id}')
@@ -210,17 +156,8 @@ async def remove_user_skill(
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
-    user_result = await db.execute(select(User).where(User.id == user_id))
-    user = user_result.scalar_one_or_none()
-    skill_result = await db.execute(select(Skill).where(Skill.id == skill_id))
-    skill = skill_result.scalar_one_or_none()
-    if skill and skill in user.skills:
-        user.skills.remove(skill)
-        await db.commit()
-    return user.skills
+    return await user_service.remove_skill(db, user_id, skill_id)
 
-
-# ── Resumes ───────────────────────────────────────────────────────────────────
 
 @router.get('/{user_id}/resumes')
 async def list_resumes(

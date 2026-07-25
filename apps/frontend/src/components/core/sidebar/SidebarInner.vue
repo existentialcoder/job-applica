@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import router from '@/router'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ALL_MENU_ITEMS, SETTINGS_MENU_ITEM } from '@/config/app'
-import { ArrowLeftToLine } from 'lucide-vue-next'
+import { ArrowLeftToLine, ChevronRight } from 'lucide-vue-next'
 import { useAppStore } from '@/stores/app'
 import { useFeatureStore } from '@/stores/features'
 import AppLogo from '@/components/core/AppLogo.vue'
@@ -47,28 +46,42 @@ const toggleSidebar = () => {
             :class="store.sidebarExpanded ? 'justify-between' : 'justify-center'"
             :style="{ width: `${store.sidebarExpanded ? 280 : 64}px` }"
           >
-            <!-- Collapsed: logo icon is the expand trigger -->
             <button
               v-if="!store.sidebarExpanded"
               class="cursor-pointer rounded-md p-0.5 hover:opacity-80 transition-opacity"
-              @click="toggleSidebar"
-              aria-label="Expand sidebar"
+              @click="handleNavigate('/home')"
+              aria-label="Go to home"
             >
               <AppLogo :collapsed="true" />
             </button>
 
-            <!-- Expanded: full logo + collapse button -->
             <template v-else>
-              <AppLogo :collapsed="false" />
-              <Button
-                variant="outline"
-                class="p-[6px] w-8 h-8 flex-shrink-0 bg-transparent transition-all duration-200"
-                @click="toggleSidebar"
+              <button
+                class="cursor-pointer rounded-md hover:opacity-80 transition-opacity"
+                @click="handleNavigate('/home')"
+                aria-label="Go to home"
               >
-                <ArrowLeftToLine class="transition-all duration-500" />
-              </Button>
+                <AppLogo :collapsed="false" />
+              </button>
+              <button
+                class="flex-shrink-0 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
+                @click="toggleSidebar"
+                aria-label="Collapse sidebar"
+              >
+                <ArrowLeftToLine class="w-5 h-5 transition-all duration-500" />
+              </button>
             </template>
           </div>
+
+          <!-- Collapsed: dedicated expand trigger, anchored at the sidebar edge near the logo -->
+          <button
+            v-if="!store.sidebarExpanded"
+            class="absolute right-2 top-6 z-20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            @click="toggleSidebar"
+            aria-label="Expand sidebar"
+          >
+            <ChevronRight class="w-3.5 h-3.5" />
+          </button>
         </div>
 
         <!-- Scrollable menu -->

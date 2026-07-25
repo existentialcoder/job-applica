@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}JobApplica{% endblock %}</title>
+  {% if theme.dark_override %}
+  <style>
+    @media (prefers-color-scheme: dark) {
+      .ja-body, .ja-outer { background-color: {{ theme.dark_override.bg }} !important; }
+      .ja-card { background-color: {{ theme.dark_override.card }} !important; }
+      .ja-heading { color: {{ theme.dark_override.fg }} !important; }
+      .ja-muted, .ja-footer { color: {{ theme.dark_override.muted }} !important; }
+      .ja-accent-bg { background-color: {{ theme.dark_override.accent }} !important; }
+      .ja-accent-fg { color: {{ theme.dark_override.accent_fg }} !important; }
+    }
+  </style>
+  {% endif %}
+</head>
+<body class="ja-body" style="margin:0; padding:0; background-color:{{ theme.base.bg }}; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="ja-outer" style="background-color:{{ theme.base.bg }}; padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="400" cellpadding="0" cellspacing="0" class="ja-card" style="background-color:{{ theme.base.card }}; border-radius:8px; max-width:400px; width:100%;">
+          <tr>
+            <td style="padding:32px 32px 8px 32px; text-align:center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 20px auto;">
+                <tr>
+                  <td style="vertical-align:middle; padding-right:8px;">
+                    <img src="{{ logo_data_uri }}" width="28" height="28" alt="" style="display:block;" />
+                  </td>
+                  <td style="vertical-align:middle; font-size:17px; font-weight:600; white-space:nowrap;">
+                    <span style="color:{{ theme.base.fg }};">Job</span><span style="color:#5E42E7;">Applica</span>
+                  </td>
+                </tr>
+              </table>
+              <h1 class="ja-heading" style="margin:0; font-size:18px; color:{{ theme.base.fg }};">{% block heading %}{% endblock %}</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 32px 32px 32px;">
+              {% block content %}{% endblock %}
+            </td>
+          </tr>
+        </table>
+        <p class="ja-footer" style="color:{{ theme.base.muted }}; font-size:12px; margin-top:16px;">JobApplica &middot; This is an automated message, please don't reply.</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

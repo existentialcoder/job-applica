@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Your verification code{% endblock %}
+{% block heading %}Reset your password{% endblock %}
+
+{% block content %}
+<p class="ja-muted" style="color:{{ theme.base.muted }}; font-size:14px; text-align:center; margin:0 0 24px 0;">
+  Use the code below to verify your identity. It expires in {{ expires_in_minutes }} minutes.
+</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+  <tr>
+    <td align="center" class="ja-accent-bg" style="background-color:{{ theme.base.accent }}; border-radius:8px; padding:16px;">
+      <span class="ja-accent-fg" style="font-size:32px; font-weight:700; letter-spacing:8px; color:{{ theme.base.accent_fg }};">{{ otp_code }}</span>
+    </td>
+  </tr>
+</table>
+<p class="ja-muted" style="color:{{ theme.base.muted }}; font-size:13px; text-align:center; margin:0;">
+  If you didn't request this, you can safely ignore this email.
+</p>
+{% endblock %}
