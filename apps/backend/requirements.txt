@@ -6,8 +6,8 @@ aiofiles
 alembic
 pydantic[email]
 pydantic-settings
-bcrypt>=4.0.0,<5.0.0
-passlib>=1.7.4.1
+bcrypt<4.1,>=4.0
+passlib
 python-dotenv
 requests==2.32.1
 beautifulsoup4==4.13.0
@@ -22,4 +22,3 @@ python-docx==1.2.0
 scikit-learn
 anthropic
 openai
-
