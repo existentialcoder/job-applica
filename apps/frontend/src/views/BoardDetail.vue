@@ -1,266 +1,312 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import type { BoardData, JobData, JobCreatePayload } from '@/lib/types';
-import dataservice from '@/lib/dataservice';
-import { Button } from '@/components/ui/button';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import type { BoardData, JobData, JobCreatePayload } from '@/lib/types'
+import dataservice from '@/lib/dataservice'
+import { Button } from '@/components/ui/button'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog'
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import Applications from '@/views/Applications.vue';
-import { BoardSettingsModal } from '@/components/applications';
-import { useAppStore } from '@/stores/app';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import Applications from '@/views/Applications.vue'
+import { BoardSettingsModal } from '@/components/applications'
+import { useAppStore } from '@/stores/app'
 
-const route = useRoute();
-const router = useRouter();
-const appStore = useAppStore();
+const route = useRoute()
+const router = useRouter()
+const appStore = useAppStore()
 
-const boardId = computed(() => Number(route.params.boardId));
-const board = ref<BoardData | null>(null);
-const isLoading = ref(true);
-const isNotFound = ref(false);
+const boardId = computed(() => Number(route.params.boardId))
+const board = ref<BoardData | null>(null)
+const isLoading = ref(true)
+const isNotFound = ref(false)
 
-const allBoards = ref<BoardData[]>([]);
-const isBoardSwitcherOpen = ref(false);
+const allBoards = ref<BoardData[]>([])
+const isBoardSwitcherOpen = ref(false)
 
 function switchBoard(target: BoardData) {
-  isBoardSwitcherOpen.value = false;
-  if (target.id !== boardId.value) router.push(`/boards/${target.id}`);
+  isBoardSwitcherOpen.value = false
+  if (target.id !== boardId.value) router.push(`/boards/${target.id}`)
 }
 
-const isSettingsOpen = ref(false);
-const isSaving = ref(false);
+const isSettingsOpen = ref(false)
+const isSaving = ref(false)
 
-const isDeleteOpen = ref(false);
-const isDeleting = ref(false);
+const isDeleteOpen = ref(false)
+const isDeleting = ref(false)
 
-const isImporting = ref(false);
-const importInputRef = ref<HTMLInputElement | null>(null);
-const refreshCounter = ref(0);
+const isImporting = ref(false)
+const importInputRef = ref<HTMLInputElement | null>(null)
+const refreshCounter = ref(0)
 
 async function loadBoard() {
-  isLoading.value = true;
-  const data = await dataservice.getBoard(boardId.value);
+  isLoading.value = true
+  const data = await dataservice.getBoard(boardId.value)
   if (!data) {
-    isNotFound.value = true;
-    isLoading.value = false;
-    return;
+    isNotFound.value = true
+    isLoading.value = false
+    return
   }
 
   // Auto-heal stages where key ≠ label (artifact of the old rename bug).
   // Silently migrate jobs and fix the stored keys so the UI and DB stay in sync.
-  const mismatched = data.stages.filter(s => s.key !== s.label);
+  const mismatched = data.stages.filter((s) => s.key !== s.label)
   if (mismatched.length > 0) {
-    const keyRenames: Record<string, string> = {};
-    const fixedStages = data.stages.map(s => {
-      if (s.key !== s.label) { keyRenames[s.key] = s.label; return { ...s, key: s.label }; }
-      return s;
-    });
-    const fixed = await dataservice.updateBoard(data.id, { stages: fixedStages, key_renames: keyRenames });
-    board.value = fixed ?? data;
+    const keyRenames: Record<string, string> = {}
+    const fixedStages = data.stages.map((s) => {
+      if (s.key !== s.label) {
+        keyRenames[s.key] = s.label
+        return { ...s, key: s.label }
+      }
+      return s
+    })
+    const fixed = await dataservice.updateBoard(data.id, {
+      stages: fixedStages,
+      key_renames: keyRenames
+    })
+    board.value = fixed ?? data
   } else {
-    board.value = data;
+    board.value = data
   }
 
-  appStore.setBreadcrumbs([
-    { label: 'Boards', path: '/boards' },
-    { label: board.value!.name },
-  ]);
-  isLoading.value = false;
+  appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: board.value!.name }])
+  isLoading.value = false
 }
 
-async function saveSettings(payload: { name: string; description: string; color: string; stages: { key: string; label: string; color: string }[]; key_renames: Record<string, string> }) {
-  if (!board.value) return;
-  isSaving.value = true;
+async function saveSettings(payload: {
+  name: string
+  description: string
+  color: string
+  stages: { key: string; label: string; color: string }[]
+  key_renames: Record<string, string>
+}) {
+  if (!board.value) return
+  isSaving.value = true
   const updated = await dataservice.updateBoard(board.value.id, {
     name: payload.name,
     color: payload.color,
     description: payload.description || undefined,
     stages: payload.stages,
-    key_renames: Object.keys(payload.key_renames).length > 0 ? payload.key_renames : undefined,
-  });
-  isSaving.value = false;
+    key_renames: Object.keys(payload.key_renames).length > 0 ? payload.key_renames : undefined
+  })
+  isSaving.value = false
   if (updated) {
-    board.value = updated;
-    const idx = allBoards.value.findIndex(b => b.id === updated.id);
-    if (idx !== -1) allBoards.value[idx] = updated;
-    appStore.setBreadcrumbs([
-      { label: 'Boards', path: '/boards' },
-      { label: updated.name },
-    ]);
-    isSettingsOpen.value = false;
-    if (Object.keys(payload.key_renames).length > 0) refreshCounter.value++;
+    board.value = updated
+    const idx = allBoards.value.findIndex((b) => b.id === updated.id)
+    if (idx !== -1) allBoards.value[idx] = updated
+    appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: updated.name }])
+    isSettingsOpen.value = false
+    if (Object.keys(payload.key_renames).length > 0) refreshCounter.value++
   }
 }
 
 async function confirmDelete() {
-  if (!board.value) return;
-  isDeleting.value = true;
-  const ok = await dataservice.deleteBoard(board.value.id);
-  isDeleting.value = false;
-  if (ok) router.push('/boards');
+  if (!board.value) return
+  isDeleting.value = true
+  const ok = await dataservice.deleteBoard(board.value.id)
+  isDeleting.value = false
+  if (ok) router.push('/boards')
 }
 
 // ── Download ──────────────────────────────────────────────────────────────────
 function triggerDownload(content: string, filename: string, type: string) {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 function toCSV(jobs: JobData[]): string {
-  const headers = ['title', 'company', 'location', 'status', 'work_model', 'salary_range', 'platform', 'source_url', 'applied_date', 'notes'];
-  const rows = jobs.map(job => [
-    job.title,
-    job.company?.name ?? '',
-    job.location ? [job.location.city, job.location.state, job.location.country].filter(Boolean).join(', ') : '',
-    job.status,
-    job.work_model ?? '',
-    job.salary_range ?? '',
-    job.source_platform ?? '',
-    job.source_url ?? '',
-    job.applied_date ?? '',
-    job.notes ?? '',
-  ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','));
-  return [headers.join(','), ...rows].join('\r\n');
+  const headers = [
+    'title',
+    'company',
+    'location',
+    'status',
+    'work_model',
+    'salary_range',
+    'platform',
+    'source_url',
+    'applied_date',
+    'notes'
+  ]
+  const rows = jobs.map((job) =>
+    [
+      job.title,
+      job.company?.name ?? '',
+      job.location
+        ? [job.location.city, job.location.state, job.location.country].filter(Boolean).join(', ')
+        : '',
+      job.status,
+      job.work_model ?? '',
+      job.salary_range ?? '',
+      job.source_platform ?? '',
+      job.source_url ?? '',
+      job.applied_date ?? '',
+      job.notes ?? ''
+    ]
+      .map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`)
+      .join(',')
+  )
+  return [headers.join(','), ...rows].join('\r\n')
 }
 
 async function getAllBoardJobs() {
-  if (!board.value) return [];
-  const PAGE = 100;
-  const first = await dataservice.getJobs({ board_id: board.value.id, page: 1, per_page: PAGE });
-  const all = [...first.items];
-  const pages = Math.ceil(first.total / PAGE);
+  if (!board.value) return []
+  const PAGE = 100
+  const first = await dataservice.getJobs({ board_id: board.value.id, page: 1, per_page: PAGE })
+  const all = [...first.items]
+  const pages = Math.ceil(first.total / PAGE)
   for (let p = 2; p <= pages; p++) {
-    const res = await dataservice.getJobs({ board_id: board.value.id, page: p, per_page: PAGE });
-    all.push(...res.items);
+    const res = await dataservice.getJobs({ board_id: board.value.id, page: p, per_page: PAGE })
+    all.push(...res.items)
   }
-  return all;
+  return all
 }
 
 async function downloadAs(format: 'json' | 'csv') {
-  if (!board.value) return;
-  const jobs = await getAllBoardJobs();
-  const name = board.value.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  if (!board.value) return
+  const jobs = await getAllBoardJobs()
+  const name = board.value.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()
   if (format === 'json') {
-    triggerDownload(JSON.stringify(jobs, null, 2), `${name}-jobs.json`, 'application/json');
+    triggerDownload(JSON.stringify(jobs, null, 2), `${name}-jobs.json`, 'application/json')
   } else {
-    triggerDownload(toCSV(jobs), `${name}-jobs.csv`, 'text/csv;charset=utf-8;');
+    triggerDownload(toCSV(jobs), `${name}-jobs.csv`, 'text/csv;charset=utf-8;')
   }
 }
 
 // ── Import ────────────────────────────────────────────────────────────────────
 function triggerImport() {
-  importInputRef.value?.click();
+  importInputRef.value?.click()
 }
 
 function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
+  const result: string[] = []
+  let current = ''
+  let inQuotes = false
   for (let i = 0; i < line.length; i++) {
     if (line[i] === '"') {
-      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
-      else inQuotes = !inQuotes;
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"'
+        i++
+      } else inQuotes = !inQuotes
     } else if (line[i] === ',' && !inQuotes) {
-      result.push(current); current = '';
+      result.push(current)
+      current = ''
     } else {
-      current += line[i];
+      current += line[i]
     }
   }
-  result.push(current);
-  return result;
+  result.push(current)
+  return result
 }
 
 async function handleImport(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file || !board.value) return;
-  isImporting.value = true;
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file || !board.value) return
+  isImporting.value = true
   try {
-    const text = await file.text();
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    let payloads: JobCreatePayload[] = [];
+    const text = await file.text()
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    let payloads: JobCreatePayload[] = []
 
     if (ext === 'json') {
-      const data = JSON.parse(text);
-      const items: any[] = Array.isArray(data) ? data : [data];
-      payloads = items.filter(item => item.title).map(item => ({
-        title: item.title,
-        company_name: item.company?.name ?? item.company_name,
-        location: item.location
-          ? (typeof item.location === 'string'
-            ? item.location
-            : [item.location.city, item.location.state].filter(Boolean).join(', '))
-          : undefined,
-        status: item.status ?? board.value!.stages[0]?.key,
-        work_model: item.work_model,
-        salary_range: item.salary_range,
-        source_platform: item.source_platform,
-        source_url: item.source_url,
-        applied_date: item.applied_date,
-        notes: item.notes,
-        board_id: board.value!.id,
-      }));
+      const data = JSON.parse(text)
+      const items: any[] = Array.isArray(data) ? data : [data]
+      payloads = items
+        .filter((item) => item.title)
+        .map((item) => ({
+          title: item.title,
+          company_name: item.company?.name ?? item.company_name,
+          location: item.location
+            ? typeof item.location === 'string'
+              ? item.location
+              : [item.location.city, item.location.state].filter(Boolean).join(', ')
+            : undefined,
+          status: item.status ?? board.value!.stages[0]?.key,
+          work_model: item.work_model,
+          salary_range: item.salary_range,
+          source_platform: item.source_platform,
+          source_url: item.source_url,
+          applied_date: item.applied_date,
+          notes: item.notes,
+          board_id: board.value!.id
+        }))
     } else if (ext === 'csv') {
-      const lines = text.split(/\r?\n/).filter(l => l.trim());
-      if (lines.length < 2) return;
-      const headers = parseCSVLine(lines[0]);
-      payloads = lines.slice(1).map(line => {
-        const values = parseCSVLine(line);
-        const row: Record<string, string> = {};
-        headers.forEach((h, i) => { row[h.trim()] = values[i] ?? ''; });
-        if (!row.title) return null;
-        return {
-          title: row.title,
-          company_name: row.company || undefined,
-          location: row.location || undefined,
-          status: row.status || board.value!.stages[0]?.key,
-          work_model: row.work_model || undefined,
-          salary_range: row.salary_range || undefined,
-          source_platform: row.platform || undefined,
-          source_url: row.source_url || undefined,
-          applied_date: row.applied_date || undefined,
-          notes: row.notes || undefined,
-          board_id: board.value!.id,
-        } as JobCreatePayload;
-      }).filter((p): p is JobCreatePayload => p !== null);
+      const lines = text.split(/\r?\n/).filter((l) => l.trim())
+      if (lines.length < 2) return
+      const headers = parseCSVLine(lines[0])
+      payloads = lines
+        .slice(1)
+        .map((line) => {
+          const values = parseCSVLine(line)
+          const row: Record<string, string> = {}
+          headers.forEach((h, i) => {
+            row[h.trim()] = values[i] ?? ''
+          })
+          if (!row.title) return null
+          return {
+            title: row.title,
+            company_name: row.company || undefined,
+            location: row.location || undefined,
+            status: row.status || board.value!.stages[0]?.key,
+            work_model: row.work_model || undefined,
+            salary_range: row.salary_range || undefined,
+            source_platform: row.platform || undefined,
+            source_url: row.source_url || undefined,
+            applied_date: row.applied_date || undefined,
+            notes: row.notes || undefined,
+            board_id: board.value!.id
+          } as JobCreatePayload
+        })
+        .filter((p): p is JobCreatePayload => p !== null)
     }
 
     if (payloads.length > 0) {
-      await Promise.all(payloads.map(p => dataservice.createJob(p)));
-      refreshCounter.value++;
+      await Promise.all(payloads.map((p) => dataservice.createJob(p)))
+      refreshCounter.value++
     }
   } catch (e) {
-    console.error('Import failed', e);
+    console.error('Import failed', e)
   } finally {
-    isImporting.value = false;
-    if (importInputRef.value) importInputRef.value.value = '';
+    isImporting.value = false
+    if (importInputRef.value) importInputRef.value.value = ''
   }
 }
 
-watch(boardId, loadBoard, { immediate: true });
+watch(boardId, loadBoard, { immediate: true })
 
 onMounted(async () => {
-  allBoards.value = await dataservice.getBoards();
-});
+  allBoards.value = await dataservice.getBoards()
+})
 
 onUnmounted(() => {
-  appStore.setBreadcrumbs([]);
-});
+  appStore.setBreadcrumbs([])
+})
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <!-- Loading -->
     <div v-if="isLoading" class="flex justify-center py-16">
-      <svg class="w-6 h-6 animate-spin text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <svg
+        class="w-6 h-6 animate-spin text-muted-foreground"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
       </svg>
@@ -299,23 +345,28 @@ onUnmounted(() => {
                   </span>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                class="w-56"
-              >
+              <DropdownMenuContent align="start" class="w-56">
                 <DropdownMenuItem
                   v-for="b in allBoards"
                   :key="b.id"
                   :class="{ 'bg-muted': b.id === board.id }"
                   @click="switchBoard(b)"
                 >
-                  <span :class="['w-2 h-2 rounded-full mr-2 flex-shrink-0', b.color || 'bg-blue-500']" />
+                  <span
+                    :class="['w-2 h-2 rounded-full mr-2 flex-shrink-0', b.color || 'bg-blue-500']"
+                  />
                   <span class="truncate">{{ b.name }}</span>
-                  <Icon v-if="b.id === board.id" name="Check" class="w-3.5 h-3.5 ml-auto text-primary flex-shrink-0" />
+                  <Icon
+                    v-if="b.id === board.id"
+                    name="Check"
+                    class="w-3.5 h-3.5 ml-auto text-primary flex-shrink-0"
+                  />
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <p v-if="board.description" class="text-xs text-muted-foreground truncate">{{ board.description }}</p>
+            <p v-if="board.description" class="text-xs text-muted-foreground truncate">
+              {{ board.description }}
+            </p>
           </div>
         </div>
 
@@ -335,7 +386,13 @@ onUnmounted(() => {
           </DropdownMenu>
 
           <!-- Import -->
-          <Button variant="ghost" size="icon" title="Import jobs (JSON or CSV)" :disabled="isImporting" @click="triggerImport">
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Import jobs (JSON or CSV)"
+            :disabled="isImporting"
+            @click="triggerImport"
+          >
             <Icon name="Upload" class="w-4 h-4" />
           </Button>
           <input
@@ -351,9 +408,9 @@ onUnmounted(() => {
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" size="icon" title="Board actions">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <circle cx="10" cy="4" r="1.5"/>
-                  <circle cx="10" cy="10" r="1.5"/>
-                  <circle cx="10" cy="16" r="1.5"/>
+                  <circle cx="10" cy="4" r="1.5" />
+                  <circle cx="10" cy="10" r="1.5" />
+                  <circle cx="10" cy="16" r="1.5" />
                 </svg>
               </Button>
             </DropdownMenuTrigger>
@@ -381,7 +438,11 @@ onUnmounted(() => {
         :board-id="board.id"
         :stages="board.stages"
         :default-status="board.stages[0]?.key"
-        @stages-updated="(s) => { if (board) board.stages = s }"
+        @stages-updated="
+          (s) => {
+            if (board) board.stages = s
+          }
+        "
       />
     </template>
 
@@ -402,12 +463,14 @@ onUnmounted(() => {
         <div class="py-2">
           <p class="text-sm text-muted-foreground">
             Are you sure you want to delete
-            <strong class="text-foreground">{{ board?.name }}</strong>?
-            All jobs in this board will be permanently deleted. This action cannot be undone.
+            <strong class="text-foreground">{{ board?.name }}</strong
+            >? All jobs in this board will be permanently deleted. This action cannot be undone.
           </p>
         </div>
         <DialogFooter>
-          <Button variant="outline" @click="isDeleteOpen = false" :disabled="isDeleting">Cancel</Button>
+          <Button variant="outline" @click="isDeleteOpen = false" :disabled="isDeleting"
+            >Cancel</Button
+          >
           <Button variant="destructive" @click="confirmDelete" :disabled="isDeleting">
             {{ isDeleting ? 'Deleting...' : 'Delete Board' }}
           </Button>

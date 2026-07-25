@@ -1,24 +1,25 @@
-from typing import Optional
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
-from ....schemas import user as schemas
 from ....core.config import settings
+from ....models.resume import Resume
+from ....schemas import user as schemas
+from ....services import resume as resume_service
+from ....services import user as user_service
 from ...deps.auth import get_current_user
 from ...deps.db import get_db
 from ...deps.plan import plan_gate
-from ....models.resume import Resume
-from ....services import resume as resume_service, user as user_service
 
 router = APIRouter(prefix='/users')
 public_router = APIRouter(prefix='/users')
 
+
 class UpdateProfileRequest(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    avatar_url: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    avatar_url: str | None = None
 
 
 class ChangePasswordRequest(BaseModel):
@@ -44,6 +45,7 @@ def _resume_response(r, user_id: int) -> dict:
         'url': url,
         'created_at': r.created_at.isoformat() if r.created_at else None,
     }
+
 
 @public_router.post('/check-user-name', response_model=schemas.UserNameCheckResponse)
 async def check_user_name_availability(
@@ -76,7 +78,8 @@ async def update_user(
 ):
     _check_self(user_id, current_user)
     return await user_service.update_profile(
-        db, user_id,
+        db,
+        user_id,
         first_name=payload.first_name,
         last_name=payload.last_name,
         avatar_url=payload.avatar_url,
@@ -105,6 +108,7 @@ async def change_password(
     _check_self(user_id, current_user)
     await user_service.change_password(db, user_id, payload.current_password, payload.new_password)
     return {'message': 'Password updated'}
+
 
 @router.get('/{user_id}/settings')
 async def get_settings(

@@ -26,15 +26,24 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ''
     SMTP_FROM_EMAIL: str = 'no-reply@example.com'
     SMTP_USE_TLS: bool = False
+    # Non-local environments send via an HTTPS email-provider API instead of SMTP —
+    # many PaaS hosts (e.g. Railway) silently block outbound SMTP ports, causing sends
+    # to hang until timeout. Provider-agnostic: swap EMAIL_PROVIDER_API_URL to point at
+    # any provider using a similar from/to/subject/html JSON schema (Resend by default).
+    # Falls back to SMTP_PASSWORD if unset, so existing SMTP-only deployments don't
+    # need a new env var to keep working.
     EMAIL_PROVIDER_API_KEY: str = ''
     EMAIL_PROVIDER_API_URL: str = 'https://api.resend.com/emails'
+    # 'smtp' | 'https' — explicit override. Leave unset ('') to auto-infer from
+    # APP_ENV (local -> smtp/Mailpit, everything else -> https), so forgetting to
+    # set this on a new deployment can't silently reintroduce the SMTP-hang bug.
     EMAIL_PROTOCOL: str = ''
 
     LLM_CONFIG: dict = {
-        'default':        {'provider': 'deepseek',  'model': 'deepseek-chat'},
-        'ats':            {'provider': 'deepseek',  'model': 'deepseek-chat'},
-        'skills':         {'provider': 'deepseek',  'model': 'deepseek-chat'},
-        'extract':        {'provider': 'deepseek',  'model': 'deepseek-chat'},
+        'default': {'provider': 'deepseek', 'model': 'deepseek-chat'},
+        'ats': {'provider': 'deepseek', 'model': 'deepseek-chat'},
+        'skills': {'provider': 'deepseek', 'model': 'deepseek-chat'},
+        'extract': {'provider': 'deepseek', 'model': 'deepseek-chat'},
         'deepseek_cache': True,
     }
 

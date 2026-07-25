@@ -1,0 +1,27 @@
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+exclude = ["api-backend-env/", "alembic/"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["api-backend-env", "alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+# E712 (== True/False) fires on SQLAlchemy query filters (Model.col == True) where
+# its suggested fix is actively wrong — Python's `not`/truthiness doesn't route
+# through SQLAlchemy's expression building, so the "fix" would break queries at
+# runtime rather than just being a style nit. Not worth the per-occurrence review.
+ignore = ["E712"]
+
+# LLM prompt templates are hand-aligned natural-language text where wording/whitespace
+# precision matters — not mechanically rewrappable without risking a silent prompt change.
+[tool.ruff.lint.per-file-ignores]
+"**/services/llm.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "preserve"

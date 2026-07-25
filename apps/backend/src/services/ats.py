@@ -1,41 +1,75 @@
 import re
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.resume import Resume
 from ..models.job import Job
+from ..models.resume import Resume
 from ..models.user import User
 from ..schemas.ats import ATSReport
 from .llm import ats_score_report
 
 
 async def get_resume(db: AsyncSession, user_id: int, resume_id: int) -> Resume | None:
-    result = await db.execute(
-        select(Resume).where(Resume.id == resume_id, Resume.user_id == user_id)
-    )
+    result = await db.execute(select(Resume).where(Resume.id == resume_id, Resume.user_id == user_id))
     return result.scalar_one_or_none()
 
 
 async def get_default_resume(db: AsyncSession, user_id: int) -> Resume | None:
-    result = await db.execute(
-        select(Resume).where(Resume.user_id == user_id, Resume.is_default == True)
-    )
+    result = await db.execute(select(Resume).where(Resume.user_id == user_id, Resume.is_default == True))
     resume = result.scalar_one_or_none()
     if resume:
         return resume
     # Fall back to the most recently uploaded resume
-    result = await db.execute(
-        select(Resume).where(Resume.user_id == user_id).order_by(Resume.id.desc()).limit(1)
-    )
+    result = await db.execute(select(Resume).where(Resume.user_id == user_id).order_by(Resume.id.desc()).limit(1))
     return result.scalar_one_or_none()
 
 
 _SKIP_WORDS = {
-    'A', 'I', 'We', 'The', 'An', 'In', 'On', 'At', 'As', 'Be', 'Or', 'And', 'For',
-    'With', 'From', 'Our', 'You', 'Are', 'Will', 'Have', 'Has', 'Can', 'May', 'Must',
-    'This', 'That', 'They', 'Your', 'All', 'New', 'Any', 'Not', 'Use', 'Its', 'Our',
-    'Who', 'Key', 'Job', 'Per', 'Via', 'Of', 'To', 'Do', 'By',
+    'A',
+    'I',
+    'We',
+    'The',
+    'An',
+    'In',
+    'On',
+    'At',
+    'As',
+    'Be',
+    'Or',
+    'And',
+    'For',
+    'With',
+    'From',
+    'Our',
+    'You',
+    'Are',
+    'Will',
+    'Have',
+    'Has',
+    'Can',
+    'May',
+    'Must',
+    'This',
+    'That',
+    'They',
+    'Your',
+    'All',
+    'New',
+    'Any',
+    'Not',
+    'Use',
+    'Its',
+    'Our',
+    'Who',
+    'Key',
+    'Job',
+    'Per',
+    'Via',
+    'Of',
+    'To',
+    'Do',
+    'By',
 }
 
 _SKILL_RE = re.compile(
@@ -93,16 +127,14 @@ async def calculate_score(
 
 # ── Public scoring entry points ───────────────────────────────────────────────
 
+
 async def score_job(
     db: AsyncSession,
     user: User,
     job: Job,
     resume_id: int | None = None,
 ) -> ATSReport | None:
-    resume = (
-        await get_resume(db, user.id, resume_id) if resume_id
-        else await get_default_resume(db, user.id)
-    )
+    resume = await get_resume(db, user.id, resume_id) if resume_id else await get_default_resume(db, user.id)
     if not resume or not resume.parsed_text or not job.description:
         return None
 
@@ -123,10 +155,7 @@ async def score_quick(
     required_skills: list[str] | None = None,
     resume_id: int | None = None,
 ) -> ATSReport | None:
-    resume = (
-        await get_resume(db, user.id, resume_id) if resume_id
-        else await get_default_resume(db, user.id)
-    )
+    resume = await get_resume(db, user.id, resume_id) if resume_id else await get_default_resume(db, user.id)
     if not resume or not resume.parsed_text:
         return None
 

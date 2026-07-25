@@ -1,32 +1,35 @@
-from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from pydantic import HttpUrl
 from fastapi import HTTPException
+from pydantic import HttpUrl
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
 from ..models.company import Company
 from ..models.job import Job
 from ..schemas.company import CompanyBase, CompanyCreate
-from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
 
 PaginatedCompanies = get_paginated_response_model(CompanyBase)
+
 
 async def get_company_by_id(db: AsyncSession, company_id: int) -> Company | None:
     result = await db.execute(select(Company).where(Company.id == company_id))
     return result.scalar_one_or_none()
+
 
 async def get_company_by_name(db: AsyncSession, company_name: str) -> Company | None:
     result = await db.execute(select(Company).where(Company.name.ilike(company_name)))
     return result.scalar_one_or_none()
 
 
-async def get_companies(db: AsyncSession, pagination: dict, user_id: Optional[int] = None, search: Optional[str] = None) -> PaginatedCompanies:
+async def get_companies(
+    db: AsyncSession, pagination: dict, user_id: int | None = None, search: str | None = None
+) -> PaginatedCompanies:
     q = select(Company)
     if user_id is not None:
         # Only return companies linked to this user's jobs
-        q = q.where(Company.id.in_(
-            select(Job.company_id).where(Job.user_id == user_id, Job.company_id.is_not(None)).distinct()
-        ))
+        q = q.where(
+            Company.id.in_(select(Job.company_id).where(Job.user_id == user_id, Job.company_id.is_not(None)).distinct())
+        )
     if search:
         q = q.where(Company.name.ilike(f'%{search}%'))
 

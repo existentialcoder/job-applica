@@ -1,17 +1,18 @@
 import os
-from fastapi import HTTPException, UploadFile
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from pydantic import ValidationError, EmailStr
-import jwt
-from jwt import InvalidTokenError
 
-from ..core.utils import hash_password, verify_password, create_token
+import jwt
+from fastapi import HTTPException, UploadFile
+from jwt import InvalidTokenError
+from pydantic import EmailStr, ValidationError
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from ..core.config import settings
 from ..core.constants import Constants
-from ..models.user import User
+from ..core.utils import create_token, hash_password, verify_password
 from ..models.skill import Skill
-from ..schemas.user import UserBase, UserSignup, UserLogin, UserLoginTokenResponse, TokenPayload, UserNameCheckResponse
+from ..models.user import User
+from ..schemas.user import TokenPayload, UserBase, UserLogin, UserLoginTokenResponse, UserNameCheckResponse, UserSignup
 from ..utils.file_uploader import FileUploader
 
 UPLOAD_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'uploads'))
@@ -69,7 +70,9 @@ async def user_login(db: AsyncSession, login_data: UserLogin) -> UserLoginTokenR
         raise HTTPException(status_code=404, detail='User not found')
 
     if not user_data.hashed_password:
-        raise HTTPException(status_code=400, detail='This account uses social login. Please sign in with Google or LinkedIn.')
+        raise HTTPException(
+            status_code=400, detail='This account uses social login. Please sign in with Google or LinkedIn.'
+        )
 
     if not verify_password(login_data.password, user_data.hashed_password):
         raise HTTPException(status_code=401, detail='Incorrect password')
@@ -81,8 +84,20 @@ async def user_login(db: AsyncSession, login_data: UserLogin) -> UserLoginTokenR
         'email': user_data.email,
     }
 
-    access_token = create_token(token_data, expiry=settings.ACCESS_TOKEN_EXPIRE_MINUTES, expiry_type='minutes', secret=settings.AUTH_SECRET, algorithm=Constants.AUTH_ALGORITHM)
-    refresh_token = create_token(token_data, expiry=settings.REFRESH_TOKEN_EXPIRE_DAYS, expiry_type='days', secret=settings.AUTH_SECRET, algorithm=Constants.AUTH_ALGORITHM)
+    access_token = create_token(
+        token_data,
+        expiry=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+        expiry_type='minutes',
+        secret=settings.AUTH_SECRET,
+        algorithm=Constants.AUTH_ALGORITHM,
+    )
+    refresh_token = create_token(
+        token_data,
+        expiry=settings.REFRESH_TOKEN_EXPIRE_DAYS,
+        expiry_type='days',
+        secret=settings.AUTH_SECRET,
+        algorithm=Constants.AUTH_ALGORITHM,
+    )
 
     return UserLoginTokenResponse(
         message='Successfully logged in',
@@ -99,12 +114,14 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> UserBase:
         raise HTTPException(status_code=404, detail='User not found')
     return UserBase.model_validate(user_data)
 
+
 async def get_user_by_user_name(db: AsyncSession, user_name: str) -> User:
     result = await db.execute(select(User).where(User.user_name == user_name))
     user_data = result.scalar_one_or_none()
     if not user_data:
         raise HTTPException(status_code=404, detail='User not found')
     return user_data
+
 
 async def get_user_by_email(db: AsyncSession, user_email: EmailStr) -> User:
     result = await db.execute(select(User).where(User.email == user_email))

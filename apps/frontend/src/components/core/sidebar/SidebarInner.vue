@@ -14,9 +14,7 @@ import AppLogo from '@/components/core/AppLogo.vue'
 const route = useRoute()
 const featureStore = useFeatureStore()
 
-const menus = computed(() =>
-  ALL_MENU_ITEMS.filter(m => !m.flag || featureStore.flags[m.flag])
-)
+const menus = computed(() => ALL_MENU_ITEMS.filter((m) => !m.flag || featureStore.flags[m.flag]))
 
 const handleNavigate = (path: string) => {
   router.push(path)
@@ -126,7 +124,10 @@ const toggleSidebar = () => {
       </div>
 
       <!-- Bottom: Settings pinned -->
-      <div class="border-t-[1px] transition-all duration-400" :class="store.sidebarExpanded ? 'p-4' : 'p-2'">
+      <div
+        class="border-t-[1px] transition-all duration-400"
+        :class="store.sidebarExpanded ? 'p-4' : 'p-2'"
+      >
         <TooltipProvider :disable-hoverable-content="true">
           <Tooltip :delay-duration="0">
             <TooltipTrigger class="w-full">

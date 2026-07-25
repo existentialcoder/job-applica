@@ -1,22 +1,23 @@
 import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....api.deps.auth import get_current_user
 from ....api.deps.db import get_db
+from ....models.user import User
+from ....schemas.ats import ATSQuickScoreRequest, ATSReport, ATSScoreRequest
 from ....schemas.user import UserBase
-from ....schemas.ats import ATSReport, ATSScoreRequest, ATSQuickScoreRequest
 from ....services import ats as ats_service
 from ....services.job import get_job_with_id
-from ....models.user import User
 
 # ── Job-tied scoring ──────────────────────────────────────────────────────────
 router = APIRouter(prefix='/jobs')
 
 
 _CACHE_VERSION = 6  # bump this to invalidate all stored ATS reports
+
 
 def _content_hash(resume_text: str, jd: str) -> str:
     return hashlib.sha256(f'{resume_text}\x00{jd}'.encode()).hexdigest()[:24]
@@ -39,7 +40,8 @@ async def calculate_ats_score(
 
     # Resolve which resume will be used so we can check the cache before calling the LLM
     resume = (
-        await ats_service.get_resume(db, user.id, payload.resume_id) if payload.resume_id
+        await ats_service.get_resume(db, user.id, payload.resume_id)
+        if payload.resume_id
         else await ats_service.get_default_resume(db, user.id)
     )
     if not resume:
@@ -95,7 +97,8 @@ async def quick_ats_score(
     user = user_result.scalar_one_or_none()
 
     report = await ats_service.score_quick(
-        db, user,
+        db,
+        user,
         job_description=payload.job_description,
         required_skills=payload.required_skills,
         resume_id=payload.resume_id,

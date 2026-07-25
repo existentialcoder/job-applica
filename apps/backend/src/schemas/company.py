@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field, EmailStr, HttpUrl
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
+
 from .base import BaseSchema
 
 
@@ -14,14 +15,17 @@ class CompanyFields(BaseModel):
 
 class CompanyBase(BaseSchema, CompanyFields):
     """Returned from API responses"""
+
     pass
 
 
 class CompanyCreate(CompanyFields):
     """Used for creating a company"""
+
     pass
 
 
 class CompanyUpdate(CompanyFields):
     """Used for updating a company"""
+
     pass

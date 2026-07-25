@@ -1,8 +1,9 @@
 # src/models/company.py
 from sqlalchemy import Integer, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db.base_class import Base
+
 
 class Company(Base):
     __tablename__ = 'companies'

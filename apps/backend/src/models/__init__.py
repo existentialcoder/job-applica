@@ -1,9 +1,7 @@
 import os
 import sys
-from pathlib import Path
 from importlib import import_module
-
-from ..db.base_class import Base 
+from pathlib import Path
 
 current_dir = Path(__file__).parent
 sys.path.append(str(current_dir))

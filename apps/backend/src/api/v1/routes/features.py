@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from ....core.config import get_feature_flags
 
 router = APIRouter()

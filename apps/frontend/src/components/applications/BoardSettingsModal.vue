@@ -1,28 +1,50 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
-import type { BoardData, StageData } from '@/lib/types';
+import { ref, watch, nextTick } from 'vue'
+import type { BoardData, StageData } from '@/lib/types'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const props = defineProps<{
   open: boolean
   board: BoardData
-}>();
+}>()
 
 const emit = defineEmits<{
   (e: 'update:open', val: boolean): void
-  (e: 'save', payload: { name: string; description: string; color: string; stages: StageData[]; key_renames: Record<string, string> }): void
-}>();
+  (
+    e: 'save',
+    payload: {
+      name: string
+      description: string
+      color: string
+      stages: StageData[]
+      key_renames: Record<string, string>
+    }
+  ): void
+}>()
 
 const STAGE_COLORS = [
-  'bg-slate-500', 'bg-blue-500', 'bg-violet-500', 'bg-emerald-500',
-  'bg-amber-500', 'bg-rose-500', 'bg-orange-500', 'bg-cyan-500',
-  'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-zinc-400',
-];
+  'bg-slate-500',
+  'bg-blue-500',
+  'bg-violet-500',
+  'bg-emerald-500',
+  'bg-amber-500',
+  'bg-rose-500',
+  'bg-orange-500',
+  'bg-cyan-500',
+  'bg-pink-500',
+  'bg-teal-500',
+  'bg-indigo-500',
+  'bg-zinc-400'
+]
 
 const COLOR_OPTIONS = [
   { value: 'bg-blue-500', label: 'Blue' },
@@ -32,120 +54,123 @@ const COLOR_OPTIONS = [
   { value: 'bg-rose-500', label: 'Rose' },
   { value: 'bg-slate-500', label: 'Slate' },
   { value: 'bg-orange-500', label: 'Orange' },
-  { value: 'bg-cyan-500', label: 'Cyan' },
-];
+  { value: 'bg-cyan-500', label: 'Cyan' }
+]
 
-const name = ref('');
-const description = ref('');
-const color = ref('bg-blue-500');
-const stages = ref<StageData[]>([]);
-const isSaving = ref(false);
-const activeTab = ref<'general' | 'stages'>('general');
+const name = ref('')
+const description = ref('')
+const color = ref('bg-blue-500')
+const stages = ref<StageData[]>([])
+const activeTab = ref<'general' | 'stages'>('general')
 
 // Inline stage rename state
-const editingIndex = ref<number | null>(null);
-const editingLabel = ref('');
-const keyRenames = ref<Record<string, string>>({});
+const editingIndex = ref<number | null>(null)
+const editingLabel = ref('')
+const keyRenames = ref<Record<string, string>>({})
 
 // Add stage inline
-const showAddStage = ref(false);
-const newStageName = ref('');
-const addInputRef = ref<HTMLInputElement | null>(null);
+const showAddStage = ref(false)
+const newStageName = ref('')
+const addInputRef = ref<HTMLInputElement | null>(null)
 
-watch(() => props.open, (open) => {
-  if (open) {
-    name.value = props.board.name;
-    description.value = props.board.description ?? '';
-    color.value = props.board.color ?? 'bg-blue-500';
-    // Auto-detect key/label mismatches from old bug and queue them as renames
-    const renames: Record<string, string> = {};
-    stages.value = props.board.stages.map(s => {
-      if (s.key !== s.label) {
-        renames[s.key] = s.label;
-        return { ...s, key: s.label };
-      }
-      return { ...s };
-    });
-    keyRenames.value = renames;
-    editingIndex.value = null;
-    showAddStage.value = false;
-    newStageName.value = '';
-    activeTab.value = 'general';
+watch(
+  () => props.open,
+  (open) => {
+    if (open) {
+      name.value = props.board.name
+      description.value = props.board.description ?? ''
+      color.value = props.board.color ?? 'bg-blue-500'
+      // Auto-detect key/label mismatches from old bug and queue them as renames
+      const renames: Record<string, string> = {}
+      stages.value = props.board.stages.map((s) => {
+        if (s.key !== s.label) {
+          renames[s.key] = s.label
+          return { ...s, key: s.label }
+        }
+        return { ...s }
+      })
+      keyRenames.value = renames
+      editingIndex.value = null
+      showAddStage.value = false
+      newStageName.value = ''
+      activeTab.value = 'general'
+    }
   }
-});
+)
 
 function getNextColor(): string {
-  const used = stages.value.map(s => s.color);
-  return STAGE_COLORS.find(c => !used.includes(c)) ?? STAGE_COLORS[0];
+  const used = stages.value.map((s) => s.color)
+  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0]
 }
 
 function startEditLabel(i: number) {
-  editingIndex.value = i;
-  editingLabel.value = stages.value[i].label;
+  editingIndex.value = i
+  editingLabel.value = stages.value[i].label
 }
 
 function commitEditLabel() {
-  if (editingIndex.value === null) return;
-  const label = editingLabel.value.trim();
+  if (editingIndex.value === null) return
+  const label = editingLabel.value.trim()
   if (label && label !== stages.value[editingIndex.value].label) {
-    const oldKey = stages.value[editingIndex.value].key;
-    const newKey = label;
+    const oldKey = stages.value[editingIndex.value].key
+    const newKey = label
     // Track the rename chain: if the old key was itself a rename target, update the chain
-    const originalKey = Object.keys(keyRenames.value).find(k => keyRenames.value[k] === oldKey) ?? oldKey;
+    const originalKey =
+      Object.keys(keyRenames.value).find((k) => keyRenames.value[k] === oldKey) ?? oldKey
     if (originalKey !== newKey) {
-      keyRenames.value = { ...keyRenames.value, [originalKey]: newKey };
+      keyRenames.value = { ...keyRenames.value, [originalKey]: newKey }
     }
-    stages.value[editingIndex.value] = { ...stages.value[editingIndex.value], key: newKey, label };
+    stages.value[editingIndex.value] = { ...stages.value[editingIndex.value], key: newKey, label }
   }
-  editingIndex.value = null;
+  editingIndex.value = null
 }
 
 function cancelEditLabel() {
-  editingIndex.value = null;
+  editingIndex.value = null
 }
 
 async function openAddStage() {
-  showAddStage.value = true;
-  await nextTick();
-  addInputRef.value?.focus();
+  showAddStage.value = true
+  await nextTick()
+  addInputRef.value?.focus()
 }
 
 function submitAddStage() {
-  const key = newStageName.value.trim();
-  if (!key) return;
-  if (stages.value.some(s => s.key.toLowerCase() === key.toLowerCase())) return;
-  stages.value.push({ key, label: key, color: getNextColor() });
-  newStageName.value = '';
-  showAddStage.value = false;
+  const key = newStageName.value.trim()
+  if (!key) return
+  if (stages.value.some((s) => s.key.toLowerCase() === key.toLowerCase())) return
+  stages.value.push({ key, label: key, color: getNextColor() })
+  newStageName.value = ''
+  showAddStage.value = false
 }
 
 function removeStage(index: number) {
-  stages.value.splice(index, 1);
+  stages.value.splice(index, 1)
 }
 
 function moveUp(index: number) {
-  if (index === 0) return;
-  const tmp = stages.value[index - 1];
-  stages.value[index - 1] = stages.value[index];
-  stages.value[index] = tmp;
+  if (index === 0) return
+  const tmp = stages.value[index - 1]
+  stages.value[index - 1] = stages.value[index]
+  stages.value[index] = tmp
 }
 
 function moveDown(index: number) {
-  if (index === stages.value.length - 1) return;
-  const tmp = stages.value[index + 1];
-  stages.value[index + 1] = stages.value[index];
-  stages.value[index] = tmp;
+  if (index === stages.value.length - 1) return
+  const tmp = stages.value[index + 1]
+  stages.value[index + 1] = stages.value[index]
+  stages.value[index] = tmp
 }
 
 function handleSave() {
-  if (!name.value.trim() || stages.value.length === 0) return;
+  if (!name.value.trim() || stages.value.length === 0) return
   emit('save', {
     name: name.value.trim(),
     description: description.value.trim(),
     color: color.value,
     stages: stages.value,
-    key_renames: keyRenames.value,
-  });
+    key_renames: keyRenames.value
+  })
 }
 </script>
 
@@ -159,13 +184,27 @@ function handleSave() {
       <!-- Tabs -->
       <div class="flex border-b border-border mb-4">
         <button
-          :class="['px-4 py-2 text-sm font-medium border-b-2 transition-colors', activeTab === 'general' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground']"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+            activeTab === 'general'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          ]"
           @click="activeTab = 'general'"
-        >General</button>
+        >
+          General
+        </button>
         <button
-          :class="['px-4 py-2 text-sm font-medium border-b-2 transition-colors', activeTab === 'stages' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground']"
+          :class="[
+            'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+            activeTab === 'stages'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          ]"
           @click="activeTab = 'stages'"
-        >Stages</button>
+        >
+          Stages
+        </button>
       </div>
 
       <!-- General tab -->
@@ -184,7 +223,13 @@ function handleSave() {
             <button
               v-for="opt in COLOR_OPTIONS"
               :key="opt.value"
-              :class="['w-7 h-7 rounded-full transition-all', opt.value, color === opt.value ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-105']"
+              :class="[
+                'w-7 h-7 rounded-full transition-all',
+                opt.value,
+                color === opt.value
+                  ? 'ring-2 ring-offset-2 ring-primary scale-110'
+                  : 'hover:scale-105'
+              ]"
               :title="opt.label"
               @click="color = opt.value"
             />
@@ -223,9 +268,12 @@ function handleSave() {
               class="flex-1 text-sm cursor-pointer hover:text-primary transition-colors"
               title="Click to rename"
               @click="startEditLabel(i)"
-            >{{ stage.label }}</span>
+              >{{ stage.label }}</span
+            >
 
-            <span v-if="i === 0" class="text-xs text-muted-foreground/60 italic flex-shrink-0">first</span>
+            <span v-if="i === 0" class="text-xs text-muted-foreground/60 italic flex-shrink-0"
+              >first</span
+            >
 
             <!-- Reorder -->
             <button
@@ -233,7 +281,13 @@ function handleSave() {
               :disabled="i === 0"
               @click="moveUp(i)"
             >
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <svg
+                class="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
               </svg>
             </button>
@@ -242,7 +296,13 @@ function handleSave() {
               :disabled="i === stages.length - 1"
               @click="moveDown(i)"
             >
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <svg
+                class="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -254,7 +314,13 @@ function handleSave() {
               @click="removeStage(i)"
               title="Remove stage"
             >
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg
+                class="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -271,7 +337,13 @@ function handleSave() {
             class="w-full flex items-center gap-2 px-3 py-2 rounded-md border-2 border-dashed border-muted-foreground/20 text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
             @click="openAddStage"
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             Add a stage
@@ -287,18 +359,28 @@ function handleSave() {
             class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
             placeholder="Stage name..."
             @keyup.enter="submitAddStage"
-            @keyup.escape="showAddStage = false; newStageName = ''"
+            @keyup.escape="
+              showAddStage = false
+              newStageName = ''
+            "
           />
           <div class="flex gap-1.5">
             <button
               class="flex-1 text-xs py-1.5 rounded bg-primary text-primary-foreground font-medium disabled:opacity-50"
               :disabled="!newStageName.trim()"
               @click="submitAddStage"
-            >Add</button>
+            >
+              Add
+            </button>
             <button
               class="flex-1 text-xs py-1.5 rounded border border-border text-muted-foreground hover:text-foreground"
-              @click="showAddStage = false; newStageName = ''"
-            >Cancel</button>
+              @click="
+                showAddStage = false
+                newStageName = ''
+              "
+            >
+              Cancel
+            </button>
           </div>
         </div>
       </div>

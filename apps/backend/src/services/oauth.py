@@ -1,13 +1,13 @@
 import httpx
 from fastapi import HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import settings
 from ..core.constants import Constants
 from ..core.utils import create_token
 from ..models.user import User
-from ..schemas.user import UserLoginTokenResponse, TokenPayload
+from ..schemas.user import TokenPayload, UserLoginTokenResponse
 from . import connected_accounts as ca_service
 
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -25,6 +25,7 @@ def _linkedin_redirect_uri() -> str:
 def get_linkedin_auth_url(origin: str = 'web') -> str:
     import secrets
     from urllib.parse import urlencode
+
     state = f'{origin}:{secrets.token_urlsafe(16)}'
     params = {
         'response_type': 'code',
@@ -38,13 +39,16 @@ def get_linkedin_auth_url(origin: str = 'web') -> str:
 
 async def exchange_google_code(code: str) -> dict:
     async with httpx.AsyncClient() as client:
-        token_resp = await client.post(GOOGLE_TOKEN_URL, data={
-            'code': code,
-            'client_id': settings.GOOGLE_CLIENT_ID,
-            'client_secret': settings.GOOGLE_CLIENT_SECRET,
-            'redirect_uri': f'{settings.BACKEND_URL}/api/v1/auth/google/callback',
-            'grant_type': 'authorization_code',
-        })
+        token_resp = await client.post(
+            GOOGLE_TOKEN_URL,
+            data={
+                'code': code,
+                'client_id': settings.GOOGLE_CLIENT_ID,
+                'client_secret': settings.GOOGLE_CLIENT_SECRET,
+                'redirect_uri': f'{settings.BACKEND_URL}/api/v1/auth/google/callback',
+                'grant_type': 'authorization_code',
+            },
+        )
     if token_resp.status_code != 200:
         raise HTTPException(status_code=400, detail='Failed to exchange Google code')
     token_data = token_resp.json()
@@ -70,13 +74,17 @@ async def exchange_google_code(code: str) -> dict:
 
 async def exchange_linkedin_code(code: str) -> dict:
     async with httpx.AsyncClient() as client:
-        token_resp = await client.post(LINKEDIN_TOKEN_URL, data={
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': _linkedin_redirect_uri(),
-            'client_id': settings.LINKEDIN_CLIENT_ID,
-            'client_secret': settings.LINKEDIN_CLIENT_SECRET,
-        }, headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        token_resp = await client.post(
+            LINKEDIN_TOKEN_URL,
+            data={
+                'grant_type': 'authorization_code',
+                'code': code,
+                'redirect_uri': _linkedin_redirect_uri(),
+                'client_id': settings.LINKEDIN_CLIENT_ID,
+                'client_secret': settings.LINKEDIN_CLIENT_SECRET,
+            },
+            headers={'Content-Type': 'application/x-www-form-urlencoded'},
+        )
     if token_resp.status_code != 200:
         raise HTTPException(status_code=400, detail='Failed to exchange LinkedIn code')
     token_data = token_resp.json()

@@ -23,7 +23,7 @@ DEFAULT_DARK_KEY = 'noir'
 
 
 def resolve_email_theme(user_settings: dict) -> dict:
-    """ Resolves a user's persisted theme/settings into email-safe colors. """
+    """Resolves a user's persisted theme/settings into email-safe colors."""
     mode = user_settings.get('theme')
     light_key = user_settings.get('light_bg_theme', DEFAULT_LIGHT_KEY)
     dark_key = user_settings.get('dark_bg_theme', DEFAULT_DARK_KEY)

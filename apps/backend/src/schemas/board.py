@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List, Dict
+
 from .base import BaseSchema
 
 
@@ -13,9 +13,9 @@ class StageSchema(BaseModel):
 
 class BoardBase(BaseSchema):
     name: str
-    color: Optional[str] = None
-    description: Optional[str] = None
-    stages: List[StageSchema] = []
+    color: str | None = None
+    description: str | None = None
+    stages: list[StageSchema] = []
     is_default: bool = False
     number_of_jobs: int = 0
 
@@ -24,14 +24,14 @@ class BoardBase(BaseSchema):
 
 class BoardCreate(BaseModel):
     name: str
-    color: Optional[str] = None
-    description: Optional[str] = None
-    stages: Optional[List[StageSchema]] = None
+    color: str | None = None
+    description: str | None = None
+    stages: list[StageSchema] | None = None
 
 
 class BoardUpdate(BaseModel):
-    name: Optional[str] = None
-    color: Optional[str] = None
-    description: Optional[str] = None
-    stages: Optional[List[StageSchema]] = None
-    key_renames: Optional[Dict[str, str]] = None
+    name: str | None = None
+    color: str | None = None
+    description: str | None = None
+    stages: list[StageSchema] | None = None
+    key_renames: dict[str, str] | None = None

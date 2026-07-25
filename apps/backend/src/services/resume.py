@@ -1,17 +1,18 @@
 import os
 import uuid
-from docx import Document
-from pypdf import PdfReader
-from fastapi import UploadFile, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
+from docx import Document
+from fastapi import HTTPException, UploadFile
+from pypdf import PdfReader
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..core.config import settings
 from ..models.resume import Resume
 from ..models.skill import Skill
 from ..models.user import User
-from ..core.config import settings
-from ..utils.file_uploader import FileUploader
 from ..services.llm import extract_skills_from_resume
+from ..utils.file_uploader import FileUploader
 
 UPLOAD_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'uploads'))
 ALLOWED_TYPES = {
@@ -20,6 +21,7 @@ ALLOWED_TYPES = {
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 }
 MAX_SIZE_MB = 5
+
 
 def _parse_resume_text(file: UploadFile, dest: str) -> str:
     if file.content_type == 'application/pdf':
@@ -35,9 +37,7 @@ def _parse_resume_text(file: UploadFile, dest: str) -> str:
 
 
 async def list_resumes(db: AsyncSession, user_id: int) -> list[Resume]:
-    result = await db.execute(
-        select(Resume).where(Resume.user_id == user_id).order_by(Resume.id.desc())
-    )
+    result = await db.execute(select(Resume).where(Resume.user_id == user_id).order_by(Resume.id.desc()))
     return result.scalars().all()
 
 
@@ -64,9 +64,7 @@ async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Res
             content_type=file.content_type or 'application/octet-stream',
         )
 
-    existing_count_result = await db.execute(
-        select(func.count(Resume.id)).where(Resume.user_id == user_id)
-    )
+    existing_count_result = await db.execute(select(func.count(Resume.id)).where(Resume.user_id == user_id))
     is_first = existing_count_result.scalar() == 0
 
     resume = Resume(
@@ -105,9 +103,7 @@ async def _sync_extracted_skills(db: AsyncSession, user_id: int, resume_text: st
 
     for name in extracted:
         # Case-insensitive lookup — avoids duplicates like 'python' vs 'Python'
-        result = await db.execute(
-            select(Skill).where(func.lower(Skill.name) == name.lower())
-        )
+        result = await db.execute(select(Skill).where(func.lower(Skill.name) == name.lower()))
         skill = result.scalar_one_or_none()
 
         if skill is None:
@@ -124,9 +120,7 @@ async def _sync_extracted_skills(db: AsyncSession, user_id: int, resume_text: st
 
 
 async def delete_resume(db: AsyncSession, user_id: int, resume_id: int) -> None:
-    result = await db.execute(
-        select(Resume).where(Resume.id == resume_id, Resume.user_id == user_id)
-    )
+    result = await db.execute(select(Resume).where(Resume.id == resume_id, Resume.user_id == user_id))
     resume = result.scalar_one_or_none()
     if not resume:
         raise HTTPException(status_code=404, detail='Resume not found')
@@ -146,20 +140,17 @@ async def delete_resume(db: AsyncSession, user_id: int, resume_id: int) -> None:
 async def sync_skills_background(user_id: int, resume_text: str) -> None:
     """Run after upload in a background task — creates its own DB session."""
     from ..db.session import AsyncSessionLocal
+
     async with AsyncSessionLocal() as db:
         await _sync_extracted_skills(db, user_id, resume_text)
 
 
 async def set_default_resume(db: AsyncSession, user_id: int, resume_id: int) -> Resume:
-    existing = await db.execute(
-        select(Resume).where(Resume.user_id == user_id, Resume.is_default == True)
-    )
+    existing = await db.execute(select(Resume).where(Resume.user_id == user_id, Resume.is_default == True))
     for r in existing.scalars().all():
         r.is_default = False
 
-    result = await db.execute(
-        select(Resume).where(Resume.id == resume_id, Resume.user_id == user_id)
-    )
+    result = await db.execute(select(Resume).where(Resume.id == resume_id, Resume.user_id == user_id))
     resume = result.scalar_one_or_none()
     if not resume:
         raise HTTPException(status_code=404, detail='Resume not found')

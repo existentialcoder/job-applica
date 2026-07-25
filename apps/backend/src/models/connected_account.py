@@ -1,7 +1,8 @@
 from datetime import datetime
-from sqlalchemy import String, Text, Integer, ForeignKey, DateTime, UniqueConstraint, Index
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.base_class import Base
 

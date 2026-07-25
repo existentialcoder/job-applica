@@ -1,43 +1,51 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { toast } from '@/lib/toast';
-import type { BoardData } from '@/lib/types';
-import dataservice from '@/lib/dataservice';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { toast } from '@/lib/toast'
+import type { BoardData } from '@/lib/types'
+import dataservice from '@/lib/dataservice'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog'
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAppStore } from '@/stores/app';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { useAppStore } from '@/stores/app'
 
-const router = useRouter();
-const appStore = useAppStore();
+const router = useRouter()
+const appStore = useAppStore()
 
-const boards = ref<BoardData[]>([]);
-const isLoading = ref(true);
+const boards = ref<BoardData[]>([])
+const isLoading = ref(true)
 
-const isCreateOpen = ref(false);
-const newBoardName = ref('');
-const newBoardColor = ref('bg-blue-500');
-const newBoardDesc = ref('');
-const isSaving = ref(false);
+const isCreateOpen = ref(false)
+const newBoardName = ref('')
+const newBoardColor = ref('bg-blue-500')
+const newBoardDesc = ref('')
+const isSaving = ref(false)
 
 // Edit state
-const isEditOpen = ref(false);
-const editingBoard = ref<BoardData | null>(null);
-const editName = ref('');
-const editColor = ref('bg-blue-500');
-const editDesc = ref('');
+const isEditOpen = ref(false)
+const editingBoard = ref<BoardData | null>(null)
+const editName = ref('')
+const editColor = ref('bg-blue-500')
+const editDesc = ref('')
 
 // Delete confirm state
-const isDeleteOpen = ref(false);
-const deletingBoard = ref<BoardData | null>(null);
-const isDeleting = ref(false);
+const isDeleteOpen = ref(false)
+const deletingBoard = ref<BoardData | null>(null)
+const isDeleting = ref(false)
 
 const COLOR_OPTIONS = [
   { value: 'bg-blue-500', label: 'Blue' },
@@ -47,128 +55,128 @@ const COLOR_OPTIONS = [
   { value: 'bg-rose-500', label: 'Rose' },
   { value: 'bg-slate-500', label: 'Slate' },
   { value: 'bg-orange-500', label: 'Orange' },
-  { value: 'bg-cyan-500', label: 'Cyan' },
-];
+  { value: 'bg-cyan-500', label: 'Cyan' }
+]
 
 async function loadBoards() {
-  isLoading.value = true;
-  boards.value = await dataservice.getBoards();
-  isLoading.value = false;
+  isLoading.value = true
+  boards.value = await dataservice.getBoards()
+  isLoading.value = false
 }
 
 async function createBoard() {
-  if (!newBoardName.value.trim()) return;
-  isSaving.value = true;
+  if (!newBoardName.value.trim()) return
+  isSaving.value = true
   try {
     const board = await dataservice.createBoard({
       name: newBoardName.value.trim(),
       color: newBoardColor.value,
-      description: newBoardDesc.value.trim() || undefined,
-    });
+      description: newBoardDesc.value.trim() || undefined
+    })
     if (board) {
-      isCreateOpen.value = false;
-      newBoardName.value = '';
-      newBoardDesc.value = '';
-      newBoardColor.value = 'bg-blue-500';
-      boards.value.push(board);
-      toast.success('Board created');
+      isCreateOpen.value = false
+      newBoardName.value = ''
+      newBoardDesc.value = ''
+      newBoardColor.value = 'bg-blue-500'
+      boards.value.push(board)
+      toast.success('Board created')
     } else {
-      toast.error('Failed to create board');
+      toast.error('Failed to create board')
     }
   } catch {
-    toast.error('Failed to create board');
+    toast.error('Failed to create board')
   } finally {
-    isSaving.value = false;
+    isSaving.value = false
   }
 }
 
 function openBoard(board: BoardData) {
-  router.push(`/boards/${board.id}`);
+  router.push(`/boards/${board.id}`)
 }
 
 function openEdit(board: BoardData, e: Event) {
-  e.stopPropagation();
-  editingBoard.value = board;
-  editName.value = board.name;
-  editColor.value = board.color ?? 'bg-blue-500';
-  editDesc.value = board.description ?? '';
-  isEditOpen.value = true;
+  e.stopPropagation()
+  editingBoard.value = board
+  editName.value = board.name
+  editColor.value = board.color ?? 'bg-blue-500'
+  editDesc.value = board.description ?? ''
+  isEditOpen.value = true
 }
 
 async function saveEdit() {
-  if (!editingBoard.value || !editName.value.trim()) return;
-  isSaving.value = true;
+  if (!editingBoard.value || !editName.value.trim()) return
+  isSaving.value = true
   try {
     const updated = await dataservice.updateBoard(editingBoard.value.id, {
       name: editName.value.trim(),
       color: editColor.value,
-      description: editDesc.value.trim() || undefined,
-    });
+      description: editDesc.value.trim() || undefined
+    })
     if (updated) {
-      const idx = boards.value.findIndex(b => b.id === updated.id);
-      if (idx !== -1) boards.value[idx] = updated;
-      isEditOpen.value = false;
-      toast.success('Board updated');
+      const idx = boards.value.findIndex((b) => b.id === updated.id)
+      if (idx !== -1) boards.value[idx] = updated
+      isEditOpen.value = false
+      toast.success('Board updated')
     } else {
-      toast.error('Failed to update board');
+      toast.error('Failed to update board')
     }
   } catch {
-    toast.error('Failed to update board');
+    toast.error('Failed to update board')
   } finally {
-    isSaving.value = false;
+    isSaving.value = false
   }
 }
 
 async function makeDefault(board: BoardData, e: Event) {
-  e.stopPropagation();
+  e.stopPropagation()
   try {
-    const updated = await dataservice.setDefaultBoard(board.id);
+    const updated = await dataservice.setDefaultBoard(board.id)
     if (updated) {
-      boards.value = boards.value.map(b => ({ ...b, is_default: b.id === board.id }));
-      toast.success(`"${board.name}" set as default`);
+      boards.value = boards.value.map((b) => ({ ...b, is_default: b.id === board.id }))
+      toast.success(`"${board.name}" set as default`)
     } else {
-      toast.error('Failed to set default board');
+      toast.error('Failed to set default board')
     }
   } catch {
-    toast.error('Failed to set default board');
+    toast.error('Failed to set default board')
   }
 }
 
 function openDelete(board: BoardData, e: Event) {
-  e.stopPropagation();
-  deletingBoard.value = board;
-  isDeleteOpen.value = true;
+  e.stopPropagation()
+  deletingBoard.value = board
+  isDeleteOpen.value = true
 }
 
 async function confirmDelete() {
-  if (!deletingBoard.value) return;
-  isDeleting.value = true;
-  const name = deletingBoard.value.name;
+  if (!deletingBoard.value) return
+  isDeleting.value = true
+  const name = deletingBoard.value.name
   try {
-    const ok = await dataservice.deleteBoard(deletingBoard.value.id);
+    const ok = await dataservice.deleteBoard(deletingBoard.value.id)
     if (ok) {
-      boards.value = boards.value.filter(b => b.id !== deletingBoard.value!.id);
-      isDeleteOpen.value = false;
-      deletingBoard.value = null;
-      toast.success(`"${name}" deleted`);
+      boards.value = boards.value.filter((b) => b.id !== deletingBoard.value!.id)
+      isDeleteOpen.value = false
+      deletingBoard.value = null
+      toast.success(`"${name}" deleted`)
     } else {
-      toast.error('Failed to delete board');
+      toast.error('Failed to delete board')
     }
   } catch {
-    toast.error('Failed to delete board');
+    toast.error('Failed to delete board')
   } finally {
-    isDeleting.value = false;
+    isDeleting.value = false
   }
 }
 
 onMounted(async () => {
-  appStore.setBreadcrumbs([]);
-  await loadBoards();
-});
+  appStore.setBreadcrumbs([])
+  await loadBoards()
+})
 
 onUnmounted(() => {
-  appStore.setBreadcrumbs([]);
-});
+  appStore.setBreadcrumbs([])
+})
 </script>
 
 <template>
@@ -177,7 +185,9 @@ onUnmounted(() => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-semibold">Application Boards</h1>
-        <p class="text-sm text-muted-foreground mt-0.5">Organise your job search into separate boards</p>
+        <p class="text-sm text-muted-foreground mt-0.5">
+          Organise your job search into separate boards
+        </p>
       </div>
       <Button @click="isCreateOpen = true">
         <Icon name="Plus" class="w-4 h-4 mr-1" />
@@ -187,20 +197,30 @@ onUnmounted(() => {
 
     <!-- Loading -->
     <div v-if="isLoading" class="flex justify-center py-16">
-      <svg class="w-6 h-6 animate-spin text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <svg
+        class="w-6 h-6 animate-spin text-muted-foreground"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
       </svg>
     </div>
 
     <!-- Empty state -->
-    <div v-else-if="boards.length === 0" class="flex flex-col items-center justify-center py-20 gap-4 text-center">
+    <div
+      v-else-if="boards.length === 0"
+      class="flex flex-col items-center justify-center py-20 gap-4 text-center"
+    >
       <div class="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
         <Icon name="LayoutDashboard" class="w-7 h-7 text-muted-foreground" />
       </div>
       <div>
         <p class="font-medium">No boards yet</p>
-        <p class="text-sm text-muted-foreground mt-0.5">Create a board to start tracking applications</p>
+        <p class="text-sm text-muted-foreground mt-0.5">
+          Create a board to start tracking applications
+        </p>
       </div>
       <Button @click="isCreateOpen = true">
         <Icon name="Plus" class="w-4 h-4 mr-1" />
@@ -220,10 +240,17 @@ onUnmounted(() => {
           <!-- Name row -->
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-2 min-w-0">
-              <span :class="['w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5', board.color || 'bg-blue-500']" />
+              <span
+                :class="[
+                  'w-2.5 h-2.5 rounded-full flex-shrink-0 mt-0.5',
+                  board.color || 'bg-blue-500'
+                ]"
+              />
               <h3 class="font-semibold text-base leading-tight truncate">{{ board.name }}</h3>
-              <span v-if="board.is_default"
-                class="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded flex-shrink-0">
+              <span
+                v-if="board.is_default"
+                class="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded flex-shrink-0"
+              >
                 Default
               </span>
             </div>
@@ -235,9 +262,9 @@ onUnmounted(() => {
                   class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground flex-shrink-0"
                 >
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <circle cx="10" cy="4" r="1.5"/>
-                    <circle cx="10" cy="10" r="1.5"/>
-                    <circle cx="10" cy="16" r="1.5"/>
+                    <circle cx="10" cy="4" r="1.5" />
+                    <circle cx="10" cy="10" r="1.5" />
+                    <circle cx="10" cy="16" r="1.5" />
                   </svg>
                 </button>
               </DropdownMenuTrigger>
@@ -269,10 +296,19 @@ onUnmounted(() => {
         </div>
 
         <!-- Footer: stage count + arrow -->
-        <div class="px-4 py-2 border-t border-border/50 bg-muted/20 flex items-center justify-between">
+        <div
+          class="px-4 py-2 border-t border-border/50 bg-muted/20 flex items-center justify-between"
+        >
           <span class="text-xs text-muted-foreground">{{ board.stages.length }} stages</span>
-          <span class="text-xs text-muted-foreground">{{ board.number_of_jobs }} job application{{ board.number_of_jobs !== 1 ? 's' : '' }}</span>
-          <Icon name="ArrowRight" class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <span class="text-xs text-muted-foreground"
+            >{{ board.number_of_jobs }} job application{{
+              board.number_of_jobs !== 1 ? 's' : ''
+            }}</span
+          >
+          <Icon
+            name="ArrowRight"
+            class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors"
+          />
         </div>
       </div>
     </div>
@@ -286,7 +322,11 @@ onUnmounted(() => {
         <div class="flex flex-col gap-4 py-2">
           <div class="flex flex-col gap-1.5">
             <Label>Board Name <span class="text-destructive">*</span></Label>
-            <Input v-model="newBoardName" placeholder="e.g. Full-time 2025" @keyup.enter="createBoard" />
+            <Input
+              v-model="newBoardName"
+              placeholder="e.g. Full-time 2025"
+              @keyup.enter="createBoard"
+            />
           </div>
           <div class="flex flex-col gap-1.5">
             <Label>Description</Label>
@@ -298,7 +338,13 @@ onUnmounted(() => {
               <button
                 v-for="opt in COLOR_OPTIONS"
                 :key="opt.value"
-                :class="['w-7 h-7 rounded-full transition-all', opt.value, newBoardColor === opt.value ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-105']"
+                :class="[
+                  'w-7 h-7 rounded-full transition-all',
+                  opt.value,
+                  newBoardColor === opt.value
+                    ? 'ring-2 ring-offset-2 ring-primary scale-110'
+                    : 'hover:scale-105'
+                ]"
                 :title="opt.label"
                 @click="newBoardColor = opt.value"
               />
@@ -335,7 +381,13 @@ onUnmounted(() => {
               <button
                 v-for="opt in COLOR_OPTIONS"
                 :key="opt.value"
-                :class="['w-7 h-7 rounded-full transition-all', opt.value, editColor === opt.value ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-105']"
+                :class="[
+                  'w-7 h-7 rounded-full transition-all',
+                  opt.value,
+                  editColor === opt.value
+                    ? 'ring-2 ring-offset-2 ring-primary scale-110'
+                    : 'hover:scale-105'
+                ]"
                 :title="opt.label"
                 @click="editColor = opt.value"
               />
@@ -360,12 +412,14 @@ onUnmounted(() => {
         <div class="py-2">
           <p class="text-sm text-muted-foreground">
             Are you sure you want to delete
-            <strong class="text-foreground">{{ deletingBoard?.name }}</strong>?
-            All jobs in this board will be permanently deleted. This action cannot be undone.
+            <strong class="text-foreground">{{ deletingBoard?.name }}</strong
+            >? All jobs in this board will be permanently deleted. This action cannot be undone.
           </p>
         </div>
         <DialogFooter>
-          <Button variant="outline" @click="isDeleteOpen = false" :disabled="isDeleting">Cancel</Button>
+          <Button variant="outline" @click="isDeleteOpen = false" :disabled="isDeleting"
+            >Cancel</Button
+          >
           <Button variant="destructive" @click="confirmDelete" :disabled="isDeleting">
             {{ isDeleting ? 'Deleting...' : 'Delete Board' }}
           </Button>

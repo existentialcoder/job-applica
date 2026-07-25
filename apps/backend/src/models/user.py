@@ -1,12 +1,14 @@
-from typing import Any, TYPE_CHECKING
-from sqlalchemy import String, Text, Integer, ForeignKey, Table, Column, text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING, Any
+
+from sqlalchemy import Column, ForeignKey, Integer, String, Table, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from ..db.base_class import Base
 
 if TYPE_CHECKING:
-    from .skill import Skill
     from .connected_account import ConnectedAccount
+    from .skill import Skill
 
 user_skill_table = Table(
     'user_skill',

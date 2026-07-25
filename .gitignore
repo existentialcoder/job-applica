@@ -1,5 +1,7 @@
 .vscode
 
+*.secrets
+
 # Claude Code
 .claude/
 CLAUDE.md

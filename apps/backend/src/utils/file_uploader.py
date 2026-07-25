@@ -1,8 +1,8 @@
 import os
+
+import aiobotocore.session
 import aiofiles
 from fastapi import HTTPException, UploadFile
-from typing import Optional
-import aiobotocore.session
 
 from ..core.config import settings
 
@@ -10,7 +10,7 @@ CHUNK_SIZE = 256 * 1024  # 256 KB
 
 
 class FileUploader:
-    def __init__(self, destination_path: str, file: Optional[UploadFile] = None, max_size_mb: int = 0):
+    def __init__(self, destination_path: str, file: UploadFile | None = None, max_size_mb: int = 0):
         self.file = file
         self.destination_path = destination_path
         self.max_size_bytes = max_size_mb * 1024 * 1024
@@ -40,10 +40,7 @@ class FileUploader:
             aws_secret_access_key=settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
             region_name='auto',
         ) as client:
-            await client.delete_object(
-                Bucket=bucket,
-                Key=key
-            )
+            await client.delete_object(Bucket=bucket, Key=key)
 
     async def upload_local(self) -> int:
         data, size = await self._read_file()

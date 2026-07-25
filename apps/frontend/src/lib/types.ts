@@ -139,11 +139,27 @@ export interface DashboardOverview {
   offer_rate: number
 }
 
-export interface DashboardStageInfo { key: string; label: string; color: string }
-export interface StageCount  { stage: string;    count: number }
-export interface WeekCount   { week: string;     count: number }
-export interface PlatformCount { platform: string; count: number }
-export interface CompanyCount  { company: string;  count: number }
+export interface DashboardStageInfo {
+  key: string
+  label: string
+  color: string
+}
+export interface StageCount {
+  stage: string
+  count: number
+}
+export interface WeekCount {
+  week: string
+  count: number
+}
+export interface PlatformCount {
+  platform: string
+  count: number
+}
+export interface CompanyCount {
+  company: string
+  count: number
+}
 
 export interface DashboardStats {
   stages: DashboardStageInfo[]

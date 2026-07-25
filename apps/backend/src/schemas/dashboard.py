@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import List
 
 
 class StageInfo(BaseModel):
@@ -44,9 +43,9 @@ class CompanyCount(BaseModel):
 
 
 class DashboardStats(BaseModel):
-    stages: List[StageInfo]
+    stages: list[StageInfo]
     overview: OverviewStats
-    by_stage: List[StageCount]
-    by_week: List[WeekCount]
-    by_platform: List[PlatformCount]
-    top_companies: List[CompanyCount]
+    by_stage: list[StageCount]
+    by_week: list[WeekCount]
+    by_platform: list[PlatformCount]
+    top_companies: list[CompanyCount]

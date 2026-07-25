@@ -1,98 +1,130 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import type { JobData, JobCreatePayload } from '@/lib/types';
+import { ref, watch, computed } from 'vue'
+import type { JobData, JobCreatePayload } from '@/lib/types'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
-  Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import CompanyCombobox from './CompanyCombobox.vue';
-import DatePickerInput from './DatePickerInput.vue';
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import CompanyCombobox from './CompanyCombobox.vue'
+import DatePickerInput from './DatePickerInput.vue'
 
 const props = defineProps<{
   open: boolean
   editJob?: JobData | null
   statusOptions?: string[]
   defaultStatus?: string
-}>();
+}>()
 
 const emit = defineEmits<{
   (e: 'update:open', val: boolean): void
   (e: 'save', payload: JobCreatePayload): void
-}>();
+}>()
 
 const STATUS_OPTIONS = computed(() =>
   props.statusOptions?.length
     ? props.statusOptions
-    : ['Saved', 'Applied', 'Phone Screen', 'Interview', 'Technical', 'Offer', 'Rejected', 'Withdrawn']
-);
-const POSITION_OPTIONS = ['Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager'];
-const WORK_MODEL_OPTIONS = ['On-site', 'Remote', 'Hybrid'];
-const PLATFORM_OPTIONS = ['LinkedIn', 'Indeed', 'Glassdoor', 'Monster', 'ZipRecruiter', 'Jobscan', 'Other'];
+    : [
+        'Saved',
+        'Applied',
+        'Phone Screen',
+        'Interview',
+        'Technical',
+        'Offer',
+        'Rejected',
+        'Withdrawn'
+      ]
+)
+const POSITION_OPTIONS = ['Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager']
+const WORK_MODEL_OPTIONS = ['On-site', 'Remote', 'Hybrid']
+const PLATFORM_OPTIONS = [
+  'LinkedIn',
+  'Indeed',
+  'Glassdoor',
+  'Monster',
+  'ZipRecruiter',
+  'Jobscan',
+  'Other'
+]
 
-const title = ref('');
-const companyName = ref('');
-const location = ref('');
-const status = ref(props.defaultStatus ?? STATUS_OPTIONS.value[0] ?? 'Saved');
-const position = ref('');
-const workModel = ref('');
-const salaryRange = ref('');
-const sourcePlatform = ref('');
-const sourceUrl = ref('');
-const appliedDate = ref('');
-const description = ref('');
-const notes = ref('');
+const title = ref('')
+const companyName = ref('')
+const location = ref('')
+const status = ref(props.defaultStatus ?? STATUS_OPTIONS.value[0] ?? 'Saved')
+const position = ref('')
+const workModel = ref('')
+const salaryRange = ref('')
+const sourcePlatform = ref('')
+const sourceUrl = ref('')
+const appliedDate = ref('')
+const description = ref('')
+const notes = ref('')
 
 function resetForm() {
-  title.value = '';
-  companyName.value = '';
-  location.value = '';
-  status.value = props.defaultStatus ?? STATUS_OPTIONS.value[0] ?? 'Saved';
-  position.value = '';
-  workModel.value = '';
-  salaryRange.value = '';
-  sourcePlatform.value = '';
-  sourceUrl.value = '';
-  appliedDate.value = '';
-  description.value = '';
-  notes.value = '';
+  title.value = ''
+  companyName.value = ''
+  location.value = ''
+  status.value = props.defaultStatus ?? STATUS_OPTIONS.value[0] ?? 'Saved'
+  position.value = ''
+  workModel.value = ''
+  salaryRange.value = ''
+  sourcePlatform.value = ''
+  sourceUrl.value = ''
+  appliedDate.value = ''
+  description.value = ''
+  notes.value = ''
 }
 
 function populateFromEdit(job: JobData) {
-  title.value = job.title || '';
-  companyName.value = job.company?.name || '';
-  location.value = job.location ? [job.location.city, job.location.state, job.location.country].filter(Boolean).join(', ') : '';
-  status.value = job.status || 'Saved';
-  position.value = job.position || '';
-  workModel.value = job.work_model || '';
-  salaryRange.value = job.salary_range || '';
-  sourcePlatform.value = job.source_platform || '';
-  sourceUrl.value = job.source_url || '';
-  appliedDate.value = job.applied_date || '';
-  description.value = job.description || '';
-  notes.value = job.notes || '';
+  title.value = job.title || ''
+  companyName.value = job.company?.name || ''
+  location.value = job.location
+    ? [job.location.city, job.location.state, job.location.country].filter(Boolean).join(', ')
+    : ''
+  status.value = job.status || 'Saved'
+  position.value = job.position || ''
+  workModel.value = job.work_model || ''
+  salaryRange.value = job.salary_range || ''
+  sourcePlatform.value = job.source_platform || ''
+  sourceUrl.value = job.source_url || ''
+  appliedDate.value = job.applied_date || ''
+  description.value = job.description || ''
+  notes.value = job.notes || ''
 }
 
-watch(() => props.open, (open) => {
-  if (open) {
-    if (props.editJob) {
-      populateFromEdit(props.editJob);
-    } else {
-      resetForm();
+watch(
+  () => props.open,
+  (open) => {
+    if (open) {
+      if (props.editJob) {
+        populateFromEdit(props.editJob)
+      } else {
+        resetForm()
+      }
     }
   }
-});
+)
 
 function handleSave() {
-  if (!title.value.trim()) return;
-  const autoDate = status.value === 'Applied' && !appliedDate.value
-    ? new Date().toISOString().slice(0, 10)
-    : appliedDate.value || undefined;
+  if (!title.value.trim()) return
+  const autoDate =
+    status.value === 'Applied' && !appliedDate.value
+      ? new Date().toISOString().slice(0, 10)
+      : appliedDate.value || undefined
   const payload: JobCreatePayload = {
     title: title.value.trim(),
     company_name: companyName.value.trim() || undefined,
@@ -105,10 +137,10 @@ function handleSave() {
     source_url: sourceUrl.value.trim() || undefined,
     applied_date: autoDate,
     description: description.value.trim() || undefined,
-    notes: notes.value.trim() || undefined,
-  };
-  emit('save', payload);
-  emit('update:open', false);
+    notes: notes.value.trim() || undefined
+  }
+  emit('save', payload)
+  emit('update:open', false)
 }
 </script>
 
@@ -141,7 +173,13 @@ function handleSave() {
         <!-- Description -->
         <div class="flex flex-col gap-1.5">
           <Label for="modal-desc">Job Description</Label>
-          <Textarea id="modal-desc" v-model="description" placeholder="Paste job description..." class="min-h-[120px]" rows="5" />
+          <Textarea
+            id="modal-desc"
+            v-model="description"
+            placeholder="Paste job description..."
+            class="min-h-[120px]"
+            rows="5"
+          />
         </div>
 
         <!-- Status + Position row -->
@@ -184,7 +222,9 @@ function handleSave() {
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem v-for="w in WORK_MODEL_OPTIONS" :key="w" :value="w">{{ w }}</SelectItem>
+                  <SelectItem v-for="w in WORK_MODEL_OPTIONS" :key="w" :value="w">{{
+                    w
+                  }}</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -225,7 +265,13 @@ function handleSave() {
         <!-- Notes -->
         <div class="flex flex-col gap-1.5">
           <Label for="modal-notes">Notes</Label>
-          <Textarea id="modal-notes" v-model="notes" placeholder="Personal notes..." class="resize-none" rows="2" />
+          <Textarea
+            id="modal-notes"
+            v-model="notes"
+            placeholder="Personal notes..."
+            class="resize-none"
+            rows="2"
+          />
         </div>
       </div>
 

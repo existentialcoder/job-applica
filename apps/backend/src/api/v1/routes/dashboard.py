@@ -1,7 +1,5 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.api.deps.auth import get_current_user
 from src.api.deps.db import get_db
 from src.schemas.dashboard import DashboardStats
@@ -13,7 +11,7 @@ router = APIRouter()
 
 @router.get('/dashboard/stats', response_model=DashboardStats)
 async def get_stats(
-    board_id: Optional[int] = Query(None),
+    board_id: int | None = Query(None),
     current_user: UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

@@ -215,8 +215,7 @@ _TRANSLATE_SYSTEM = (
 )
 
 _SKILL_SYSTEM = (
-    'You extract technical skills from resumes. '
-    'Return only a JSON array of strings — no explanation, no markdown.'
+    'You extract technical skills from resumes. Return only a JSON array of strings — no explanation, no markdown.'
 )
 
 _SKILL_USER = """\
@@ -234,6 +233,7 @@ Return only a JSON array, e.g. ["Python", "FastAPI", "PostgreSQL"]."""
 
 
 # ── Abstract base ──────────────────────────────────────────────────────────────
+
 
 class LLMProvider(ABC):
     """
@@ -260,10 +260,7 @@ class LLMProvider(ABC):
         job_description: str,
         required_skills: list[str],
     ) -> ATSReport:
-        skills_hint = (
-            f'The role explicitly requires: {", ".join(required_skills)}.\n\n'
-            if required_skills else ''
-        )
+        skills_hint = f'The role explicitly requires: {", ".join(required_skills)}.\n\n' if required_skills else ''
         text = await self.complete(
             system=_ATS_SYSTEM,
             user=_ATS_USER.format(jd=job_description, cv=resume_text, skills_hint=skills_hint),
@@ -304,6 +301,7 @@ class LLMProvider(ABC):
 
 # ── Anthropic ─────────────────────────────────────────────────────────────────
 
+
 class AnthropicProvider(LLMProvider):
     DEFAULT_MODEL = 'claude-haiku-4-5-20251001'
 
@@ -312,6 +310,7 @@ class AnthropicProvider(LLMProvider):
 
     async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
         import anthropic
+
         client = anthropic.AsyncAnthropic()
         msg = await client.messages.create(
             model=self.model,
@@ -323,6 +322,7 @@ class AnthropicProvider(LLMProvider):
 
 
 # ── DeepSeek ──────────────────────────────────────────────────────────────────
+
 
 class DeepSeekProvider(LLMProvider):
     DEFAULT_MODEL = 'deepseek-chat'  # DeepSeek-V3
@@ -338,6 +338,7 @@ class DeepSeekProvider(LLMProvider):
 
     async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
         from openai import AsyncOpenAI
+
         from ..core.config import settings
 
         client = AsyncOpenAI(api_key=settings.DEEPSEEK_API_KEY, base_url=self._BASE_URL)
@@ -356,6 +357,7 @@ class DeepSeekProvider(LLMProvider):
 
 # ── Gemini ────────────────────────────────────────────────────────────────────
 
+
 class GeminiProvider(LLMProvider):
     DEFAULT_MODEL = 'gemini-2.0-flash'  # free tier: 1500 req/day, 15 req/min
     _BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/'
@@ -365,6 +367,7 @@ class GeminiProvider(LLMProvider):
 
     async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
         from openai import AsyncOpenAI
+
         from ..core.config import settings
 
         client = AsyncOpenAI(api_key=settings.GEMINI_API_KEY, base_url=self._BASE_URL)
@@ -415,6 +418,7 @@ def get_provider(purpose: str = '') -> LLMProvider:
 
 
 # ── Module-level API (callers unchanged) ──────────────────────────────────────
+
 
 async def ats_score_report(
     resume_text: str,

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Maximize2, X } from 'lucide-vue-next';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { ref } from 'vue'
+import { Maximize2, X } from 'lucide-vue-next'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 
 defineProps<{
   title: string
   subtitle?: string
-}>();
+}>()
 
-const emit = defineEmits<{ remove: [] }>();
+const emit = defineEmits<{ remove: [] }>()
 
-const isExpanded = ref(false);
+const isExpanded = ref(false)
 </script>
 
 <template>

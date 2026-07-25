@@ -1,7 +1,7 @@
 @import url('./index.css');
 
 body {
-  background-color: #FBFBFD;
+  background-color: #fbfbfd;
 }
 body.dark {
   background-color: #030711;
@@ -13,18 +13,24 @@ body.dark {
   left: 20px;
 }
 
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.2s linear;
 }
 
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
-input:active, input:focus, input:blur {
+input:active,
+input:focus,
+input:blur {
   outline: none;
 }
-.sidebar, .app-main, nav {
+.sidebar,
+.app-main,
+nav {
   transition: all 0.4s cubic-bezier(0.075, 0.82, 0.165, 1);
   overflow-x: hidden;
 }
