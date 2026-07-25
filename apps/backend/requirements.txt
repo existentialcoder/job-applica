@@ -6,7 +6,7 @@ aiofiles
 alembic
 pydantic[email]
 pydantic-settings
-bcrypt>=4.0.0,<5.0.0
+bcrypt==4.3.0
 passlib
 python-dotenv
 requests==2.32.1
