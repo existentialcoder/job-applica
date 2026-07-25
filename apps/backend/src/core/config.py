@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ''
     SMTP_FROM_EMAIL: str = 'no-reply@example.com'
     SMTP_USE_TLS: bool = False
+    EMAIL_PROVIDER_API_KEY: str = ''
+    EMAIL_PROVIDER_API_URL: str = 'https://api.resend.com/emails'
+    EMAIL_PROTOCOL: str = ''
 
     LLM_CONFIG: dict = {
         'default':        {'provider': 'deepseek',  'model': 'deepseek-chat'},
