@@ -1,4 +1,3 @@
-import base64
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -10,10 +9,6 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from ..core.config import settings
 
 TEMPLATE_FOLDER = Path(__file__).resolve().parent.parent / 'templates' / 'email'
-LOGO_DATA_URI = 'data:image/png;base64,' + base64.b64encode(
-    (TEMPLATE_FOLDER / 'assets' / 'logo.png').read_bytes()
-).decode()
-
 SEND_TIMEOUT_SECONDS = 15
 
 
@@ -29,7 +24,8 @@ class EmailService:
 
     def _render(self, template_name: str, context: dict) -> str:
         template = self.jinja_env.get_template(template_name)
-        return template.render({'logo_data_uri': LOGO_DATA_URI, **context})
+        logo_url = f'{settings.BACKEND_URL}/email-assets/logo.png'
+        return template.render({'logo_url': logo_url, **context})
 
     async def _send_via_smtp(self, to: str, subject: str, html: str) -> None:
         message = EmailMessage()

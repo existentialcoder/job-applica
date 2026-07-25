@@ -1,8 +1,7 @@
-from fastapi import HTTPException
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func
 
-from ..models.board import Board, DEFAULT_STAGES
+from ..models.board import DEFAULT_STAGES, Board
 from ..models.job import Job
 from ..schemas.board import BoardBase, BoardCreate, BoardUpdate
 from ..schemas.user import UserBase
@@ -14,9 +13,7 @@ async def get_boards(db: AsyncSession, user: UserBase) -> list[BoardBase]:
     )
     boards = [BoardBase.model_validate(b) for b in result.scalars().all()]
     for board in boards:
-        job_count_result = await db.execute(
-            select(func.count(Job.id)).where(Job.board_id == board.id)
-        )
+        job_count_result = await db.execute(select(func.count(Job.id)).where(Job.board_id == board.id))
         board.number_of_jobs = job_count_result.scalar()
     return boards
 
@@ -34,9 +31,7 @@ async def get_default_board_id(db: AsyncSession, user_id: int) -> int | None:
 
 
 async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) -> BoardBase:
-    existing_count_result = await db.execute(
-        select(func.count(Board.id)).where(Board.user_id == user.id)
-    )
+    existing_count_result = await db.execute(select(func.count(Board.id)).where(Board.user_id == user.id))
     is_first = existing_count_result.scalar() == 0
 
     stages = [s.model_dump() for s in board_in.stages] if board_in.stages else DEFAULT_STAGES
@@ -84,7 +79,9 @@ async def update_board(db: AsyncSession, user: UserBase, board_id: int, board_in
         if removed_keys and new_stages:
             first_stage = new_stages[0]['key']
             await db.execute(
-                update(Job).where(Job.board_id == board_id, Job.status.in_(list(removed_keys))).values(status=first_stage)
+                update(Job)
+                .where(Job.board_id == board_id, Job.status.in_(list(removed_keys)))
+                .values(status=first_stage)
             )
 
         board.stages = new_stages
@@ -100,9 +97,7 @@ async def set_default_board(db: AsyncSession, user: UserBase, board_id: int) -> 
     if not board:
         return None
 
-    await db.execute(
-        update(Board).where(Board.user_id == user.id, Board.is_default == True).values(is_default=False)
-    )
+    await db.execute(update(Board).where(Board.user_id == user.id, Board.is_default == True).values(is_default=False))
     board.is_default = True
     await db.commit()
     await db.refresh(board)

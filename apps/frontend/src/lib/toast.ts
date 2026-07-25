@@ -1,23 +1,23 @@
-import { toast as _toast } from 'vue-sonner';
+import { toast as _toast } from 'vue-sonner'
 
 export const toast = {
   success: (message: string, opts?: object) =>
     _toast.success(message, {
-      ...opts,
+      ...opts
     }),
 
   error: (message: string, opts?: object) =>
     _toast.error(message, {
-      ...opts,
+      ...opts
     }),
 
   warning: (message: string, opts?: object) =>
     _toast.warning(message, {
-      ...opts,
+      ...opts
     }),
 
   info: (message: string, opts?: object) =>
     _toast.info(message, {
-      ...opts,
-    }),
-};
+      ...opts
+    })
+}

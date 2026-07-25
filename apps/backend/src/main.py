@@ -1,19 +1,18 @@
 import os
 from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .api.deps.auth import get_current_user
-from .api.v1.routes import jobs, companies, auth, skills, boards, dashboard, connected_accounts, features, ats, users
+from .api.v1.routes import ats, auth, boards, companies, connected_accounts, dashboard, features, jobs, skills, users
 from .core.config import settings
 from .core.constants import Constants
 from .core.exceptions import PlanLimitReached
 from .db.base_class import Base
 from .db.session import engine
-from .models import resume as _resume_model  # ensure table is created
-from .models import connected_account as _connected_account_model  # ensure table is created
 
 
 @asynccontextmanager
@@ -44,6 +43,7 @@ async def plan_limit_handler(_: Request, exc: PlanLimitReached):
 @app.get('/health', tags=['Health'], include_in_schema=False)
 def health():
     return {'status': 'ok'}
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -87,3 +87,6 @@ for protected_router, tags in PROTECTED_ROUTERS:
 _uploads_dir = os.path.join(os.path.dirname(__file__), '..', 'uploads')
 os.makedirs(_uploads_dir, exist_ok=True)
 app.mount('/uploads', StaticFiles(directory=_uploads_dir), name='uploads')
+
+_email_assets_dir = os.path.join(os.path.dirname(__file__), 'templates', 'email', 'assets')
+app.mount('/email-assets', StaticFiles(directory=_email_assets_dir), name='email-assets')

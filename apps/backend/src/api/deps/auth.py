@@ -1,18 +1,18 @@
 from typing import Annotated
+
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .db import get_db
 from ...core.constants import Constants
 from ...schemas.user import UserBase
 from ...services import user as user_service
+from .db import get_db
 
-reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{Constants.API_V1_PREFIX}/auth/login"
-)
+reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{Constants.API_V1_PREFIX}/auth/login")
 
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
+
 
 async def get_current_user(token: TokenDep, db: AsyncSession = Depends(get_db)) -> UserBase:
     token_data = user_service.decode_token(token)

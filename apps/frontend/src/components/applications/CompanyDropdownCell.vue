@@ -1,20 +1,15 @@
 <script setup lang="ts">
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
-import type { CompanyOption } from '@/stores/companies';
-
-const props = defineProps<{
-  jobId: number
-  company: string
-  companyLogo?: string
-  companies: CompanyOption[]
-}>();
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants'
 
 const emit = defineEmits<{
   (e: 'change', jobId: number, companyName: string): void
-}>();
+}>()
 </script>
 
 <template>

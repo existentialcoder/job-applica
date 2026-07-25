@@ -1,52 +1,60 @@
+import enum
 import re
 import secrets
-from datetime import datetime, timedelta, timezone
-from enum import Enum
+from datetime import UTC, datetime, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ....schemas import user as schemas
 from ....core.config import settings
 from ....core.constants import Constants
 from ....core.utils import create_token, hash_password, verify_password
-from ...deps.auth import get_current_user
-from ...deps.db import get_db
-from ....services import user as user_service
-from ....services import oauth as oauth_service
+from ....models.user import User
+from ....schemas import user as schemas
 from ....services import connected_accounts as ca_service
+from ....services import oauth as oauth_service
+from ....services import user as user_service
 from ....services.email import email_service
 from ....services.email_theme import resolve_email_theme
-from ....models.user import User
+from ...deps.auth import get_current_user
+from ...deps.db import get_db
 
 router = APIRouter(prefix='/auth')
 
-class ResetMechanism(str, Enum):
+
+class ResetMechanism(enum.StrEnum):
     otp = 'otp'
     security_question = 'security_question'
+
 
 class RefreshRequest(BaseModel):
     refresh_token: str
 
+
 class ResetMechanismRequest(BaseModel):
     user_identifier: EmailStr | str
+
 
 class VerifyResetMechanismResponse(BaseModel):
     is_valid: bool
     token: str | None
 
+
 class ResetMechanismResponse(BaseModel):
     mechanism: ResetMechanism
     context: dict = {}
+
 
 class VerifyResetMechanismRequest(BaseModel):
     user_identifier: EmailStr | str
     mechanism: ResetMechanism
     question: str | None = None
     answer: str
+
 
 class ResetPasswordRequest(BaseModel):
     token: str
@@ -99,6 +107,7 @@ async def login(login_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSess
 
 
 # ── Google OAuth ──────────────────────────────────────────────────────────────
+
 
 @router.get('/google', description='Redirect to Google OAuth consent screen')
 def google_login(origin: str = 'web'):
@@ -154,14 +163,13 @@ async def google_callback(code: str, state: str = '', db: AsyncSession = Depends
     tokens = oauth_service.create_tokens_for_user(user)
     relay_path = '/auth/relay' if origin == 'extension' else '/auth/callback'
     redirect_url = (
-        f'{settings.FRONTEND_URL}{relay_path}'
-        f'?access_token={tokens.access_token}'
-        f'&refresh_token={tokens.refresh_token}'
+        f'{settings.FRONTEND_URL}{relay_path}?access_token={tokens.access_token}&refresh_token={tokens.refresh_token}'
     )
     return RedirectResponse(redirect_url)
 
 
 # ── LinkedIn OAuth ────────────────────────────────────────────────────────────
+
 
 @router.get('/linkedin', description='Redirect to LinkedIn OAuth consent screen')
 def linkedin_login(origin: str = 'web'):
@@ -196,11 +204,10 @@ async def linkedin_callback(code: str, state: str = '', db: AsyncSession = Depen
     tokens = oauth_service.create_tokens_for_user(user)
     relay_path = '/auth/relay' if origin == 'extension' else '/auth/callback'
     redirect_url = (
-        f'{settings.FRONTEND_URL}{relay_path}'
-        f'?access_token={tokens.access_token}'
-        f'&refresh_token={tokens.refresh_token}'
+        f'{settings.FRONTEND_URL}{relay_path}?access_token={tokens.access_token}&refresh_token={tokens.refresh_token}'
     )
     return RedirectResponse(redirect_url)
+
 
 @router.get('/get-reset-mechanism', description='API to get the reset password mechanism based on user status')
 async def get_retry_mechanism(user_identifier: str, db: AsyncSession = Depends(get_db)) -> ResetMechanismResponse:
@@ -211,9 +218,9 @@ async def get_retry_mechanism(user_identifier: str, db: AsyncSession = Depends(g
 
     # If security_question is provided always use it
     if target_user.security_question:
-        return ResetMechanismResponse(mechanism='security_question', context={
-            'security_question': target_user.security_question
-        })
+        return ResetMechanismResponse(
+            mechanism='security_question', context={'security_question': target_user.security_question}
+        )
 
     return ResetMechanismResponse(mechanism='otp', context={'request_for_email': is_email == False})
 
@@ -229,7 +236,7 @@ async def request_reset_otp(user_identifier: str, db: AsyncSession = Depends(get
         raise HTTPException(status_code=400, detail='No email on file for this account')
 
     otp_code = f'{secrets.randbelow(1_000_000):06d}'
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=Constants.OTP_EXPIRE_MINUTES)
+    expires_at = datetime.now(UTC) + timedelta(minutes=Constants.OTP_EXPIRE_MINUTES)
 
     target_user.settings = {
         **target_user.settings,
@@ -271,8 +278,8 @@ async def verify_reset_mechanism(payload: VerifyResetMechanismRequest, db: Async
             raise HTTPException(status_code=401, detail='OTP has expired')
         expiry = datetime.fromisoformat(otp_expires_at)
         if expiry.tzinfo is None:
-            expiry = expiry.replace(tzinfo=timezone.utc)
-        if expiry < datetime.now(timezone.utc):
+            expiry = expiry.replace(tzinfo=UTC)
+        if expiry < datetime.now(UTC):
             raise HTTPException(status_code=401, detail='OTP has expired')
 
     token_data: schemas.TokenPayload = {
@@ -284,17 +291,24 @@ async def verify_reset_mechanism(payload: VerifyResetMechanismRequest, db: Async
     }
 
     if payload.mechanism == ResetMechanism.security_question:
-        is_valid = bool(target_user.hashed_security_answer) and verify_password(payload.answer, target_user.hashed_security_answer)
+        is_valid = bool(target_user.hashed_security_answer) and verify_password(
+            payload.answer, target_user.hashed_security_answer
+        )
     else:
         stored_otp_hash = target_user.settings.get('otp', {}).get('value')
         is_valid = bool(stored_otp_hash) and verify_password(payload.answer, stored_otp_hash)
 
-    token = create_token(token_data,
-        expiry=Constants.RESET_TOKEN_EXPIRE_MINUTES,
-        expiry_type='minutes',
-        secret=settings.AUTH_SECRET,
-        algorithm=Constants.AUTH_ALGORITHM
-    ) if is_valid else None
+    token = (
+        create_token(
+            token_data,
+            expiry=Constants.RESET_TOKEN_EXPIRE_MINUTES,
+            expiry_type='minutes',
+            secret=settings.AUTH_SECRET,
+            algorithm=Constants.AUTH_ALGORITHM,
+        )
+        if is_valid
+        else None
+    )
 
     if payload.mechanism == ResetMechanism.otp and is_valid:
         target_user.settings = {**target_user.settings, 'otp': {}}

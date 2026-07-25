@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       let response = await fetch(`${API_BASE}/auth/me`, {
-        headers: { Authorization: `Bearer ${accessToken.value}` },
+        headers: { Authorization: `Bearer ${accessToken.value}` }
       })
 
       if (response.status === 401) {
@@ -79,7 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
           const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh_token: storedRefresh }),
+            body: JSON.stringify({ refresh_token: storedRefresh })
           })
           if (!refreshRes.ok) {
             // Refresh token rejected — genuine session expiry
@@ -91,7 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
           if (refreshData.access_token) {
             setTokens(refreshData.access_token)
             response = await fetch(`${API_BASE}/auth/me`, {
-              headers: { Authorization: `Bearer ${refreshData.access_token}` },
+              headers: { Authorization: `Bearer ${refreshData.access_token}` }
             })
           }
         } catch {
@@ -109,7 +109,7 @@ export const useAuthStore = defineStore('auth', () => {
           user_name: data.user_name,
           has_password: data.has_password,
           email: data.email ?? null,
-          avatar_url: data.avatar_url ?? null,
+          avatar_url: data.avatar_url ?? null
         })
         await useAppStore().syncSettingsFromServer()
       } else if (response.status === 401) {
@@ -123,7 +123,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(username: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  async function login(
+    username: string,
+    password: string
+  ): Promise<{ ok: boolean; error?: string }> {
     const body = new URLSearchParams()
     body.append('username', username)
     body.append('password', password)
@@ -132,7 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
-      credentials: 'include',
+      credentials: 'include'
     })
 
     if (!response.ok) {
@@ -150,7 +153,7 @@ export const useAuthStore = defineStore('auth', () => {
     const response = await fetch(`${API_BASE}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     })
 
     if (!response.ok) {
@@ -166,7 +169,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await fetch(`${API_BASE}/users/check-user-name`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_name: userName }),
+        body: JSON.stringify({ user_name: userName })
       })
       if (!response.ok) return null
       const data = await response.json()
@@ -196,12 +199,19 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}))
-      return { ok: false, error: err.detail || 'We could not find an account matching that username or email' }
+      return {
+        ok: false,
+        error: err.detail || 'We could not find an account matching that username or email'
+      }
     }
 
     const data = await response.json()
     if (data.mechanism === 'security_question') {
-      return { ok: true, mechanism: 'security_question', securityQuestion: data.context?.security_question }
+      return {
+        ok: true,
+        mechanism: 'security_question',
+        securityQuestion: data.context?.security_question
+      }
     }
     return { ok: true, mechanism: 'otp' }
   }
@@ -222,12 +232,12 @@ export const useAuthStore = defineStore('auth', () => {
     identifier: string,
     mechanism: 'otp' | 'security_question',
     question: string,
-    answer: string,
+    answer: string
   ): Promise<{ ok: boolean; error?: string; token?: string }> {
     const response = await fetch(`${API_BASE}/auth/verify-reset-mechanism`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_identifier: identifier, mechanism, question, answer }),
+      body: JSON.stringify({ user_identifier: identifier, mechanism, question, answer })
     })
 
     if (!response.ok) {
@@ -241,11 +251,14 @@ export const useAuthStore = defineStore('auth', () => {
       : { ok: false, error: mechanism === 'otp' ? 'Incorrect or expired code' : 'Incorrect answer' }
   }
 
-  async function resetPassword(token: string, newPassword: string): Promise<{ ok: boolean; error?: string }> {
+  async function resetPassword(
+    token: string,
+    newPassword: string
+  ): Promise<{ ok: boolean; error?: string }> {
     const response = await fetch(`${API_BASE}/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, new_password: newPassword }),
+      body: JSON.stringify({ token, new_password: newPassword })
     })
 
     if (!response.ok) {
@@ -267,9 +280,23 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    accessToken, user, isAuthenticated, displayName,
-    login, signup, logout, fetchMe, checkUsernameAvailability, getSecurityQuestions,
-    getResetMechanism, requestResetOtp, verifyResetMechanism, resetPassword,
-    setTokens, setUser, getAuthHeaders, clearAuth,
+    accessToken,
+    user,
+    isAuthenticated,
+    displayName,
+    login,
+    signup,
+    logout,
+    fetchMe,
+    checkUsernameAvailability,
+    getSecurityQuestions,
+    getResetMechanism,
+    requestResetOtp,
+    verifyResetMechanism,
+    resetPassword,
+    setTokens,
+    setUser,
+    getAuthHeaders,
+    clearAuth
   }
 })

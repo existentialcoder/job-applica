@@ -1,50 +1,54 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Calendar as CalendarIcon, X } from 'lucide-vue-next';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { computed, ref } from 'vue'
+import { Calendar as CalendarIcon, X } from 'lucide-vue-next'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import { cn } from '@/lib/utils'
 
 const props = defineProps<{
-  modelValue?: string   // YYYY-MM-DD
+  modelValue?: string // YYYY-MM-DD
   placeholder?: string
   class?: string
-}>();
+}>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', val: string): void
-}>();
+}>()
 
-const open = ref(false);
+const open = ref(false)
 
 function parseDate(str: string): Date | undefined {
-  if (!str) return undefined;
-  const [y, m, d] = str.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  return isNaN(date.getTime()) ? undefined : date;
+  if (!str) return undefined
+  const [y, m, d] = str.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  return isNaN(date.getTime()) ? undefined : date
 }
 
-const internalDate = computed(() => parseDate(props.modelValue ?? ''));
+const internalDate = computed(() => parseDate(props.modelValue ?? ''))
 
 const displayDate = computed(() => {
-  if (!internalDate.value) return '';
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(internalDate.value);
-});
+  if (!internalDate.value) return ''
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(internalDate.value)
+})
 
 function onSelect(val: unknown) {
-  if (!val) return;
-  const d = val instanceof Date ? val : new Date(val as string | number);
-  if (isNaN(d.getTime())) return;
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  emit('update:modelValue', `${yyyy}-${mm}-${dd}`);
-  open.value = false;
+  if (!val) return
+  const d = val instanceof Date ? val : new Date(val as string | number)
+  if (isNaN(d.getTime())) return
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  emit('update:modelValue', `${yyyy}-${mm}-${dd}`)
+  open.value = false
 }
 
 function clear() {
-  emit('update:modelValue', '');
+  emit('update:modelValue', '')
 }
 </script>
 
@@ -54,10 +58,12 @@ function clear() {
       <PopoverTrigger as-child>
         <Button
           variant="outline"
-          :class="cn(
-            'flex-1 justify-start text-left font-normal h-9 px-3 gap-2',
-            !modelValue && 'text-muted-foreground',
-          )"
+          :class="
+            cn(
+              'flex-1 justify-start text-left font-normal h-9 px-3 gap-2',
+              !modelValue && 'text-muted-foreground'
+            )
+          "
         >
           <CalendarIcon class="h-4 w-4 shrink-0 opacity-50" />
           <span>{{ displayDate || (placeholder ?? 'Pick a date') }}</span>

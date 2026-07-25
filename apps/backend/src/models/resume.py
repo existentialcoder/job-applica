@@ -1,5 +1,6 @@
-from sqlalchemy import Integer, ForeignKey, Text, Boolean
+from sqlalchemy import Boolean, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
+
 from ..db.base_class import Base
 
 

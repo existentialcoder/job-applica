@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { Check } from 'lucide-vue-next';
-import { Badge } from '@/components/ui/badge';
+import { Check } from 'lucide-vue-next'
+import { Badge } from '@/components/ui/badge'
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
-
-const props = defineProps<{
-  jobId: number
-  status: string
-  statusOptions: string[]
-}>();
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 const emit = defineEmits<{
   (e: 'change', jobId: number, status: string): void
-}>();
+}>()
 
 const statusVariants: Record<string, string> = {
   Saved: 'secondary',
@@ -24,8 +21,8 @@ const statusVariants: Record<string, string> = {
   Technical: 'warning',
   Offer: 'success',
   Rejected: 'danger',
-  Withdrawn: 'outline',
-};
+  Withdrawn: 'outline'
+}
 </script>
 
 <template>

@@ -1,145 +1,166 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { LayoutDashboard } from 'lucide-vue-next';
-import dataservice from '@/lib/dataservice';
-import type { DashboardStats, BoardData } from '@/lib/types';
-import DashboardWidget from '@/components/core/DashboardWidget.vue';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ref, computed, watch, onMounted } from 'vue'
+import { LayoutDashboard } from 'lucide-vue-next'
+import dataservice from '@/lib/dataservice'
+import type { DashboardStats, BoardData } from '@/lib/types'
+import DashboardWidget from '@/components/core/DashboardWidget.vue'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 
-const stats   = ref<DashboardStats | null>(null);
-const boards  = ref<BoardData[]>([]);
-const boardId = ref<number | null>(null);
-const loading = ref(true);
+const stats = ref<DashboardStats | null>(null)
+const boards = ref<BoardData[]>([])
+const boardId = ref<number | null>(null)
+const loading = ref(true)
 
 // shadcn Select works with strings; bridge to number | null
 const boardIdStr = computed({
-  get: () => boardId.value == null ? '__all__' : String(boardId.value),
-  set: (v: string) => { boardId.value = v === '__all__' ? null : Number(v); },
-});
+  get: () => (boardId.value == null ? '__all__' : String(boardId.value)),
+  set: (v: string) => {
+    boardId.value = v === '__all__' ? null : Number(v)
+  }
+})
 
 // ── Widget visibility ─────────────────────────────────────────────────────────
 const WIDGET_DEFS = [
-  { id: 'stat-cards', label: 'Summary Cards',       description: 'Applied, Interviews, Ghosted, Rejected' },
-  { id: 'rate-strip', label: 'Rate Metrics',         description: 'Response rate, offer rate, stuck count' },
-  { id: 'funnel',     label: 'Application Funnel',   description: 'Conversion through each stage' },
-  { id: 'weekly',     label: 'Weekly Activity',      description: 'Applications over the last 12 weeks' },
-  { id: 'outcome',    label: 'Outcome Breakdown',    description: 'Donut chart of where applications ended up' },
-  { id: 'platform',   label: 'By Platform',          description: 'Where you found the roles' },
-  { id: 'companies',  label: 'Top Companies',        description: 'Most applications sent to' },
-] as const;
+  {
+    id: 'stat-cards',
+    label: 'Summary Cards',
+    description: 'Applied, Interviews, Ghosted, Rejected'
+  },
+  {
+    id: 'rate-strip',
+    label: 'Rate Metrics',
+    description: 'Response rate, offer rate, stuck count'
+  },
+  { id: 'funnel', label: 'Application Funnel', description: 'Conversion through each stage' },
+  { id: 'weekly', label: 'Weekly Activity', description: 'Applications over the last 12 weeks' },
+  {
+    id: 'outcome',
+    label: 'Outcome Breakdown',
+    description: 'Donut chart of where applications ended up'
+  },
+  { id: 'platform', label: 'By Platform', description: 'Where you found the roles' },
+  { id: 'companies', label: 'Top Companies', description: 'Most applications sent to' }
+] as const
 
-type WidgetId = typeof WIDGET_DEFS[number]['id'];
+type WidgetId = (typeof WIDGET_DEFS)[number]['id']
 
-const hiddenWidgets = ref<WidgetId[]>([]);
+const hiddenWidgets = ref<WidgetId[]>([])
 
-function isVisible(id: WidgetId) { return !hiddenWidgets.value.includes(id); }
+function isVisible(id: WidgetId) {
+  return !hiddenWidgets.value.includes(id)
+}
 
 async function setHidden(ids: WidgetId[]) {
-  hiddenWidgets.value = ids;
-  await dataservice.updateSettings({ hidden_widgets: ids });
+  hiddenWidgets.value = ids
+  await dataservice.updateSettings({ hidden_widgets: ids })
 }
 
 function removeWidget(id: WidgetId) {
-  setHidden([...hiddenWidgets.value, id]);
+  setHidden([...hiddenWidgets.value, id])
 }
 
 function toggleWidget(id: WidgetId) {
   if (hiddenWidgets.value.includes(id)) {
-    setHidden(hiddenWidgets.value.filter(w => w !== id));
+    setHidden(hiddenWidgets.value.filter((w) => w !== id))
   } else {
-    setHidden([...hiddenWidgets.value, id]);
+    setHidden([...hiddenWidgets.value, id])
   }
 }
 
-const hiddenCount = computed(() => hiddenWidgets.value.length);
+const hiddenCount = computed(() => hiddenWidgets.value.length)
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 async function fetchStats() {
-  loading.value = true;
-  stats.value = await dataservice.getDashboardStats(boardId.value ?? undefined);
-  loading.value = false;
+  loading.value = true
+  stats.value = await dataservice.getDashboardStats(boardId.value ?? undefined)
+  loading.value = false
 }
 
 onMounted(async () => {
   const [, boardList, settings] = await Promise.all([
     fetchStats(),
     dataservice.getBoards(),
-    dataservice.getSettings(),
-  ]);
-  boards.value = boardList;
-  hiddenWidgets.value = (settings.hidden_widgets as WidgetId[] | undefined) ?? [];
-});
+    dataservice.getSettings()
+  ])
+  boards.value = boardList
+  hiddenWidgets.value = (settings.hidden_widgets as WidgetId[] | undefined) ?? []
+})
 
-watch(boardId, fetchStats);
+watch(boardId, fetchStats)
 
 // ── Funnel ────────────────────────────────────────────────────────────────────
-const TERMINAL_KEYS = new Set(['Saved', 'Rejected', 'Withdrawn']);
+const TERMINAL_KEYS = new Set(['Saved', 'Rejected', 'Withdrawn'])
 const funnelData = computed(() => {
-  if (!stats.value) return [];
+  if (!stats.value) return []
   return stats.value.stages
-    .filter(s => !TERMINAL_KEYS.has(s.key))
-    .map(s => ({
-      key:   s.key,
+    .filter((s) => !TERMINAL_KEYS.has(s.key))
+    .map((s) => ({
+      key: s.key,
       label: s.label,
       color: s.color,
-      count: stats.value!.by_stage.find(b => b.stage === s.key)?.count ?? 0,
-    }));
-});
-const funnelMax = computed(() => Math.max(1, ...funnelData.value.map(d => d.count)));
+      count: stats.value!.by_stage.find((b) => b.stage === s.key)?.count ?? 0
+    }))
+})
+const funnelMax = computed(() => Math.max(1, ...funnelData.value.map((d) => d.count)))
 
 // ── Weekly ────────────────────────────────────────────────────────────────────
-const weeklyMax = computed(() =>
-  Math.max(1, ...(stats.value?.by_week.map(w => w.count) ?? [1]))
-);
+const weeklyMax = computed(() => Math.max(1, ...(stats.value?.by_week.map((w) => w.count) ?? [1])))
 
 function fmtWeek(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 // ── Outcome donut ─────────────────────────────────────────────────────────────
 const outcomeSegments = computed(() => {
-  const o = stats.value?.overview;
-  if (!o) return [];
-  const total = (o.total_active + o.total_rejected + o.total_ghosted + o.total_withdrawn + o.total_offers) || 1;
+  const o = stats.value?.overview
+  if (!o) return []
+  const total =
+    o.total_active + o.total_rejected + o.total_ghosted + o.total_withdrawn + o.total_offers || 1
   const items = [
-    { label: 'Active',    value: o.total_active,    color: '#6366f1' },
-    { label: 'Rejected',  value: o.total_rejected,  color: '#ef4444' },
-    { label: 'Ghosted',   value: o.total_ghosted,   color: '#f59e0b' },
+    { label: 'Active', value: o.total_active, color: '#6366f1' },
+    { label: 'Rejected', value: o.total_rejected, color: '#ef4444' },
+    { label: 'Ghosted', value: o.total_ghosted, color: '#f59e0b' },
     { label: 'Withdrawn', value: o.total_withdrawn, color: '#6b7280' },
-    { label: 'Offers',    value: o.total_offers,    color: '#10b981' },
-  ].filter(i => i.value > 0);
+    { label: 'Offers', value: o.total_offers, color: '#10b981' }
+  ].filter((i) => i.value > 0)
 
-  let offset = 0;
-  const r = 54;
-  const circ = 2 * Math.PI * r;
-  return items.map(item => {
-    const pct = item.value / total;
-    const dash = pct * circ;
-    const seg = { ...item, pct: Math.round(pct * 100), dash, offset };
-    offset += dash;
-    return seg;
-  });
-});
+  let offset = 0
+  const r = 54
+  const circ = 2 * Math.PI * r
+  return items.map((item) => {
+    const pct = item.value / total
+    const dash = pct * circ
+    const seg = { ...item, pct: Math.round(pct * 100), dash, offset }
+    offset += dash
+    return seg
+  })
+})
 
 // ── Platform ──────────────────────────────────────────────────────────────────
 const platformMax = computed(() =>
-  Math.max(1, ...(stats.value?.by_platform.map(p => p.count) ?? [1]))
-);
+  Math.max(1, ...(stats.value?.by_platform.map((p) => p.count) ?? [1]))
+)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function stagePillClass(tailwindColor: string): string {
-  const match = tailwindColor.match(/^bg-(\w+-\d+)$/) ?? tailwindColor.match(/^(\w+-\d+)$/);
-  const base = match?.[1] ?? 'indigo-500';
-  return `bg-${base}/15 text-${base.replace(/\d+$/, '400')}`;
+  const match = tailwindColor.match(/^bg-(\w+-\d+)$/) ?? tailwindColor.match(/^(\w+-\d+)$/)
+  const base = match?.[1] ?? 'indigo-500'
+  return `bg-${base}/15 text-${base.replace(/\d+$/, '400')}`
 }
 </script>
 
 <template>
   <div class="p-6 max-w-7xl mx-auto space-y-6">
-
     <!-- Header -->
     <div class="flex items-start justify-between gap-4 flex-wrap">
       <div>
@@ -154,13 +175,20 @@ function stagePillClass(tailwindColor: string): string {
             <Button variant="outline" class="h-9 gap-2 text-sm">
               <LayoutDashboard class="w-4 h-4" />
               Widgets
-              <span v-if="hiddenCount" class="ml-0.5 text-xs bg-primary/20 text-primary rounded-full px-1.5 py-0.5 font-medium">
+              <span
+                v-if="hiddenCount"
+                class="ml-0.5 text-xs bg-primary/20 text-primary rounded-full px-1.5 py-0.5 font-medium"
+              >
                 {{ hiddenCount }} off
               </span>
             </Button>
           </PopoverTrigger>
           <PopoverContent class="w-72 p-3" align="end">
-            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1">Visible widgets</p>
+            <p
+              class="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-1"
+            >
+              Visible widgets
+            </p>
             <div class="space-y-0.5">
               <button
                 v-for="w in WIDGET_DEFS"
@@ -170,10 +198,23 @@ function stagePillClass(tailwindColor: string): string {
               >
                 <div
                   class="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors"
-                  :class="isVisible(w.id) ? 'bg-primary border-primary' : 'bg-transparent border-border'"
+                  :class="
+                    isVisible(w.id) ? 'bg-primary border-primary' : 'bg-transparent border-border'
+                  "
                 >
-                  <svg v-if="isVisible(w.id)" class="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
-                    <path d="M2 5l2.5 2.5L8 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <svg
+                    v-if="isVisible(w.id)"
+                    class="w-2.5 h-2.5 text-white"
+                    viewBox="0 0 10 10"
+                    fill="none"
+                  >
+                    <path
+                      d="M2 5l2.5 2.5L8 3"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
                   </svg>
                 </div>
                 <div class="min-w-0">
@@ -193,7 +234,9 @@ function stagePillClass(tailwindColor: string): string {
           <SelectContent>
             <SelectGroup>
               <SelectItem value="__all__">All boards</SelectItem>
-              <SelectItem v-for="b in boards" :key="b.id" :value="String(b.id)">{{ b.name }}</SelectItem>
+              <SelectItem v-for="b in boards" :key="b.id" :value="String(b.id)">{{
+                b.name
+              }}</SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -206,7 +249,6 @@ function stagePillClass(tailwindColor: string): string {
     </div>
 
     <template v-else-if="stats">
-
       <!-- ── Stat cards ──────────────────────────────────────────────────── -->
       <div v-if="isVisible('stat-cards')" class="rounded-xl border bg-card p-4">
         <div class="flex items-center justify-between mb-3">
@@ -216,8 +258,14 @@ function stagePillClass(tailwindColor: string): string {
             class="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
             title="Remove widget"
           >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            <svg
+              class="w-3.5 h-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -225,12 +273,18 @@ function stagePillClass(tailwindColor: string): string {
           <div class="space-y-1">
             <p class="text-xs text-muted-foreground font-medium uppercase tracking-wide">Applied</p>
             <p class="text-3xl font-bold">{{ stats.overview.total_applied }}</p>
-            <p class="text-xs text-muted-foreground">{{ stats.overview.total_saved }} saved, not yet applied</p>
+            <p class="text-xs text-muted-foreground">
+              {{ stats.overview.total_saved }} saved, not yet applied
+            </p>
           </div>
           <div class="space-y-1">
-            <p class="text-xs text-muted-foreground font-medium uppercase tracking-wide">Interviews</p>
+            <p class="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+              Interviews
+            </p>
             <p class="text-3xl font-bold text-primary">{{ stats.overview.total_interviews }}</p>
-            <p class="text-xs text-muted-foreground">{{ stats.overview.interview_rate }}% interview rate</p>
+            <p class="text-xs text-muted-foreground">
+              {{ stats.overview.interview_rate }}% interview rate
+            </p>
           </div>
           <div class="space-y-1">
             <p class="text-xs text-muted-foreground font-medium uppercase tracking-wide">Ghosted</p>
@@ -238,9 +292,13 @@ function stagePillClass(tailwindColor: string): string {
             <p class="text-xs text-muted-foreground">No reply in 14+ days</p>
           </div>
           <div class="space-y-1">
-            <p class="text-xs text-muted-foreground font-medium uppercase tracking-wide">Rejected</p>
+            <p class="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+              Rejected
+            </p>
             <p class="text-3xl font-bold text-red-500">{{ stats.overview.total_rejected }}</p>
-            <p class="text-xs text-muted-foreground">{{ stats.overview.total_withdrawn }} withdrawn</p>
+            <p class="text-xs text-muted-foreground">
+              {{ stats.overview.total_withdrawn }} withdrawn
+            </p>
           </div>
         </div>
       </div>
@@ -248,14 +306,22 @@ function stagePillClass(tailwindColor: string): string {
       <!-- ── Rate strip ──────────────────────────────────────────────────── -->
       <div v-if="isVisible('rate-strip')" class="rounded-xl border bg-card p-4">
         <div class="flex items-center justify-between mb-3">
-          <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Rate Metrics</p>
+          <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Rate Metrics
+          </p>
           <button
             @click="removeWidget('rate-strip')"
             class="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
             title="Remove widget"
           >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            <svg
+              class="w-3.5 h-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -290,7 +356,6 @@ function stagePillClass(tailwindColor: string): string {
         class="grid gap-4"
         :class="isVisible('funnel') && isVisible('weekly') ? 'md:grid-cols-2' : 'grid-cols-1'"
       >
-
         <!-- Application Funnel -->
         <DashboardWidget
           v-if="isVisible('funnel')"
@@ -302,7 +367,12 @@ function stagePillClass(tailwindColor: string): string {
             <div class="space-y-3" :class="expanded ? 'max-h-96 overflow-y-auto pr-1' : ''">
               <div v-for="(item, i) in funnelData" :key="item.key" class="space-y-1">
                 <div class="flex justify-between items-center">
-                  <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', stagePillClass(item.color)]">
+                  <span
+                    :class="[
+                      'text-xs px-2 py-0.5 rounded-full font-medium',
+                      stagePillClass(item.color)
+                    ]"
+                  >
                     {{ item.label }}
                   </span>
                   <span class="text-xs font-semibold tabular-nums">{{ item.count }}</span>
@@ -314,11 +384,20 @@ function stagePillClass(tailwindColor: string): string {
                     :style="{ width: `${(item.count / funnelMax) * 100}%` }"
                   />
                 </div>
-                <p v-if="i > 0 && funnelData[0].count > 0" class="text-[11px] text-muted-foreground text-right">
-                  {{ Math.round(item.count / funnelData[0].count * 100) }}% of {{ funnelData[0].label.toLowerCase() }}
+                <p
+                  v-if="i > 0 && funnelData[0].count > 0"
+                  class="text-[11px] text-muted-foreground text-right"
+                >
+                  {{ Math.round((item.count / funnelData[0].count) * 100) }}% of
+                  {{ funnelData[0].label.toLowerCase() }}
                 </p>
               </div>
-              <p v-if="funnelData.length === 0" class="text-xs text-muted-foreground text-center py-8">No stage data yet</p>
+              <p
+                v-if="funnelData.length === 0"
+                class="text-xs text-muted-foreground text-center py-8"
+              >
+                No stage data yet
+              </p>
             </div>
           </template>
         </DashboardWidget>
@@ -331,7 +410,10 @@ function stagePillClass(tailwindColor: string): string {
           @remove="removeWidget('weekly')"
         >
           <template #default="{ expanded }">
-            <div v-if="stats.by_week.length === 0" class="flex items-center justify-center h-32 text-xs text-muted-foreground">
+            <div
+              v-if="stats.by_week.length === 0"
+              class="flex items-center justify-center h-32 text-xs text-muted-foreground"
+            >
               No data yet
             </div>
             <div v-else class="flex items-end gap-1" :class="expanded ? 'h-64' : 'h-36'">
@@ -340,21 +422,27 @@ function stagePillClass(tailwindColor: string): string {
                 :key="week.week"
                 class="group relative flex-1 flex flex-col items-center gap-1"
               >
-                <div class="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-popover border text-xs rounded px-1.5 py-0.5 whitespace-nowrap z-10 shadow">
+                <div
+                  class="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block bg-popover border text-xs rounded px-1.5 py-0.5 whitespace-nowrap z-10 shadow"
+                >
                   {{ fmtWeek(week.week) }}: {{ week.count }}
                 </div>
                 <div
                   class="w-full rounded-t bg-primary hover:bg-primary/80 transition-colors"
-                  :style="{ height: `${(week.count / weeklyMax) * (expanded ? 240 : 128)}px`, minHeight: '4px' }"
+                  :style="{
+                    height: `${(week.count / weeklyMax) * (expanded ? 240 : 128)}px`,
+                    minHeight: '4px'
+                  }"
                 />
-                <span class="text-[9px] text-muted-foreground rotate-45 origin-left translate-x-1 hidden sm:block">
+                <span
+                  class="text-[9px] text-muted-foreground rotate-45 origin-left translate-x-1 hidden sm:block"
+                >
                   {{ fmtWeek(week.week) }}
                 </span>
               </div>
             </div>
           </template>
         </DashboardWidget>
-
       </div>
 
       <!-- ── Outcome + Platform + Companies ─────────────────────────────── -->
@@ -363,10 +451,11 @@ function stagePillClass(tailwindColor: string): string {
         class="grid grid-cols-1 gap-4"
         :class="{
           'md:grid-cols-3': isVisible('outcome') && isVisible('platform') && isVisible('companies'),
-          'md:grid-cols-2': [isVisible('outcome'), isVisible('platform'), isVisible('companies')].filter(Boolean).length === 2,
+          'md:grid-cols-2':
+            [isVisible('outcome'), isVisible('platform'), isVisible('companies')].filter(Boolean)
+              .length === 2
         }"
       >
-
         <!-- Outcome Breakdown -->
         <DashboardWidget
           v-if="isVisible('outcome')"
@@ -375,16 +464,33 @@ function stagePillClass(tailwindColor: string): string {
           @remove="removeWidget('outcome')"
         >
           <template #default="{ expanded }">
-            <div v-if="outcomeSegments.length === 0" class="flex items-center justify-center h-32 text-xs text-muted-foreground">
+            <div
+              v-if="outcomeSegments.length === 0"
+              class="flex items-center justify-center h-32 text-xs text-muted-foreground"
+            >
               No outcome data yet
             </div>
             <div v-else class="flex flex-col items-center gap-4">
-              <svg :viewBox="'0 0 128 128'" :class="['−rotate-90', expanded ? 'w-48 h-48' : 'w-32 h-32']" style="transform: rotate(-90deg)">
-                <circle cx="64" cy="64" r="54" fill="none" stroke="currentColor" stroke-width="16" class="text-muted/30" />
+              <svg
+                :viewBox="'0 0 128 128'"
+                :class="['−rotate-90', expanded ? 'w-48 h-48' : 'w-32 h-32']"
+                style="transform: rotate(-90deg)"
+              >
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="54"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="16"
+                  class="text-muted/30"
+                />
                 <circle
                   v-for="seg in outcomeSegments"
                   :key="seg.label"
-                  cx="64" cy="64" r="54"
+                  cx="64"
+                  cy="64"
+                  r="54"
                   fill="none"
                   :stroke="seg.color"
                   stroke-width="16"
@@ -393,9 +499,16 @@ function stagePillClass(tailwindColor: string): string {
                 />
               </svg>
               <div class="w-full space-y-1.5">
-                <div v-for="seg in outcomeSegments" :key="seg.label" class="flex items-center justify-between">
+                <div
+                  v-for="seg in outcomeSegments"
+                  :key="seg.label"
+                  class="flex items-center justify-between"
+                >
                   <div class="flex items-center gap-2">
-                    <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ background: seg.color }" />
+                    <div
+                      class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      :style="{ background: seg.color }"
+                    />
                     <span class="text-xs">{{ seg.label }}</span>
                   </div>
                   <span class="text-xs font-semibold tabular-nums">{{ seg.pct }}%</span>
@@ -413,7 +526,10 @@ function stagePillClass(tailwindColor: string): string {
           @remove="removeWidget('platform')"
         >
           <template #default>
-            <div v-if="stats.by_platform.length === 0" class="flex items-center justify-center h-32 text-xs text-muted-foreground">
+            <div
+              v-if="stats.by_platform.length === 0"
+              class="flex items-center justify-center h-32 text-xs text-muted-foreground"
+            >
               No platform data yet
             </div>
             <div v-else class="space-y-3">
@@ -441,7 +557,10 @@ function stagePillClass(tailwindColor: string): string {
           @remove="removeWidget('companies')"
         >
           <template #default>
-            <div v-if="stats.top_companies.length === 0" class="flex items-center justify-center h-32 text-xs text-muted-foreground">
+            <div
+              v-if="stats.top_companies.length === 0"
+              class="flex items-center justify-center h-32 text-xs text-muted-foreground"
+            >
               No company data yet
             </div>
             <div v-else class="space-y-2">
@@ -450,16 +569,22 @@ function stagePillClass(tailwindColor: string): string {
                 :key="c.company"
                 class="flex items-center gap-3"
               >
-                <span class="text-xs text-muted-foreground w-4 text-right tabular-nums">{{ i + 1 }}</span>
+                <span class="text-xs text-muted-foreground w-4 text-right tabular-nums">{{
+                  i + 1
+                }}</span>
                 <div class="flex-1 min-w-0">
                   <div class="flex justify-between items-center">
                     <span class="text-xs font-medium truncate">{{ c.company }}</span>
-                    <span class="text-xs text-muted-foreground tabular-nums ml-2">{{ c.count }}</span>
+                    <span class="text-xs text-muted-foreground tabular-nums ml-2">{{
+                      c.count
+                    }}</span>
                   </div>
                   <div class="mt-1 h-1 rounded-full bg-muted overflow-hidden">
                     <div
                       class="h-full rounded-full bg-primary/60 transition-all duration-500"
-                      :style="{ width: `${(c.count / (stats.top_companies[0]?.count || 1)) * 100}%` }"
+                      :style="{
+                        width: `${(c.count / (stats.top_companies[0]?.count || 1)) * 100}%`
+                      }"
                     />
                   </div>
                 </div>
@@ -467,24 +592,31 @@ function stagePillClass(tailwindColor: string): string {
             </div>
           </template>
         </DashboardWidget>
-
       </div>
 
       <!-- All widgets hidden -->
       <div
-        v-if="!isVisible('stat-cards') && !isVisible('rate-strip') && !isVisible('funnel') && !isVisible('weekly') && !isVisible('outcome') && !isVisible('platform') && !isVisible('companies')"
+        v-if="
+          !isVisible('stat-cards') &&
+          !isVisible('rate-strip') &&
+          !isVisible('funnel') &&
+          !isVisible('weekly') &&
+          !isVisible('outcome') &&
+          !isVisible('platform') &&
+          !isVisible('companies')
+        "
         class="flex flex-col items-center justify-center h-48 gap-3 text-muted-foreground rounded-xl border border-dashed"
       >
         <LayoutDashboard class="w-8 h-8 opacity-30" />
-        <p class="text-sm">All widgets are hidden. Use the <strong>Widgets</strong> button to restore them.</p>
+        <p class="text-sm">
+          All widgets are hidden. Use the <strong>Widgets</strong> button to restore them.
+        </p>
       </div>
-
     </template>
 
     <!-- Empty state -->
     <div v-else class="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
       <p class="text-sm">Could not load dashboard data.</p>
     </div>
-
   </div>
 </template>

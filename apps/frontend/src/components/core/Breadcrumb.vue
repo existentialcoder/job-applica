@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { RouterLink, useRoute } from 'vue-router';
-import { computed } from 'vue';
-import { useAppStore } from '@/stores/app';
+import { RouterLink, useRoute } from 'vue-router'
+import { computed } from 'vue'
+import { useAppStore } from '@/stores/app'
 
-const route = useRoute();
-const appStore = useAppStore();
+const route = useRoute()
+const appStore = useAppStore()
 
 const currentRoute = computed(() => {
-  return route.matched.length > 1 ? route.matched[route.matched.length - 1] : route.matched[0];
-});
+  return route.matched.length > 1 ? route.matched[route.matched.length - 1] : route.matched[0]
+})
 
-const hasBreadcrumbs = computed(() => appStore.breadcrumbs.length > 0);
+const hasBreadcrumbs = computed(() => appStore.breadcrumbs.length > 0)
 </script>
 
 <template>

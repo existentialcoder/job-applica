@@ -1,14 +1,14 @@
-from fastapi import Query, HTTPException
 from math import ceil
-from typing import List, Optional, Type, Dict
 
+from fastapi import HTTPException, Query
 from pydantic import BaseModel
+
 from ...core.constants import Constants
 
 
 def pagination_params(
-    page: Optional[int] = Query(1, ge=1, description='Page number (1-indexed)'),
-    per_page: Optional[int] = Query(
+    page: int | None = Query(1, ge=1, description='Page number (1-indexed)'),
+    per_page: int | None = Query(
         Constants.DEFAULT_PAGE_SIZE, ge=1, le=Constants.MAX_PAGE_SIZE, description='Items per page'
     ),
 ):
@@ -51,9 +51,10 @@ def build_paginated_response(items: list, total: int, page: int, per_page: int):
         'results': items,
     }
 
-def get_paginated_response_model(item_model: Type[BaseModel]) -> Type[BaseModel]:
+
+def get_paginated_response_model(item_model: type[BaseModel]) -> type[BaseModel]:
     class PaginatedResponse(BaseModel):
-        meta: Dict[str, int]
-        results: List[item_model]
+        meta: dict[str, int]
+        results: list[item_model]
 
     return PaginatedResponse

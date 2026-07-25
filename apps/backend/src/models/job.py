@@ -1,14 +1,14 @@
 import enum
-from sqlalchemy import Enum, Integer, ForeignKey, JSON, Text, Date, Float
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from ..db.base_class import Base
-from .company import Company
-from .user import User
-from .skill import Skill
-from .location import Location
-from .board import Board
 
-from sqlalchemy import Table, Column
+from sqlalchemy import JSON, Column, Date, Enum, Float, ForeignKey, Integer, Table, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from ..db.base_class import Base
+from .board import Board
+from .company import Company
+from .location import Location
+from .skill import Skill
+from .user import User
 
 job_skill_table = Table(
     'job_skill',
@@ -17,7 +17,8 @@ job_skill_table = Table(
     Column('skill_id', Integer, ForeignKey('skills.id', ondelete='CASCADE'), primary_key=True),
 )
 
-class ApplicationStatus(str, enum.Enum):
+
+class ApplicationStatus(enum.StrEnum):
     SAVED = 'Saved'
     APPLIED = 'Applied'
     PHONE_SCREEN = 'Phone Screen'
@@ -28,7 +29,7 @@ class ApplicationStatus(str, enum.Enum):
     WITHDRAWN = 'Withdrawn'
 
 
-class JobPosition(str, enum.Enum):
+class JobPosition(enum.StrEnum):
     INTERN = 'Intern'
     JUNIOR = 'Junior'
     MID = 'Mid'
@@ -36,12 +37,14 @@ class JobPosition(str, enum.Enum):
     LEAD = 'Lead'
     MANAGER = 'Manager'
 
-class JobWorkModel(str, enum.Enum):
+
+class JobWorkModel(enum.StrEnum):
     ON_SITE = 'On-site'
     REMOTE = 'Remote'
     HYBRID = 'Hybrid'
 
-class SourcePlatform(str, enum.Enum):
+
+class SourcePlatform(enum.StrEnum):
     LINKEDIN = 'LinkedIn'
     INDEED = 'Indeed'
     GLASSDOOR = 'Glassdoor'
@@ -50,16 +53,13 @@ class SourcePlatform(str, enum.Enum):
     JOBSCAN = 'Jobscan'
     OTHER = 'Other'
 
+
 class Job(Base):
     __tablename__ = 'jobs'
     title: Mapped[str] = mapped_column(Text, nullable=False)
 
     status: Mapped[str] = mapped_column(Text, nullable=False, default='Saved')
-    position: Mapped[JobPosition] = mapped_column(
-        Enum(JobPosition),
-        default=JobPosition.INTERN,
-        nullable=True
-    )
+    position: Mapped[JobPosition] = mapped_column(Enum(JobPosition), default=JobPosition.INTERN, nullable=True)
     category: Mapped[str] = mapped_column(Text, nullable=True)
     salary_range: Mapped[str] = mapped_column(Text, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=True)
@@ -67,10 +67,7 @@ class Job(Base):
     years_of_experience: Mapped[dict] = mapped_column(JSON, nullable=True)
 
     source_url: Mapped[str] = mapped_column(Text, nullable=True)
-    source_platform: Mapped[SourcePlatform] = mapped_column(
-        Enum(SourcePlatform, name='sourceplatform'),
-        nullable=True
-    )
+    source_platform: Mapped[SourcePlatform] = mapped_column(Enum(SourcePlatform, name='sourceplatform'), nullable=True)
     applied_date: Mapped[Date] = mapped_column(Date, nullable=True)
     notes: Mapped[str] = mapped_column(Text, nullable=True)
     ats_score: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -83,14 +80,9 @@ class Job(Base):
     company: Mapped['Company'] = relationship('Company')
     company_id: Mapped[int] = mapped_column(ForeignKey('companies.id'), nullable=True)
 
-    required_skills: Mapped[list['Skill']] = relationship(
-        'Skill',
-        secondary=job_skill_table
-    )
+    required_skills: Mapped[list['Skill']] = relationship('Skill', secondary=job_skill_table)
     work_model: Mapped[JobWorkModel] = mapped_column(
-        Enum(JobWorkModel, name='jobworkmodel'),
-        default=JobWorkModel.ON_SITE,
-        nullable=False
+        Enum(JobWorkModel, name='jobworkmodel'), default=JobWorkModel.ON_SITE, nullable=False
     )
 
     location: Mapped['Location'] = relationship('Location')

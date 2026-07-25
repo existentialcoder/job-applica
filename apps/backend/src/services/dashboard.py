@@ -1,12 +1,18 @@
-from datetime import datetime, timedelta, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from datetime import UTC, datetime, timedelta
 
-from src.models.job import Job
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.models.board import DEFAULT_STAGES, Board
 from src.models.company import Company
-from src.models.board import Board, DEFAULT_STAGES
+from src.models.job import Job
 from src.schemas.dashboard import (
-    DashboardStats, OverviewStats, StageCount, StageInfo, WeekCount, PlatformCount, CompanyCount,
+    CompanyCount,
+    DashboardStats,
+    OverviewStats,
+    PlatformCount,
+    StageCount,
+    StageInfo,
+    WeekCount,
 )
 
 GHOST_DAYS = 14
@@ -40,39 +46,33 @@ async def get_dashboard_stats(db: AsyncSession, user_id: int, board_id: int | No
 
     raw_stages = await _load_stages(db, user_id, board_id)
 
-    stage_keys  = [s['key'] for s in raw_stages]
+    stage_keys = [s['key'] for s in raw_stages]
     active_keys = {s['key'] for s in raw_stages if s['key'] not in TERMINAL_KEYS}
     applied_key = next((s['key'] for s in raw_stages if s['key'] not in TERMINAL_KEYS), 'Applied')
 
-    now          = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     ghost_cutoff = now - timedelta(days=GHOST_DAYS)
     stuck_cutoff = now - timedelta(days=STUCK_DAYS)
 
     # ── Overview ─────────────────────────────────────────────────────────────
-    total_saved      = sum(1 for j in all_jobs if j.status == 'Saved')
-    total_applied    = sum(1 for j in all_jobs if j.status != 'Saved')
-    total_offers     = sum(1 for j in all_jobs if j.status == 'Offer')
-    total_rejected   = sum(1 for j in all_jobs if j.status == 'Rejected')
-    total_withdrawn  = sum(1 for j in all_jobs if j.status == 'Withdrawn')
-    total_active     = sum(1 for j in all_jobs if j.status in active_keys)
+    total_saved = sum(1 for j in all_jobs if j.status == 'Saved')
+    total_applied = sum(1 for j in all_jobs if j.status != 'Saved')
+    total_offers = sum(1 for j in all_jobs if j.status == 'Offer')
+    total_rejected = sum(1 for j in all_jobs if j.status == 'Rejected')
+    total_withdrawn = sum(1 for j in all_jobs if j.status == 'Withdrawn')
+    total_active = sum(1 for j in all_jobs if j.status in active_keys)
 
     interview_keys = active_keys - {applied_key}
     total_interviews = sum(1 for j in all_jobs if j.status in interview_keys)
 
-    total_ghosted = sum(
-        1 for j in all_jobs
-        if j.status == applied_key and j.updated_at and j.updated_at < ghost_cutoff
-    )
-    total_stuck = sum(
-        1 for j in all_jobs
-        if j.status in active_keys and j.updated_at and j.updated_at < stuck_cutoff
-    )
+    total_ghosted = sum(1 for j in all_jobs if j.status == applied_key and j.updated_at and j.updated_at < ghost_cutoff)
+    total_stuck = sum(1 for j in all_jobs if j.status in active_keys and j.updated_at and j.updated_at < stuck_cutoff)
 
-    base           = total_applied or 1
-    responded      = total_interviews + total_rejected + total_withdrawn + total_offers
-    response_rate  = round(responded / base * 100, 1)
+    base = total_applied or 1
+    responded = total_interviews + total_rejected + total_withdrawn + total_offers
+    response_rate = round(responded / base * 100, 1)
     interview_rate = round(total_interviews / base * 100, 1)
-    offer_rate     = round(total_offers / base * 100, 1)
+    offer_rate = round(total_offers / base * 100, 1)
 
     # ── By stage ─────────────────────────────────────────────────────────────
     raw: dict[str, int] = {}
@@ -102,10 +102,7 @@ async def get_dashboard_stats(db: AsyncSession, user_id: int, board_id: int | No
         if j.source_platform:
             p = j.source_platform.value if hasattr(j.source_platform, 'value') else str(j.source_platform)
             plat[p] = plat.get(p, 0) + 1
-    by_platform = [
-        PlatformCount(platform=k, count=v)
-        for k, v in sorted(plat.items(), key=lambda x: -x[1])
-    ]
+    by_platform = [PlatformCount(platform=k, count=v) for k, v in sorted(plat.items(), key=lambda x: -x[1])]
 
     # ── Top companies ─────────────────────────────────────────────────────────
     company_q = (

@@ -1,26 +1,25 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload
+from urllib.parse import urlparse
+
+import httpx
 from fastapi import HTTPException
 from pydantic import HttpUrl
-from urllib.parse import urlparse
-import httpx
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
 from ..core.constants import Constants
-
-from ..schemas.company import CompanyCreate
-from ..services.company import get_company_by_id, get_company_by_name, create_company
-
-from ..models.job import Job
 from ..models.company import Company
+from ..models.job import Job
 from ..models.location import Location
-from ..services import skill as skill_service
-from ..services.board import get_default_board_id
+from ..schemas.company import CompanyCreate
+from ..schemas.job import JobBase, JobCreate, JobFilterParams, JobUpdate
 from ..schemas.skill import SkillCreate
 from ..schemas.user import UserBase
-from ..schemas.job import JobBase, JobUpdate, JobCreate, JobFilterParams
-from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
+from ..services import skill as skill_service
+from ..services.board import get_default_board_id
+from ..services.company import create_company, get_company_by_id, get_company_by_name
 
 PaginatedJobs = get_paginated_response_model(JobBase)
 
@@ -31,6 +30,7 @@ def _eager(q):
         selectinload(Job.company),
         selectinload(Job.location),
     )
+
 
 async def _derive_logo_url(website: str | HttpUrl | None) -> str | None:
     if not website:
@@ -55,13 +55,16 @@ async def get_job_with_id(db: AsyncSession, user: UserBase, job_id: int):
 async def transform_required_skills(db: AsyncSession, required_skills: list[str]):
     result = []
     for skill in required_skills:
-        matched_skills = await skill_service.get_skills(db, None, filter={'name': skill, 'label': skill}, source='internal')
+        matched_skills = await skill_service.get_skills(
+            db, None, filter={'name': skill, 'label': skill}, source='internal'
+        )
         if len(matched_skills) > 0:
             result.append(matched_skills[0])
         else:
             new_skill = await skill_service.create_skill(db, SkillCreate(name=skill, label=skill), source='internal')
             result.append(new_skill)
     return result
+
 
 async def _retrieve_company_in_request(db: AsyncSession, data: dict) -> Company | None:
     if 'company_id' in data and isinstance(data['company_id'], int):
@@ -117,7 +120,9 @@ async def get_or_create_location(db: AsyncSession, location_data: dict) -> Locat
     return loc
 
 
-async def get_jobs(db: AsyncSession, user: UserBase, pagination: dict, filter: JobFilterParams | None = None) -> PaginatedJobs:
+async def get_jobs(
+    db: AsyncSession, user: UserBase, pagination: dict, filter: JobFilterParams | None = None
+) -> PaginatedJobs:
     base_q = select(Job).where(Job.user_id == user.id)
 
     if filter:
@@ -127,15 +132,12 @@ async def get_jobs(db: AsyncSession, user: UserBase, pagination: dict, filter: J
             base_q = base_q.join(Company, Job.company_id == Company.id).where(Company.name.ilike(f'%{filter.company}%'))
         if filter.location:
             base_q = base_q.join(Location, Job.location_id == Location.id).where(
-                Location.city.ilike(f'%{filter.location}%') |
-                Location.state.ilike(f'%{filter.location}%') |
-                Location.country.ilike(f'%{filter.location}%')
+                Location.city.ilike(f'%{filter.location}%')
+                | Location.state.ilike(f'%{filter.location}%')
+                | Location.country.ilike(f'%{filter.location}%')
             )
         if filter.query:
-            base_q = base_q.where(
-                Job.title.ilike(f'%{filter.query}%') |
-                Job.description.ilike(f'%{filter.query}%')
-            )
+            base_q = base_q.where(Job.title.ilike(f'%{filter.query}%') | Job.description.ilike(f'%{filter.query}%'))
         if filter.status:
             base_q = base_q.where(Job.status == filter.status)
         if filter.source_platform:

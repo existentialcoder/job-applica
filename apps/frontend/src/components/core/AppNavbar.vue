@@ -1,33 +1,33 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import Breadcrumb from '@/components/core/Breadcrumb.vue';
-import { LogOut, User, Bell, Sun, MoonStar, Monitor, Menu, Github } from 'lucide-vue-next';
-import { Button } from '@/components/ui/button';
-import { useAppStore } from '@/stores/app';
-import { useAuthStore } from '@/stores/auth';
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import Breadcrumb from '@/components/core/Breadcrumb.vue'
+import { LogOut, User, Bell, Sun, MoonStar, Monitor, Menu, Github } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
+import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
 
-const store = useAppStore();
-const authStore = useAuthStore();
-const router = useRouter();
+const store = useAppStore()
+const authStore = useAuthStore()
+const router = useRouter()
 
 const initials = computed(() => {
-  const u = authStore.user;
-  if (!u) return '?';
-  return `${u.first_name?.[0] ?? ''}${u.last_name?.[0] ?? ''}`.toUpperCase();
-});
+  const u = authStore.user
+  if (!u) return '?'
+  return `${u.first_name?.[0] ?? ''}${u.last_name?.[0] ?? ''}`.toUpperCase()
+})
 
 async function handleLogout() {
-  await authStore.logout();
+  await authStore.logout()
 }
 </script>
 
@@ -66,8 +66,18 @@ async function handleLogout() {
       <Button
         variant="outline"
         class="border-0 p-[6px] ml-2 w-8 h-8"
-        :title="store.themeMode === 'light' ? 'Switch to Dark' : store.themeMode === 'dark' ? 'Switch to System' : 'Switch to Light'"
-        @click="store.setThemeMode(store.themeMode === 'light' ? 'dark' : store.themeMode === 'dark' ? 'system' : 'light')"
+        :title="
+          store.themeMode === 'light'
+            ? 'Switch to Dark'
+            : store.themeMode === 'dark'
+              ? 'Switch to System'
+              : 'Switch to Light'
+        "
+        @click="
+          store.setThemeMode(
+            store.themeMode === 'light' ? 'dark' : store.themeMode === 'dark' ? 'system' : 'light'
+          )
+        "
       >
         <Sun v-if="store.themeMode === 'light'" class="w-4 h-4" />
         <MoonStar v-else-if="store.themeMode === 'dark'" class="w-4 h-4" />
@@ -79,7 +89,11 @@ async function handleLogout() {
         <DropdownMenuTrigger as-child>
           <Button variant="outline" class="border-0 p-[6px] w-8 h-8">
             <Avatar class="h-8 w-8">
-              <AvatarImage v-if="authStore.user?.avatar_url" :src="authStore.user.avatar_url" :alt="authStore.displayName" />
+              <AvatarImage
+                v-if="authStore.user?.avatar_url"
+                :src="authStore.user.avatar_url"
+                :alt="authStore.displayName"
+              />
               <AvatarFallback class="text-xs font-semibold">{{ initials }}</AvatarFallback>
             </Avatar>
           </Button>
@@ -89,7 +103,9 @@ async function handleLogout() {
           <DropdownMenuLabel class="font-normal">
             <div class="flex flex-col gap-0.5">
               <p class="font-semibold">{{ authStore.displayName }}</p>
-              <p class="text-xs text-muted-foreground truncate">{{ authStore.user?.email ?? authStore.user?.user_name }}</p>
+              <p class="text-xs text-muted-foreground truncate">
+                {{ authStore.user?.email ?? authStore.user?.user_name }}
+              </p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -98,7 +114,10 @@ async function handleLogout() {
             <span>Profile</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem class="text-destructive focus:text-destructive cursor-pointer" @click="handleLogout">
+          <DropdownMenuItem
+            class="text-destructive focus:text-destructive cursor-pointer"
+            @click="handleLogout"
+          >
             <LogOut class="mr-2 h-4 w-4" />
             <span>Log out</span>
           </DropdownMenuItem>

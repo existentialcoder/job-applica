@@ -1,10 +1,9 @@
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
-from fastapi import HTTPException
 
+from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
 from ..models.skill import Skill
 from ..schemas.skill import SkillBase, SkillBaseLean, SkillCreate, SkillFilterParams
-from ..api.deps.pagination import build_paginated_response, paginate_query, get_paginated_response_model
 
 PaginatedSkillsBase = get_paginated_response_model(SkillBase)
 PaginatedSkillsBaseLean = get_paginated_response_model(SkillBaseLean)
