@@ -54,15 +54,21 @@ async def get_job_with_id(db: AsyncSession, user: UserBase, job_id: int):
 
 async def transform_required_skills(db: AsyncSession, required_skills: list[str]):
     result = []
+    seen_ids = set()
     for skill in required_skills:
         matched_skills = await skill_service.get_skills(
             db, None, filter={'name': skill, 'label': skill}, source='internal'
         )
         if len(matched_skills) > 0:
-            result.append(matched_skills[0])
+            resolved = matched_skills[0]
         else:
-            new_skill = await skill_service.create_skill(db, SkillCreate(name=skill, label=skill), source='internal')
-            result.append(new_skill)
+            resolved = await skill_service.create_skill(db, SkillCreate(name=skill, label=skill), source='internal')
+        # Two different incoming labels can resolve to the same skill (e.g. after
+        # normalization collisions) — dedupe so we never insert the same (job_id,
+        # skill_id) pair twice.
+        if resolved.id not in seen_ids:
+            seen_ids.add(resolved.id)
+            result.append(resolved)
     return result
 
 
@@ -179,7 +185,19 @@ async def get_transformed_job(db: AsyncSession, job_in: JobCreate | JobUpdate, u
     if 'board_id' not in data and isinstance(job_in, JobCreate):
         data['board_id'] = await get_default_board_id(db, user.id)
 
-    data['company'] = await _retrieve_company_in_request(db, data)
+    # A blank company_name (e.g. an emptied form field) means "not provided", not
+    # "clear the company" — treat it the same as the key being absent entirely.
+    if isinstance(data.get('company_name'), str) and not data['company_name'].strip():
+        data.pop('company_name', None)
+
+    # Only touch the company relationship when the caller actually sent company info —
+    # otherwise a partial update (e.g. a drag-and-drop status change) would silently
+    # null out an existing job's company since _retrieve_company_in_request returns
+    # None when none of these keys are present.
+    if 'company_id' in data or 'company_name' in data or 'company' in data:
+        data['company'] = await _retrieve_company_in_request(db, data)
+    data.pop('company_id', None)
+    data.pop('company_name', None)
 
     location_raw = data.pop('location', None)
     if location_raw:
@@ -194,6 +212,8 @@ async def get_transformed_job(db: AsyncSession, job_in: JobCreate | JobUpdate, u
 
 async def create_job(db: AsyncSession, user: UserBase, job_in: JobCreate) -> JobBase:
     job_data = await get_transformed_job(db, job_in, user)
+    if not job_data.get('company'):
+        raise HTTPException(status_code=400, detail='Company is required')
     db_job = Job(**job_data)
     db.add(db_job)
     await db.commit()

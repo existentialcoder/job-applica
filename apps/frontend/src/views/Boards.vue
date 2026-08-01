@@ -189,10 +189,16 @@ onUnmounted(() => {
           Organise your job search into separate boards
         </p>
       </div>
-      <Button @click="isCreateOpen = true">
-        <Icon name="Plus" class="w-4 h-4 mr-1" />
-        New Board
-      </Button>
+      <div class="flex items-center gap-2">
+        <Button variant="outline" @click="router.push('/boards/all')">
+          <Icon name="LayoutGrid" class="w-4 h-4 mr-1" />
+          All Applications
+        </Button>
+        <Button @click="isCreateOpen = true">
+          <Icon name="Plus" class="w-4 h-4 mr-1" />
+          New Board
+        </Button>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -222,10 +228,6 @@ onUnmounted(() => {
           Create a board to start tracking applications
         </p>
       </div>
-      <Button @click="isCreateOpen = true">
-        <Icon name="Plus" class="w-4 h-4 mr-1" />
-        Create First Board
-      </Button>
     </div>
 
     <!-- Board grid -->

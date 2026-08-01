@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from '@/lib/toast'
-import type { JobData, JobCreatePayload, ATSReport, ResumeData } from '@/lib/types'
-import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants'
+import type { JobData, JobCreatePayload, ATSReport, ResumeData, BoardData } from '@/lib/types'
+import { DEFAULT_COMPANY_LOGO_URL, DEFAULT_BOARD_STAGES } from '@/lib/constants'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -19,9 +19,14 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Combobox } from '@/components/ui/combobox'
 import dataservice from '@/lib/dataservice'
+import { COUNTRY_OPTIONS } from '@/lib/constants'
 import CompanyCombobox from './CompanyCombobox.vue'
+import CityCombobox from './CityCombobox.vue'
 import DatePickerInput from './DatePickerInput.vue'
+
+const COUNTRY_COMBOBOX_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }))
 
 const router = useRouter()
 
@@ -39,16 +44,6 @@ const emit = defineEmits<{
   (e: 'score-updated', jobId: number, update: { ats_score: number; ats_report: ATSReport }): void
 }>()
 
-const STATUS_OPTIONS = [
-  'Saved',
-  'Applied',
-  'Phone Screen',
-  'Interview',
-  'Technical',
-  'Offer',
-  'Rejected',
-  'Withdrawn'
-]
 const POSITION_OPTIONS = ['Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager']
 const WORK_MODEL_OPTIONS = ['On-site', 'Remote', 'Hybrid']
 const PLATFORM_OPTIONS = [
@@ -66,7 +61,9 @@ const activeTab = ref<'details' | 'ats'>('details')
 // ── Details fields ────────────────────────────────────────────────────────────
 const title = ref('')
 const companyName = ref('')
-const location = ref('')
+const locationCity = ref('')
+const locationCountry = ref('')
+const boardId = ref<number | undefined>(undefined)
 const status = ref('')
 const position = ref('')
 const workModel = ref('')
@@ -82,6 +79,32 @@ watch(status, (newVal) => {
     appliedDate.value = new Date().toISOString().slice(0, 10)
   }
 })
+
+// ── Board switcher ────────────────────────────────────────────────────────────
+const allBoards = ref<BoardData[]>([])
+
+onMounted(async () => {
+  allBoards.value = await dataservice.getBoards()
+})
+
+const boardOptions = computed(() =>
+  allBoards.value.map((b) => ({ label: b.name, value: String(b.id) }))
+)
+
+const currentBoardStageLabels = computed(() => {
+  const currentBoard = allBoards.value.find((b) => b.id === boardId.value)
+  if (currentBoard?.stages.length) return currentBoard.stages.map((s) => s.label)
+  return props.statusOptions?.length
+    ? props.statusOptions
+    : DEFAULT_BOARD_STAGES.map((s) => s.label)
+})
+
+function onBoardChange(val: string) {
+  boardId.value = Number(val)
+  if (!currentBoardStageLabels.value.includes(status.value)) {
+    status.value = currentBoardStageLabels.value[0] ?? 'Saved'
+  }
+}
 
 // ── Inline URL edit ──────────────────────────────────────────────────────────
 const isEditingUrl = ref(false)
@@ -192,9 +215,9 @@ watch(
     if (!job) return
     title.value = job.title || ''
     companyName.value = job.company?.name || ''
-    location.value = job.location
-      ? [job.location.city, job.location.state, job.location.country].filter(Boolean).join(', ')
-      : ''
+    locationCity.value = job.location?.city || ''
+    locationCountry.value = job.location?.country || ''
+    boardId.value = job.board_id
     status.value = job.status || 'Saved'
     position.value = job.position || ''
     workModel.value = job.work_model || ''
@@ -215,11 +238,15 @@ watch(
 )
 
 function handleSave() {
-  if (!props.job || !title.value.trim()) return
+  if (!props.job || !title.value.trim() || !companyName.value.trim()) return
+  const city = locationCity.value.trim()
+  const country = locationCountry.value.trim()
   emit('save', props.job.id, {
     title: title.value.trim(),
     company_name: companyName.value.trim() || undefined,
-    location: location.value.trim() || undefined,
+    location:
+      city || country ? { city: city || undefined, country: country || undefined } : undefined,
+    board_id: boardId.value,
     status: status.value,
     position: position.value || undefined,
     work_model: workModel.value || undefined,
@@ -437,15 +464,41 @@ const statusVariantMap: Record<string, string> = {
               <Input v-model="title" placeholder="e.g. Senior Software Engineer" />
             </div>
 
+            <div class="space-y-1.5">
+              <Label>Company <span class="text-destructive">*</span></Label>
+              <CompanyCombobox v-model="companyName" placeholder="e.g. Acme Corp" />
+            </div>
+
             <div class="grid grid-cols-2 gap-3">
               <div class="space-y-1.5">
-                <Label>Company</Label>
-                <CompanyCombobox v-model="companyName" placeholder="e.g. Acme Corp" />
+                <Label>City</Label>
+                <CityCombobox v-model="locationCity" placeholder="e.g. New York" />
               </div>
               <div class="space-y-1.5">
-                <Label>Location</Label>
-                <Input v-model="location" placeholder="e.g. New York, NY, USA" />
+                <Label>Country</Label>
+                <Combobox
+                  v-model="locationCountry"
+                  :options="COUNTRY_COMBOBOX_OPTIONS"
+                  placeholder="Select country"
+                />
               </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <Label>Board</Label>
+              <Select
+                :model-value="boardId != null ? String(boardId) : undefined"
+                @update:model-value="onBoardChange"
+              >
+                <SelectTrigger><SelectValue placeholder="Select board" /></SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem v-for="b in boardOptions" :key="b.value" :value="b.value">{{
+                      b.label
+                    }}</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -455,12 +508,9 @@ const statusVariantMap: Record<string, string> = {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem
-                        v-for="s in statusOptions ?? STATUS_OPTIONS"
-                        :key="s"
-                        :value="s"
-                        >{{ s }}</SelectItem
-                      >
+                      <SelectItem v-for="s in currentBoardStageLabels" :key="s" :value="s">{{
+                        s
+                      }}</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -940,7 +990,9 @@ const statusVariantMap: Record<string, string> = {
           style="flex-shrink: 0"
         >
           <Button variant="outline" @click="$emit('update:open', false)">Cancel</Button>
-          <Button :disabled="!title.trim()" @click="handleSave">Save Changes</Button>
+          <Button :disabled="!title.trim() || !companyName.trim()" @click="handleSave"
+            >Save Changes</Button
+          >
         </div>
       </div>
     </SheetContent>

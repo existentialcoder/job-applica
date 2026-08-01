@@ -88,9 +88,19 @@ export interface JobFilters {
   title?: string
   company?: string
   location?: string
+  country?: string
   status?: string
   source_platform?: string
+  work_model?: string
+  position?: string
+  applied_from?: string
+  applied_to?: string
+  created_from?: string
+  created_to?: string
+  ats_score_min?: number
+  ats_score_max?: number
   board_id?: number
+  board_ids?: string
   page?: number
   per_page?: number
 }
@@ -123,9 +133,19 @@ export default {
     if (filters.title) params.set('title', filters.title)
     if (filters.company) params.set('company', filters.company)
     if (filters.location) params.set('location', filters.location)
+    if (filters.country) params.set('country', filters.country)
     if (filters.status) params.set('status', filters.status)
     if (filters.source_platform) params.set('source_platform', filters.source_platform)
+    if (filters.work_model) params.set('work_model', filters.work_model)
+    if (filters.position) params.set('position', filters.position)
+    if (filters.applied_from) params.set('applied_from', filters.applied_from)
+    if (filters.applied_to) params.set('applied_to', filters.applied_to)
+    if (filters.created_from) params.set('created_from', filters.created_from)
+    if (filters.created_to) params.set('created_to', filters.created_to)
+    if (filters.ats_score_min != null) params.set('ats_score_min', String(filters.ats_score_min))
+    if (filters.ats_score_max != null) params.set('ats_score_max', String(filters.ats_score_max))
     if (filters.board_id) params.set('board_id', String(filters.board_id))
+    if (filters.board_ids) params.set('board_ids', filters.board_ids)
     if (filters.page) params.set('page', String(filters.page))
     if (filters.per_page) params.set('per_page', String(filters.per_page))
 
@@ -448,5 +468,15 @@ export default {
     if (!response.ok) return []
     const data = await response.json()
     return data.items ?? data.results ?? []
+  },
+
+  async getCities(search?: string): Promise<string[]> {
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    const response = await apiFetch(`${API_BASE}/locations/cities?${params}`, {
+      headers: { ...authHeaders() }
+    })
+    if (!response.ok) return []
+    return response.json()
   }
 }

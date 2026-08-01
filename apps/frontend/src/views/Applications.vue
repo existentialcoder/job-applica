@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from '@/lib/toast'
-import type { JobData, JobCreatePayload, StageData, ATSReport } from '@/lib/types'
+import type { JobData, JobCreatePayload, StageData, ATSReport, BoardData } from '@/lib/types'
 import {
   Select,
   SelectContent,
@@ -14,12 +14,16 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Filter } from 'lucide-vue-next'
 import dataservice, { type JobFilters } from '@/lib/dataservice'
+import { emptyJobFilters, type JobFiltersFormValues } from '@/lib/jobFilters'
+import { DEFAULT_BOARD_STAGES } from '@/lib/constants'
 import {
   TableApplications,
   BoardApplications,
   AddJobModal,
-  JobDetailPanel
+  JobDetailPanel,
+  JobFiltersPanel
 } from '@/components/applications'
 import { useCompaniesStore } from '@/stores/companies'
 
@@ -48,10 +52,13 @@ const editingJob = ref<JobData | null>(null)
 const panelInitialTab = ref<'details' | 'ats'>('details')
 
 const searchQuery = ref('')
-const filterStatus = ref('__all__')
 const filterPlatform = ref('__all__')
 const currentPage = ref(1)
 const pageSize = 20
+
+const isFiltersPanelOpen = ref(false)
+const jobFilters = reactive<JobFiltersFormValues>(emptyJobFilters())
+const boardOptions = ref<{ label: string; value: string }[]>([])
 
 const PLATFORM_OPTIONS = [
   'LinkedIn',
@@ -63,18 +70,9 @@ const PLATFORM_OPTIONS = [
   'Other'
 ]
 
-const DEFAULT_STAGES = [
-  'Saved',
-  'Applied',
-  'Phone Screen',
-  'Interview',
-  'Technical',
-  'Offer',
-  'Rejected',
-  'Withdrawn'
-]
-
-const statusOptions = ref<string[]>(props.stages?.map((s) => s.label) ?? DEFAULT_STAGES)
+const statusOptions = ref<string[]>(
+  props.stages?.map((s) => s.label) ?? DEFAULT_BOARD_STAGES.map((s) => s.label)
+)
 
 watch(
   () => props.stages,
@@ -92,9 +90,22 @@ async function loadJobs() {
   }
   if (props.boardId) filters.board_id = props.boardId
   if (searchQuery.value.trim()) filters.query = searchQuery.value.trim()
-  if (filterStatus.value && filterStatus.value !== '__all__') filters.status = filterStatus.value
   if (filterPlatform.value && filterPlatform.value !== '__all__')
     filters.source_platform = filterPlatform.value
+
+  if (jobFilters.boardIds.length) filters.board_ids = jobFilters.boardIds.join(',')
+  if (jobFilters.status.length) filters.status = jobFilters.status.join(',')
+  if (jobFilters.location.trim()) filters.location = jobFilters.location.trim()
+  if (jobFilters.country.length) filters.country = jobFilters.country.join(',')
+  if (jobFilters.company.trim()) filters.company = jobFilters.company.trim()
+  if (jobFilters.workModel.length) filters.work_model = jobFilters.workModel.join(',')
+  if (jobFilters.position.length) filters.position = jobFilters.position.join(',')
+  if (jobFilters.appliedFrom) filters.applied_from = jobFilters.appliedFrom
+  if (jobFilters.appliedTo) filters.applied_to = jobFilters.appliedTo
+  if (jobFilters.createdFrom) filters.created_from = jobFilters.createdFrom
+  if (jobFilters.createdTo) filters.created_to = jobFilters.createdTo
+  if (jobFilters.atsScoreMin !== '') filters.ats_score_min = Number(jobFilters.atsScoreMin)
+  if (jobFilters.atsScoreMax !== '') filters.ats_score_max = Number(jobFilters.atsScoreMax)
 
   const res = await dataservice.getJobs(filters)
   allJobs.value = res.items
@@ -102,7 +113,13 @@ async function loadJobs() {
   isLoading.value = false
 }
 
-watch([searchQuery, filterStatus, filterPlatform], () => {
+function onFiltersApplied(next: JobFiltersFormValues) {
+  Object.assign(jobFilters, next)
+  currentPage.value = 1
+  loadJobs()
+}
+
+watch([searchQuery, filterPlatform], () => {
   currentPage.value = 1
   loadJobs()
 })
@@ -160,7 +177,8 @@ async function handleSaveJob(payload: JobCreatePayload) {
 }
 
 async function handleSaveEdit(jobId: number, payload: JobCreatePayload) {
-  if (props.boardId) payload = { ...payload, board_id: props.boardId }
+  if (props.boardId && payload.board_id === undefined)
+    payload = { ...payload, board_id: props.boardId }
   const updatedJob = await dataservice.updateJob(jobId, payload)
   if (updatedJob) {
     toast.success('Job updated successfully')
@@ -282,15 +300,29 @@ async function handleQuickAddJob(payload: {
 
 function clearFilters() {
   searchQuery.value = ''
-  filterStatus.value = '__all__'
   filterPlatform.value = '__all__'
+  Object.assign(jobFilters, emptyJobFilters())
+  currentPage.value = 1
+  loadJobs()
 }
 
 const hasActiveFilters = () =>
   !!(
     searchQuery.value ||
-    (filterStatus.value && filterStatus.value !== '__all__') ||
-    (filterPlatform.value && filterPlatform.value !== '__all__')
+    (filterPlatform.value && filterPlatform.value !== '__all__') ||
+    jobFilters.boardIds.length ||
+    jobFilters.status.length ||
+    jobFilters.location ||
+    jobFilters.country.length ||
+    jobFilters.company ||
+    jobFilters.workModel.length ||
+    jobFilters.position.length ||
+    jobFilters.appliedFrom ||
+    jobFilters.appliedTo ||
+    jobFilters.createdFrom ||
+    jobFilters.createdTo ||
+    jobFilters.atsScoreMin !== '' ||
+    jobFilters.atsScoreMax !== ''
   )
 
 const route = useRoute()
@@ -300,6 +332,13 @@ onMounted(async () => {
   const settings = await dataservice.getSettings()
   if (settings.view_mode === 'board' || settings.view_mode === 'list') {
     selectedLayout.value = settings.view_mode as 'list' | 'board'
+  }
+  if (settings.saved_job_filters && typeof settings.saved_job_filters === 'object') {
+    Object.assign(jobFilters, emptyJobFilters(), settings.saved_job_filters)
+  }
+  if (!props.boardId) {
+    const boards: BoardData[] = await dataservice.getBoards()
+    boardOptions.value = boards.map((b) => ({ label: b.name, value: String(b.id) }))
   }
   companiesStore.fetch()
   if (route.query.query) {
@@ -325,28 +364,6 @@ watch(selectedLayout, (val) => {
       <!-- Left: Search + Filters -->
       <div class="flex flex-wrap items-center gap-2 flex-1">
         <Input v-model="searchQuery" placeholder="Search jobs..." class="w-48" />
-        <Select v-if="selectedLayout !== 'board'" v-model="filterStatus">
-          <SelectTrigger class="w-36">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="__all__">All Statuses</SelectItem>
-              <SelectItem v-for="s in statusOptions" :key="s" :value="s">{{ s }}</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <Select v-model="filterPlatform">
-          <SelectTrigger class="w-36">
-            <SelectValue placeholder="All Platforms" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="__all__">All Platforms</SelectItem>
-              <SelectItem v-for="p in PLATFORM_OPTIONS" :key="p" :value="p">{{ p }}</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
         <Button v-if="hasActiveFilters()" variant="ghost" size="sm" @click="clearFilters">
           Clear filters
         </Button>
@@ -369,6 +386,19 @@ watch(selectedLayout, (val) => {
             Delete
           </Button>
         </div>
+        <Button
+          size="sm"
+          variant="outline"
+          class="relative"
+          title="Filter jobs"
+          @click="isFiltersPanelOpen = true"
+        >
+          <Filter class="w-4 h-4" />
+          <span
+            v-if="hasActiveFilters()"
+            class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary"
+          />
+        </Button>
         <Button size="sm" @click="openAddModal">Add Job</Button>
         <div class="flex items-center gap-1">
           <Label class="text-sm text-muted-foreground">View:</Label>
@@ -470,10 +500,6 @@ watch(selectedLayout, (val) => {
       <p class="text-sm text-muted-foreground">
         Add a job manually or use the browser extension to capture from job boards.
       </p>
-      <Button @click="openAddModal" size="sm">
-        <Icon name="Plus" class="w-4 h-4 mr-1" />
-        Add First Application
-      </Button>
     </div>
 
     <!-- Table view -->
@@ -518,6 +544,15 @@ watch(selectedLayout, (val) => {
       @save="handleSaveEdit"
       @tab-change="handlePanelTabChange"
       @score-updated="handleScoreUpdated"
+    />
+
+    <!-- Filters side panel -->
+    <JobFiltersPanel
+      v-model:open="isFiltersPanelOpen"
+      :model-value="jobFilters"
+      :status-options="statusOptions"
+      :board-options="boardOptions"
+      @update:model-value="onFiltersApplied"
     />
   </div>
 </template>

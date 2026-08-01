@@ -69,6 +69,12 @@ const router = createRouter({
             IRouteMeta
         },
         {
+          path: '/boards/all',
+          name: 'boards-all',
+          component: () => import('@/views/AllApplications.vue'),
+          meta: { title: 'JobApplica | All Applications', flag: 'boards' } as RouteMeta & IRouteMeta
+        },
+        {
           path: '/boards/:boardId',
           name: 'board-detail',
           component: () => import('@/views/BoardDetail.vue'),

@@ -55,7 +55,7 @@ async function openAddRow() {
 }
 
 function submitAdd() {
-  if (!addTitle.value.trim()) return
+  if (!addTitle.value.trim() || !addCompany.value.trim()) return
   emit('add-quick', {
     title: addTitle.value.trim(),
     company_name: addCompany.value.trim() || undefined,
@@ -227,7 +227,7 @@ function transformRows(jobs: JobData[]): RowData[] {
     title: job.title,
     company: job.company?.name || '',
     company_logo: job.company?.logo_url || undefined,
-    location: [job.location?.city, job.location?.state].filter(Boolean).join(', '),
+    location: [job.location?.city, job.location?.country].filter(Boolean).join(', '),
     status: job.status,
     platform: job.source_platform || '',
     work_model: job.work_model || ''
@@ -272,7 +272,7 @@ function transformRows(jobs: JobData[]): RowData[] {
         <input
           v-model="addCompany"
           class="w-36 rounded border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-          placeholder="Company"
+          placeholder="Company *"
           @keyup.enter="submitAdd"
           @keyup.escape="cancelAdd"
         />
@@ -290,7 +290,7 @@ function transformRows(jobs: JobData[]): RowData[] {
         </Select>
         <button
           class="px-3 py-1.5 text-xs rounded bg-primary text-primary-foreground font-medium disabled:opacity-50 transition-colors"
-          :disabled="!addTitle.trim()"
+          :disabled="!addTitle.trim() || !addCompany.trim()"
           @click="submitAdd"
         >
           Add

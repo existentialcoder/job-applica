@@ -9,8 +9,19 @@ PaginatedSkillsBase = get_paginated_response_model(SkillBase)
 PaginatedSkillsBaseLean = get_paginated_response_model(SkillBaseLean)
 
 
+# Symbols that distinguish otherwise-identical skill names (C++ vs C#, F# vs F) and would
+# otherwise collapse to the same normalized name if simply dropped.
+_SYMBOL_WORDS = {'+': 'plus', '#': 'sharp'}
+
+
 def extract_skill_name_from_label(label: str) -> str:
-    name = ''.join(char.lower() if char.isalpha() or char.isspace() else '' for char in label)
+    chars = []
+    for char in label:
+        if char.isalnum() or char.isspace():
+            chars.append(char.lower())
+        elif char in _SYMBOL_WORDS:
+            chars.append(_SYMBOL_WORDS[char])
+    name = ''.join(chars)
     name = '_'.join(name.split())
     return name
 

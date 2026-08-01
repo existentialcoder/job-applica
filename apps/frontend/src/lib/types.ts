@@ -105,7 +105,7 @@ export interface JobCreatePayload {
   title: string
   company_id?: number
   company_name?: string
-  location?: string
+  location?: string | LocationData
   status?: string
   position?: string
   category?: string

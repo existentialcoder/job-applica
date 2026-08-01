@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, nextTick } from 'vue'
+import { MapPin } from 'lucide-vue-next'
 import type { JobData, StageData } from '@/lib/types'
-import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants'
+import { DEFAULT_COMPANY_LOGO_URL, MANDATORY_STAGE_KEYS } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -73,6 +74,10 @@ const quickAddTitle = ref('')
 const quickAddCompany = ref('')
 const quickTitleInputRef = ref<HTMLInputElement | null>(null)
 
+function isMandatory(key: string): boolean {
+  return MANDATORY_STAGE_KEYS.includes(key)
+}
+
 function getNextColor(): string {
   const used = (props.stages ?? DEFAULT_COLUMNS).map((s) => s.color)
   return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0]
@@ -84,6 +89,11 @@ async function openAddStage() {
   addStageInputRef.value?.focus()
 }
 
+function cancelAddStage() {
+  showAddStage.value = false
+  newStageName.value = ''
+}
+
 function submitAddStage() {
   const key = newStageName.value.trim()
   if (!key) return
@@ -93,12 +103,17 @@ function submitAddStage() {
 }
 
 function startEditStage(stage: StageData) {
+  if (isMandatory(stage.key)) return
   editingStageKey.value = stage.key
   editingStageLabel.value = stage.label
 }
 
 function commitEditStage() {
   if (!editingStageKey.value) return
+  if (isMandatory(editingStageKey.value)) {
+    cancelEditStage()
+    return
+  }
   const label = editingStageLabel.value.trim()
   if (!label) {
     cancelEditStage()
@@ -126,7 +141,8 @@ async function startQuickAdd(statusKey: string) {
 }
 
 function commitQuickAdd() {
-  if (!quickAddTitle.value.trim() || !addingJobForStatus.value) return
+  if (!quickAddTitle.value.trim() || !quickAddCompany.value.trim() || !addingJobForStatus.value)
+    return
   emit('add-job', {
     title: quickAddTitle.value.trim(),
     company_name: quickAddCompany.value.trim() || undefined,
@@ -191,6 +207,10 @@ function formatDate(dateStr?: string) {
   if (!dateStr) return null
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
+
+function locationText(job: JobData): string {
+  return [job.location?.city, job.location?.country].filter(Boolean).join(', ')
+}
 </script>
 
 <template>
@@ -219,12 +239,25 @@ function formatDate(dateStr?: string) {
                 v-else
                 :class="[
                   'text-sm font-medium truncate select-none',
-                  stages ? 'cursor-pointer hover:text-primary transition-colors' : ''
+                  stages && !isMandatory(col.key)
+                    ? 'cursor-pointer hover:text-primary transition-colors'
+                    : ''
                 ]"
-                :title="stages ? 'Click to rename' : undefined"
+                :title="
+                  isMandatory(col.key)
+                    ? 'Standard stage — cannot be renamed'
+                    : stages
+                      ? 'Click to rename'
+                      : undefined
+                "
                 @click="stages && startEditStage(col)"
                 >{{ col.label }}</span
               >
+              <Icon
+                v-if="isMandatory(col.key)"
+                name="Lock"
+                class="w-3 h-3 text-muted-foreground/60 flex-shrink-0"
+              />
             </div>
 
             <div class="flex items-center gap-1 flex-shrink-0">
@@ -232,7 +265,7 @@ function formatDate(dateStr?: string) {
                 {{ jobsByStatus[col.key]?.length ?? 0 }}
               </span>
               <button
-                v-if="stages && stages.length > 1"
+                v-if="stages && stages.length > 1 && !isMandatory(col.key)"
                 class="opacity-0 group-hover/col:opacity-100 transition-opacity p-0.5 text-muted-foreground hover:text-destructive"
                 title="Remove stage"
                 @click="$emit('remove-stage', col.key)"
@@ -302,13 +335,18 @@ function formatDate(dateStr?: string) {
               <p class="text-sm font-medium leading-tight line-clamp-2 mb-1.5 pr-5">
                 {{ job.title }}
               </p>
-              <div v-if="job.company" class="flex items-center gap-1.5 mb-2 min-w-0">
+              <div v-if="job.company" class="flex items-center gap-1.5 mb-1.5 min-w-0">
                 <img
                   :src="job.company.logo_url || DEFAULT_COMPANY_LOGO_URL"
                   class="w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted"
                   @error="($event.target as HTMLImageElement).style.display = 'none'"
                 />
                 <p class="text-xs text-muted-foreground truncate">{{ job.company.name }}</p>
+              </div>
+
+              <div v-if="locationText(job)" class="flex items-center gap-1 mb-2 min-w-0">
+                <MapPin class="w-3 h-3 text-muted-foreground/70 flex-shrink-0" />
+                <p class="text-xs text-muted-foreground truncate">{{ locationText(job) }}</p>
               </div>
 
               <div class="flex flex-wrap gap-1 mb-2">
@@ -376,14 +414,14 @@ function formatDate(dateStr?: string) {
               <input
                 v-model="quickAddCompany"
                 class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                placeholder="Company (optional)"
+                placeholder="Company *"
                 @keyup.enter="commitQuickAdd"
                 @keyup.escape="cancelQuickAdd"
               />
               <div class="flex gap-1.5">
                 <button
                   class="flex-1 text-xs py-1.5 rounded bg-primary text-primary-foreground font-medium disabled:opacity-50 transition-colors"
-                  :disabled="!quickAddTitle.trim()"
+                  :disabled="!quickAddTitle.trim() || !quickAddCompany.trim()"
                   @click="commitQuickAdd"
                 >
                   Add card
@@ -437,10 +475,7 @@ function formatDate(dateStr?: string) {
               class="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
               placeholder="List name..."
               @keyup.enter="submitAddStage"
-              @keyup.escape="
-                showAddStage = false
-                newStageName = ''
-              "
+              @keyup.escape="cancelAddStage"
             />
             <div class="flex gap-1.5">
               <button
@@ -452,10 +487,7 @@ function formatDate(dateStr?: string) {
               </button>
               <button
                 class="flex-1 text-xs py-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground"
-                @click="
-                  showAddStage = false
-                  newStageName = ''
-                "
+                @click="cancelAddStage"
               >
                 Cancel
               </button>

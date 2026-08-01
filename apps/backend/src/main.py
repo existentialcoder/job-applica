@@ -7,7 +7,19 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .api.deps.auth import get_current_user
-from .api.v1.routes import ats, auth, boards, companies, connected_accounts, dashboard, features, jobs, skills, users
+from .api.v1.routes import (
+    ats,
+    auth,
+    boards,
+    companies,
+    connected_accounts,
+    dashboard,
+    features,
+    jobs,
+    locations,
+    skills,
+    users,
+)
 from .core.config import settings
 from .core.constants import Constants
 from .core.exceptions import PlanLimitReached
@@ -63,6 +75,7 @@ PUBLIC_ROUTERS = [
 PROTECTED_ROUTERS = [
     (jobs.router, ['Jobs']),
     (companies.router, ['Companies']),
+    (locations.router, ['Locations']),
     (skills.router, ['Skills']),
     (boards.router, ['Boards']),
     (dashboard.router, ['Dashboard']),

@@ -1,9 +1,9 @@
 import os
 import uuid
 
+import pdfplumber
 from docx import Document
 from fastapi import HTTPException, UploadFile
-from pypdf import PdfReader
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,12 +25,8 @@ MAX_SIZE_MB = 5
 
 def _parse_resume_text(file: UploadFile, dest: str) -> str:
     if file.content_type == 'application/pdf':
-        with open(dest, 'rb') as f:
-            reader = PdfReader(f)
-            text = ''
-            for page in reader.pages:
-                text += page.extract_text() or ''
-            return text
+        with pdfplumber.open(dest) as pdf:
+            return '\n'.join(page.extract_text() or '' for page in pdf.pages)
 
     doc = Document(dest)
     return '\n'.join([p.text for p in doc.paragraphs])
@@ -55,6 +51,13 @@ async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Res
     # Always write to disk first — _parse_resume_text reads from dest
     size = await uploader.upload_local()
     parsed_text = _parse_resume_text(file, dest)
+
+    if not parsed_text.strip():
+        os.remove(dest)
+        raise HTTPException(
+            status_code=422,
+            detail='Could not extract any text from this file — try a different export or format',
+        )
 
     if settings.APP_ENV != 'local':
         # Push the already-saved local file to R2; UploadFile stream is exhausted at this point

@@ -21,6 +21,11 @@ import {
 import Applications from '@/views/Applications.vue'
 import { BoardSettingsModal } from '@/components/applications'
 import { useAppStore } from '@/stores/app'
+import { DEFAULT_BOARD_STAGES } from '@/lib/constants'
+
+const DEFAULT_COLOR_BY_KEY: Record<string, string> = Object.fromEntries(
+  DEFAULT_BOARD_STAGES.map((s) => [s.key, s.color])
+)
 
 const route = useRoute()
 const router = useRouter()
@@ -37,6 +42,11 @@ const isBoardSwitcherOpen = ref(false)
 function switchBoard(target: BoardData) {
   isBoardSwitcherOpen.value = false
   if (target.id !== boardId.value) router.push(`/boards/${target.id}`)
+}
+
+function goToAllApplications() {
+  isBoardSwitcherOpen.value = false
+  router.push('/boards/all')
 }
 
 const isSettingsOpen = ref(false)
@@ -58,17 +68,23 @@ async function loadBoard() {
     return
   }
 
-  // Auto-heal stages where key ≠ label (artifact of the old rename bug).
-  // Silently migrate jobs and fix the stored keys so the UI and DB stay in sync.
+  // Auto-heal stages where key ≠ label (artifact of the old rename bug), and mandatory
+  // stages missing a color (artifact of boards created before default colors were locked in).
+  // Silently migrate jobs and fix the stored keys/colors so the UI and DB stay in sync.
   const mismatched = data.stages.filter((s) => s.key !== s.label)
-  if (mismatched.length > 0) {
+  const missingColor = data.stages.filter((s) => !s.color && DEFAULT_COLOR_BY_KEY[s.key])
+  if (mismatched.length > 0 || missingColor.length > 0) {
     const keyRenames: Record<string, string> = {}
     const fixedStages = data.stages.map((s) => {
+      let fixed = s
       if (s.key !== s.label) {
         keyRenames[s.key] = s.label
-        return { ...s, key: s.label }
+        fixed = { ...fixed, key: s.label }
       }
-      return s
+      if (!fixed.color && DEFAULT_COLOR_BY_KEY[fixed.key]) {
+        fixed = { ...fixed, color: DEFAULT_COLOR_BY_KEY[fixed.key] }
+      }
+      return fixed
     })
     const fixed = await dataservice.updateBoard(data.id, {
       stages: fixedStages,
@@ -346,6 +362,14 @@ onUnmounted(() => {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" class="w-56">
+                <DropdownMenuItem @click="goToAllApplications">
+                  <Icon
+                    name="LayoutGrid"
+                    class="w-3.5 h-3.5 mr-2 flex-shrink-0 text-muted-foreground"
+                  />
+                  <span class="truncate">All Applications</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   v-for="b in allBoards"
                   :key="b.id"
