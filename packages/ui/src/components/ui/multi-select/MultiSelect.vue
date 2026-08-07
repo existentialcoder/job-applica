@@ -76,8 +76,7 @@ function toggleAll() {
         <span v-if="!selectedLabels.length" class="text-muted-foreground text-sm truncate">
           {{ props.placeholder }}
         </span>
-        <span v-else-if="selectedLabels.length === 1" class="truncate">{{ selectedLabels[0] }}</span>
-        <span v-else class="truncate">…</span>
+        <span v-else class="truncate">{{ selectedLabels.join(', ') }}</span>
         <ChevronDown class="w-4 h-4 ml-auto flex-shrink-0" />
       </Button>
     </PopoverTrigger>
@@ -131,3 +130,4 @@ function toggleAll() {
     </PopoverContent>
   </Popover>
 </template>
+

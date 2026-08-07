@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from '@/lib/toast'
 import type { JobData, JobCreatePayload, ATSReport, ResumeData, BoardData } from '@/lib/types'
-import { DEFAULT_COMPANY_LOGO_URL, DEFAULT_BOARD_STAGES } from '@/lib/constants'
+import { DEFAULT_COMPANY_LOGO_URL, DEFAULT_BOARD_STAGES, getAtsTier } from '@/lib/constants'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -23,12 +23,13 @@ import { Combobox } from '@/components/ui/combobox'
 import dataservice from '@/lib/dataservice'
 import { COUNTRY_OPTIONS } from '@/lib/constants'
 import CompanyCombobox from './CompanyCombobox.vue'
-import CityCombobox from './CityCombobox.vue'
-import DatePickerInput from './DatePickerInput.vue'
+import { DatePicker } from '@/components/ui/date-picker'
+import { useCompaniesStore } from '@/stores/companies'
 
 const COUNTRY_COMBOBOX_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }))
 
 const router = useRouter()
+const companiesStore = useCompaniesStore()
 
 const props = defineProps<{
   open: boolean
@@ -86,6 +87,7 @@ const allBoards = ref<BoardData[]>([])
 onMounted(async () => {
   allBoards.value = await dataservice.getBoards()
 })
+companiesStore.fetch()
 
 const boardOptions = computed(() =>
   allBoards.value.map((b) => ({ label: b.name, value: String(b.id) }))
@@ -144,17 +146,12 @@ const hasLinkedCv = computed(() => !!selectedResumeId.value)
 const canScore = computed(() => hasDescription.value && hasLinkedCv.value && !isScoring.value)
 
 function atsScoreColor(score: number) {
-  if (score >= 85) return '#22c55e'
-  if (score >= 70) return 'hsl(var(--primary))'
-  if (score >= 50) return '#f59e0b'
-  return '#ef4444'
+  return getAtsTier(score).color
 }
 
 function atsTierLabel(score: number) {
-  if (score >= 85) return { label: 'Excellent', cls: 'bg-emerald-500/10 text-emerald-400' }
-  if (score >= 70) return { label: 'Good', cls: 'bg-primary/10 text-primary' }
-  if (score >= 50) return { label: 'Fair', cls: 'bg-amber-500/10 text-amber-400' }
-  return { label: 'Low', cls: 'bg-red-500/10 text-red-400' }
+  const tier = getAtsTier(score)
+  return { label: tier.label, cls: tier.badgeClass }
 }
 
 // SVG gauge helpers — full circle circumference for r=42: 2π*42 ≈ 263.9
@@ -173,7 +170,9 @@ async function loadResumes() {
   } else {
     const def = resumes.value.find((r) => (r as any).is_default)
     if (def) selectedResumeId.value = String(def.id)
-    else if (resumes.value.length) selectedResumeId.value = String(resumes.value[0].id)
+    else if (resumes.value.length) {
+      selectedResumeId.value = String(resumes.value[0].id)
+    }
   }
 }
 
@@ -466,13 +465,17 @@ const statusVariantMap: Record<string, string> = {
 
             <div class="space-y-1.5">
               <Label>Company <span class="text-destructive">*</span></Label>
-              <CompanyCombobox v-model="companyName" placeholder="e.g. Acme Corp" />
+              <CompanyCombobox
+                :companies="companiesStore.companies"
+                v-model="companyName"
+                placeholder="e.g. Acme Corp"
+              />
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div class="space-y-1.5">
                 <Label>City</Label>
-                <CityCombobox v-model="locationCity" placeholder="e.g. New York" />
+                <Input v-model="locationCity" placeholder="e.g. New York" />
               </div>
               <div class="space-y-1.5">
                 <Label>Country</Label>
@@ -566,7 +569,7 @@ const statusVariantMap: Record<string, string> = {
               </div>
               <div class="space-y-1.5">
                 <Label>Applied Date</Label>
-                <DatePickerInput v-model="appliedDate" placeholder="Pick a date" />
+                <DatePicker v-model="appliedDate" placeholder="Pick a date" />
               </div>
             </div>
 
@@ -746,6 +749,7 @@ const statusVariantMap: Record<string, string> = {
             </Button>
 
             <!-- ── Score result ─────────────────────────────────────────────── -->
+
             <template v-if="atsReport">
               <div class="border-t pt-5 space-y-5">
                 <!-- Gauge + score -->
@@ -808,7 +812,7 @@ const statusVariantMap: Record<string, string> = {
                 </div>
 
                 <!-- Matched skills -->
-                <div v-if="atsReport.matched_skills.length" class="space-y-2">
+                <div v-if="atsReport?.matched_skills.length" class="space-y-2">
                   <p class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
                     <svg
                       class="w-3.5 h-3.5"
@@ -819,7 +823,7 @@ const statusVariantMap: Record<string, string> = {
                     >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    Matched skills ({{ atsReport.matched_skills.length }})
+                    Matched skills ({{ atsReport?.matched_skills.length }})
                   </p>
                   <div class="flex flex-wrap gap-1.5">
                     <span
@@ -843,7 +847,7 @@ const statusVariantMap: Record<string, string> = {
                     >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    Matched experience ({{ atsReport.matched_experience.length }})
+                    Matched experience ({{ atsReport?.matched_experience.length }})
                   </p>
                   <ul class="space-y-1">
                     <li

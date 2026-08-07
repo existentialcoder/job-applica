@@ -87,7 +87,7 @@ export interface JobFilters {
   query?: string
   title?: string
   company?: string
-  location?: string
+  city?: string
   country?: string
   status?: string
   source_platform?: string
@@ -132,7 +132,7 @@ export default {
     if (filters.query) params.set('query', filters.query)
     if (filters.title) params.set('title', filters.title)
     if (filters.company) params.set('company', filters.company)
-    if (filters.location) params.set('location', filters.location)
+    if (filters.city) params.set('city', filters.city)
     if (filters.country) params.set('country', filters.country)
     if (filters.status) params.set('status', filters.status)
     if (filters.source_platform) params.set('source_platform', filters.source_platform)
@@ -145,7 +145,7 @@ export default {
     if (filters.ats_score_min != null) params.set('ats_score_min', String(filters.ats_score_min))
     if (filters.ats_score_max != null) params.set('ats_score_max', String(filters.ats_score_max))
     if (filters.board_id) params.set('board_id', String(filters.board_id))
-    if (filters.board_ids) params.set('board_ids', filters.board_ids)
+    if (filters.board_ids) params.set('board_id', filters.board_ids)
     if (filters.page) params.set('page', String(filters.page))
     if (filters.per_page) params.set('per_page', String(filters.per_page))
 
@@ -468,15 +468,5 @@ export default {
     if (!response.ok) return []
     const data = await response.json()
     return data.items ?? data.results ?? []
-  },
-
-  async getCities(search?: string): Promise<string[]> {
-    const params = new URLSearchParams()
-    if (search) params.set('search', search)
-    const response = await apiFetch(`${API_BASE}/locations/cities?${params}`, {
-      headers: { ...authHeaders() }
-    })
-    if (!response.ok) return []
-    return response.json()
   }
 }

@@ -440,7 +440,7 @@ onUnmounted(() => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem @click="isSettingsOpen = true">
-                <Icon name="Settings" class="w-4 h-4 mr-2" /> Board Settings
+                <Icon name="Settings" class="w-4 h-4 mr-2" /> Settings
               </DropdownMenuItem>
               <template v-if="!board.is_default">
                 <DropdownMenuSeparator />

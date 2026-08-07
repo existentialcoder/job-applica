@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import Breadcrumb from '@/components/core/Breadcrumb.vue'
+import Breadcrumb from '@/components/ui/Breadcrumb.vue'
 import { LogOut, User, Bell, Sun, MoonStar, Monitor, Menu, Github } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/stores/app'
@@ -37,7 +37,7 @@ async function handleLogout() {
     :style="{ width: store.navWidth }"
   >
     <div class="min-w-0 max-w-xs hidden lg:block">
-      <Breadcrumb />
+      <Breadcrumb :breadcrumbs="store.breadcrumbs" />
     </div>
     <div class="flex-1 hidden lg:block" />
 

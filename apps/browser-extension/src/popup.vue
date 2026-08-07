@@ -629,7 +629,7 @@ const platformBadgeVariant: Record<string, any> = {
 
     <!-- Login view -->
     <div v-else-if="view === 'login'" class="p-4 flex flex-col gap-3">
-      <p class="text-sm text-muted-foreground text-center">Sign in to track jobs</p>
+      <p class="text-sm text-muted-foreground text-center">Sign in to stand out in your job search</p>
 
       <!-- OAuth buttons -->
       <Button variant="outline" class="w-full gap-2 justify-center" type="button"

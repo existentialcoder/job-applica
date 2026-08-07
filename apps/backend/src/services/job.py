@@ -12,7 +12,6 @@ from ..api.deps.pagination import build_paginated_response, get_paginated_respon
 from ..core.constants import Constants
 from ..models.company import Company
 from ..models.job import Job
-from ..models.location import Location
 from ..schemas.company import CompanyCreate
 from ..schemas.job import JobBase, JobCreate, JobFilterParams, JobUpdate
 from ..schemas.skill import SkillCreate
@@ -28,7 +27,6 @@ def _eager(q):
     return q.options(
         selectinload(Job.required_skills),
         selectinload(Job.company),
-        selectinload(Job.location),
     )
 
 
@@ -96,36 +94,6 @@ async def _retrieve_company_in_request(db: AsyncSession, data: dict) -> Company 
     return None
 
 
-async def get_or_create_location(db: AsyncSession, location_data: dict) -> Location:
-    city = (location_data.get('city') or '').strip()
-    state = (location_data.get('state') or '').strip()
-    country = (location_data.get('country') or '').strip()
-
-    if not city and not state and not country:
-        raise HTTPException(status_code=400, detail='Invalid location')
-
-    q = select(Location)
-    if city:
-        q = q.where(Location.city.ilike(city))
-    if state:
-        q = q.where(Location.state.ilike(state))
-    if country:
-        q = q.where(Location.country.ilike(country))
-
-    result = await db.execute(q)
-    loc = result.scalars().first()
-    if not loc:
-        try:
-            async with db.begin_nested():
-                loc = Location(city=city, state=state, country=country)
-                db.add(loc)
-                await db.flush()
-        except IntegrityError:
-            result = await db.execute(q)
-            loc = result.scalars().first()
-    return loc
-
-
 async def get_jobs(
     db: AsyncSession, user: UserBase, pagination: dict, filter: JobFilterParams | None = None
 ) -> PaginatedJobs:
@@ -135,23 +103,33 @@ async def get_jobs(
         if filter.title:
             base_q = base_q.where(Job.title.ilike(f'%{filter.title}%'))
         if filter.company:
-            base_q = base_q.join(Company, Job.company_id == Company.id).where(Company.name.ilike(f'%{filter.company}%'))
-        if filter.location:
-            base_q = base_q.join(Location, Job.location_id == Location.id).where(
-                Location.city.ilike(f'%{filter.location}%')
-                | Location.state.ilike(f'%{filter.location}%')
-                | Location.country.ilike(f'%{filter.location}%')
-            )
+            base_q = base_q.join(Company, Job.company_id == Company.id).where(Company.name.in_(filter.company))
+        if filter.city:
+            base_q = base_q.where(Job.location['city'].astext.in_(filter.city))
+        if filter.state:
+            base_q = base_q.where(Job.location['state'].astext.in_(filter.state))
+        if filter.country:
+            base_q = base_q.where(Job.location['country'].astext.in_(filter.country))
+        if filter.position:
+            base_q = base_q.where(Job.position.in_(filter.position))
         if filter.query:
             base_q = base_q.where(Job.title.ilike(f'%{filter.query}%') | Job.description.ilike(f'%{filter.query}%'))
         if filter.status:
-            base_q = base_q.where(Job.status == filter.status)
+            base_q = base_q.where(Job.status.in_(filter.status))
         if filter.source_platform:
-            base_q = base_q.where(Job.source_platform == filter.source_platform)
-        if filter.source_url:
-            base_q = base_q.where(Job.source_url == filter.source_url)
+            base_q = base_q.where(Job.source_platform.in_(filter.source_platform))
+        if filter.work_model:
+            base_q = base_q.where(Job.work_model.in_(filter.work_model))
         if filter.board_id:
-            base_q = base_q.where(Job.board_id == filter.board_id)
+            base_q = base_q.where(Job.board_id.in_(filter.board_id))
+        if filter.created_from and filter.created_to:
+            base_q = base_q.where(Job.created_at.between(filter.created_from, filter.created_to))
+        if filter.applied_from and filter.applied_to:
+            base_q = base_q.where(Job.applied_date.between(filter.applied_from, filter.applied_to))
+        if filter.ats_score_min is not None:
+            base_q = base_q.where(Job.ats_score >= filter.ats_score_min)
+        if filter.ats_score_max is not None:
+            base_q = base_q.where(Job.ats_score <= filter.ats_score_max)
 
     count_result = await db.execute(select(func.count()).select_from(base_q.subquery()))
     total = count_result.scalar()
@@ -185,24 +163,13 @@ async def get_transformed_job(db: AsyncSession, job_in: JobCreate | JobUpdate, u
     if 'board_id' not in data and isinstance(job_in, JobCreate):
         data['board_id'] = await get_default_board_id(db, user.id)
 
-    # A blank company_name (e.g. an emptied form field) means "not provided", not
-    # "clear the company" — treat it the same as the key being absent entirely.
     if isinstance(data.get('company_name'), str) and not data['company_name'].strip():
         data.pop('company_name', None)
 
-    # Only touch the company relationship when the caller actually sent company info —
-    # otherwise a partial update (e.g. a drag-and-drop status change) would silently
-    # null out an existing job's company since _retrieve_company_in_request returns
-    # None when none of these keys are present.
     if 'company_id' in data or 'company_name' in data or 'company' in data:
         data['company'] = await _retrieve_company_in_request(db, data)
     data.pop('company_id', None)
     data.pop('company_name', None)
-
-    location_raw = data.pop('location', None)
-    if location_raw:
-        location_dict = location_raw if isinstance(location_raw, dict) else location_raw.model_dump()
-        data['location'] = await get_or_create_location(db, location_dict)
 
     if job_in.required_skills and len(job_in.required_skills) > 0:
         data['required_skills'] = await transform_required_skills(db, job_in.required_skills)

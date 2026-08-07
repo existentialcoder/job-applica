@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { reactive, watch, computed } from 'vue'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,9 +13,16 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import DatePickerInput from './DatePickerInput.vue'
-import { POSITION_OPTIONS, WORK_MODEL_OPTIONS, COUNTRY_OPTIONS } from '@/lib/constants'
+import { DateRangePicker } from '@/components/ui/daterange-picker'
+import {
+  POSITION_OPTIONS,
+  WORK_MODEL_OPTIONS,
+  COUNTRY_OPTIONS,
+  ATS_SCORE_TIERS
+} from '@/lib/constants'
+import { useCompaniesStore } from '@/stores/companies'
 import { emptyJobFilters, resolvePresetRange, type JobFiltersFormValues } from '@/lib/jobFilters'
+
 import dataservice from '@/lib/dataservice'
 import { toast } from '@/lib/toast'
 
@@ -25,6 +32,8 @@ const props = defineProps<{
   statusOptions: string[]
   boardOptions?: { label: string; value: string }[]
 }>()
+
+const companiesStore = useCompaniesStore()
 
 const emit = defineEmits<{
   (e: 'update:open', val: boolean): void
@@ -38,7 +47,6 @@ const DATE_PRESET_OPTIONS = [
   { value: 'custom', label: 'Custom range' }
 ]
 
-// Local draft so edits only apply when "Apply filters" is clicked, not on every keystroke.
 const draft = reactive<JobFiltersFormValues>({ ...props.modelValue })
 
 watch(
@@ -55,23 +63,30 @@ function statusMultiOptions() {
 const WORK_MODEL_MULTI_OPTIONS = WORK_MODEL_OPTIONS.map((w) => ({ label: w, value: w }))
 const POSITION_MULTI_OPTIONS = POSITION_OPTIONS.map((p) => ({ label: p, value: p }))
 const COUNTRY_MULTI_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }))
+const COMPANY_MULTI_OPTIONS = computed(() =>
+  companiesStore.companies.map((c) => ({ label: c.name, value: c.name }))
+)
 
 function onAppliedPresetChange(preset: string) {
   draft.appliedPreset = preset as JobFiltersFormValues['appliedPreset']
   const range = resolvePresetRange(draft.appliedPreset)
-  if (range) {
-    draft.appliedFrom = range.from
-    draft.appliedTo = range.to
-  }
+  if (range) draft.appliedRange = range
 }
 
 function onCreatedPresetChange(preset: string) {
   draft.createdPreset = preset as JobFiltersFormValues['createdPreset']
   const range = resolvePresetRange(draft.createdPreset)
-  if (range) {
-    draft.createdFrom = range.from
-    draft.createdTo = range.to
-  }
+  if (range) draft.createdRange = range
+}
+
+function toggleAtsTier(tierKey: string) {
+  const idx = draft.atsScoreTiers.indexOf(tierKey)
+  if (idx === -1) draft.atsScoreTiers.push(tierKey)
+  else draft.atsScoreTiers.splice(idx, 1)
+}
+
+function atsChipClass(tier: (typeof ATS_SCORE_TIERS)[number]) {
+  return draft.atsScoreTiers.includes(tier.key) ? tier.chipActiveClass : ''
 }
 
 function apply() {
@@ -106,7 +121,7 @@ async function clearSavedDefault() {
 
 <template>
   <Sheet :open="open" @update:open="$emit('update:open', $event)">
-    <SheetContent side="right" class="w-[520px] sm:w-[620px] flex flex-col">
+    <SheetContent side="right" class="w-[700px] sm:w-[620px] flex flex-col">
       <SheetHeader>
         <SheetTitle>Filter jobs</SheetTitle>
       </SheetHeader>
@@ -129,7 +144,7 @@ async function clearSavedDefault() {
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
             <Label>City</Label>
-            <Input v-model="draft.location" placeholder="City…" />
+            <Input v-model="draft.city" placeholder="City…" />
           </div>
           <div class="flex flex-col gap-1.5">
             <Label>Country</Label>
@@ -143,7 +158,11 @@ async function clearSavedDefault() {
 
         <div class="flex flex-col gap-1.5">
           <Label>Company</Label>
-          <Input v-model="draft.company" placeholder="Company name…" />
+          <MultiSelect
+            v-model="draft.company"
+            :options="COMPANY_MULTI_OPTIONS"
+            placeholder="e.g. Acme Corp"
+          />
         </div>
 
         <div class="flex flex-col gap-1.5">
@@ -176,10 +195,8 @@ async function clearSavedDefault() {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <div v-if="draft.appliedPreset === 'custom'" class="flex items-center gap-2 mt-1">
-            <DatePickerInput v-model="draft.appliedFrom" placeholder="From" class="flex-1" />
-            <span class="text-muted-foreground text-xs flex-shrink-0">to</span>
-            <DatePickerInput v-model="draft.appliedTo" placeholder="To" class="flex-1" />
+          <div v-if="draft.appliedPreset === 'custom'" class="mt-1">
+            <DateRangePicker v-model="draft.appliedRange" placeholder="Pick a date range" />
           </div>
         </div>
 
@@ -195,33 +212,25 @@ async function clearSavedDefault() {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <div v-if="draft.createdPreset === 'custom'" class="flex items-center gap-2 mt-1">
-            <DatePickerInput v-model="draft.createdFrom" placeholder="From" class="flex-1" />
-            <span class="text-muted-foreground text-xs flex-shrink-0">to</span>
-            <DatePickerInput v-model="draft.createdTo" placeholder="To" class="flex-1" />
+          <div v-if="draft.createdPreset === 'custom'" class="mt-1">
+            <DateRangePicker v-model="draft.createdRange" placeholder="Pick a date range" />
           </div>
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <Label>ATS score range</Label>
-          <div class="flex items-center gap-2">
-            <Input
-              v-model="draft.atsScoreMin"
-              type="number"
-              min="0"
-              max="100"
-              placeholder="Min"
-              class="flex-1"
-            />
-            <span class="text-muted-foreground text-xs flex-shrink-0">to</span>
-            <Input
-              v-model="draft.atsScoreMax"
-              type="number"
-              min="0"
-              max="100"
-              placeholder="Max"
-              class="flex-1"
-            />
+          <Label>ATS score</Label>
+          <div class="flex flex-wrap gap-1.5">
+            <Button
+              v-for="tier in ATS_SCORE_TIERS"
+              :key="tier.key"
+              type="button"
+              size="sm"
+              variant="outline"
+              :class="atsChipClass(tier)"
+              @click="toggleAtsTier(tier.key)"
+            >
+              {{ tier.label }} ({{ tier.min }}{{ tier.key === 'excellent' ? '+' : `-${tier.max}` }})
+            </Button>
           </div>
         </div>
       </div>

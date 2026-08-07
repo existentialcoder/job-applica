@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import type { JobData, JobCreatePayload } from '@/lib/types'
 import {
   Dialog,
@@ -22,8 +22,8 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Combobox } from '@/components/ui/combobox'
 import CompanyCombobox from './CompanyCombobox.vue'
-import CityCombobox from './CityCombobox.vue'
-import DatePickerInput from './DatePickerInput.vue'
+import { DatePicker } from '@/components/ui/date-picker'
+import { useCompaniesStore } from '@/stores/companies'
 import {
   DEFAULT_BOARD_STAGES,
   POSITION_OPTIONS,
@@ -44,6 +44,8 @@ const emit = defineEmits<{
   (e: 'update:open', val: boolean): void
   (e: 'save', payload: JobCreatePayload): void
 }>()
+
+const companiesStore = useCompaniesStore()
 
 const STATUS_OPTIONS = computed(() =>
   props.statusOptions?.length ? props.statusOptions : DEFAULT_BOARD_STAGES.map((s) => s.label)
@@ -117,6 +119,8 @@ watch(
   }
 )
 
+onMounted(companiesStore.fetch)
+
 function handleSave() {
   if (!title.value.trim() || !companyName.value.trim()) return
   const autoDate =
@@ -162,14 +166,18 @@ function handleSave() {
         <!-- Company row (required) -->
         <div class="flex flex-col gap-1.5">
           <Label for="modal-company">Company <span class="text-destructive">*</span></Label>
-          <CompanyCombobox v-model="companyName" placeholder="e.g. Acme Corp" />
+          <CompanyCombobox
+            :companies="companiesStore.companies"
+            v-model="companyName"
+            placeholder="e.g. Acme Corp"
+          />
         </div>
 
         <!-- Location row -->
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
             <Label>City</Label>
-            <CityCombobox v-model="locationCity" placeholder="e.g. New York" />
+            <Input id="modal-city" v-model="locationCity" placeholder="e.g. New York" />
           </div>
           <div class="flex flex-col gap-1.5">
             <Label>Country</Label>
@@ -263,7 +271,7 @@ function handleSave() {
           </div>
           <div class="flex flex-col gap-1.5">
             <Label>Applied Date</Label>
-            <DatePickerInput v-model="appliedDate" placeholder="Pick a date" />
+            <DatePicker v-model="appliedDate" placeholder="Pick a date" />
           </div>
         </div>
 

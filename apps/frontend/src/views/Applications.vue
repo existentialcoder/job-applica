@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Filter } from 'lucide-vue-next'
 import dataservice, { type JobFilters } from '@/lib/dataservice'
 import { emptyJobFilters, type JobFiltersFormValues } from '@/lib/jobFilters'
-import { DEFAULT_BOARD_STAGES } from '@/lib/constants'
+import { DEFAULT_BOARD_STAGES, atsTiersFilterRange } from '@/lib/constants'
 import {
   TableApplications,
   BoardApplications,
@@ -26,8 +26,10 @@ import {
   JobFiltersPanel
 } from '@/components/applications'
 import { useCompaniesStore } from '@/stores/companies'
+import { useExtensionLink } from '@/composables/useExtensionLink'
 
 const companiesStore = useCompaniesStore()
+const { storeUrl: extensionInstallLink } = useExtensionLink()
 
 const props = defineProps<{
   boardId?: number
@@ -44,6 +46,7 @@ const selectedLayout = ref<'list' | 'board'>('list')
 const allJobs = ref<JobData[]>([])
 const totalJobs = ref(0)
 const isLoading = ref(false)
+const filtersApplied = ref(false)
 
 const selectedJobs = ref<JobData[]>([])
 const isModalOpen = ref(false) // add new job modal
@@ -60,16 +63,6 @@ const isFiltersPanelOpen = ref(false)
 const jobFilters = reactive<JobFiltersFormValues>(emptyJobFilters())
 const boardOptions = ref<{ label: string; value: string }[]>([])
 
-const PLATFORM_OPTIONS = [
-  'LinkedIn',
-  'Indeed',
-  'Glassdoor',
-  'Monster',
-  'ZipRecruiter',
-  'Jobscan',
-  'Other'
-]
-
 const statusOptions = ref<string[]>(
   props.stages?.map((s) => s.label) ?? DEFAULT_BOARD_STAGES.map((s) => s.label)
 )
@@ -82,30 +75,45 @@ watch(
   { immediate: true }
 )
 
+const LIST_FILTER_KEY_MAP = [
+  ['status', 'status'],
+  ['country', 'country'],
+  ['company', 'company'],
+  ['workModel', 'work_model'],
+  ['position', 'position']
+] as const
+
 async function loadJobs() {
   isLoading.value = true
   const filters: JobFilters = {
     page: currentPage.value,
     per_page: pageSize
   }
-  if (props.boardId) filters.board_id = props.boardId
   if (searchQuery.value.trim()) filters.query = searchQuery.value.trim()
   if (filterPlatform.value && filterPlatform.value !== '__all__')
     filters.source_platform = filterPlatform.value
 
-  if (jobFilters.boardIds.length) filters.board_ids = jobFilters.boardIds.join(',')
-  if (jobFilters.status.length) filters.status = jobFilters.status.join(',')
-  if (jobFilters.location.trim()) filters.location = jobFilters.location.trim()
-  if (jobFilters.country.length) filters.country = jobFilters.country.join(',')
-  if (jobFilters.company.trim()) filters.company = jobFilters.company.trim()
-  if (jobFilters.workModel.length) filters.work_model = jobFilters.workModel.join(',')
-  if (jobFilters.position.length) filters.position = jobFilters.position.join(',')
-  if (jobFilters.appliedFrom) filters.applied_from = jobFilters.appliedFrom
-  if (jobFilters.appliedTo) filters.applied_to = jobFilters.appliedTo
-  if (jobFilters.createdFrom) filters.created_from = jobFilters.createdFrom
-  if (jobFilters.createdTo) filters.created_to = jobFilters.createdTo
-  if (jobFilters.atsScoreMin !== '') filters.ats_score_min = Number(jobFilters.atsScoreMin)
-  if (jobFilters.atsScoreMax !== '') filters.ats_score_max = Number(jobFilters.atsScoreMax)
+  if (props.boardId) {
+    filters.board_id = props.boardId
+  } else if (jobFilters.boardIds.length) {
+    filters.board_ids = jobFilters.boardIds.join(',')
+  }
+
+  for (const [formKey, apiKey] of LIST_FILTER_KEY_MAP) {
+    const values = jobFilters[formKey]
+    if (values.length) filters[apiKey] = values.join(',')
+  }
+
+  if (jobFilters.city.trim()) filters.city = jobFilters.city.trim()
+  if (jobFilters.appliedRange.from) filters.applied_from = jobFilters.appliedRange.from
+  if (jobFilters.appliedRange.to) filters.applied_to = jobFilters.appliedRange.to
+  if (jobFilters.createdRange.from) filters.created_from = jobFilters.createdRange.from
+  if (jobFilters.createdRange.to) filters.created_to = jobFilters.createdRange.to
+  const atsRange = atsTiersFilterRange(jobFilters.atsScoreTiers)
+  if (atsRange) {
+    filters.ats_score_min = atsRange.min
+    filters.ats_score_max = atsRange.max
+  }
 
   const res = await dataservice.getJobs(filters)
   allJobs.value = res.items
@@ -114,6 +122,7 @@ async function loadJobs() {
 }
 
 function onFiltersApplied(next: JobFiltersFormValues) {
+  filtersApplied.value = true
   Object.assign(jobFilters, next)
   currentPage.value = 1
   loadJobs()
@@ -169,6 +178,7 @@ async function handleSaveJob(payload: JobCreatePayload) {
   if (props.boardId) payload = { ...payload, board_id: props.boardId }
   try {
     await dataservice.createJob(payload)
+    await companiesStore.refresh()
     await loadJobs()
     toast.success('Job added successfully')
   } catch {
@@ -181,6 +191,7 @@ async function handleSaveEdit(jobId: number, payload: JobCreatePayload) {
     payload = { ...payload, board_id: props.boardId }
   const updatedJob = await dataservice.updateJob(jobId, payload)
   if (updatedJob) {
+    await companiesStore.refresh()
     toast.success('Job updated successfully')
     await loadJobs()
   } else {
@@ -291,6 +302,7 @@ async function handleQuickAddJob(payload: {
   }
   try {
     await dataservice.createJob(fullPayload)
+    await companiesStore.refresh()
     await loadJobs()
     toast.success('Job added')
   } catch {
@@ -299,6 +311,7 @@ async function handleQuickAddJob(payload: {
 }
 
 function clearFilters() {
+  filtersApplied.value = false
   searchQuery.value = ''
   filterPlatform.value = '__all__'
   Object.assign(jobFilters, emptyJobFilters())
@@ -312,17 +325,16 @@ const hasActiveFilters = () =>
     (filterPlatform.value && filterPlatform.value !== '__all__') ||
     jobFilters.boardIds.length ||
     jobFilters.status.length ||
-    jobFilters.location ||
+    jobFilters.city.trim() ||
     jobFilters.country.length ||
-    jobFilters.company ||
+    jobFilters.company.length ||
     jobFilters.workModel.length ||
     jobFilters.position.length ||
-    jobFilters.appliedFrom ||
-    jobFilters.appliedTo ||
-    jobFilters.createdFrom ||
-    jobFilters.createdTo ||
-    jobFilters.atsScoreMin !== '' ||
-    jobFilters.atsScoreMax !== ''
+    jobFilters.appliedRange.from ||
+    jobFilters.appliedRange.to ||
+    jobFilters.createdRange.from ||
+    jobFilters.createdRange.to ||
+    jobFilters.atsScoreTiers.length
   )
 
 const route = useRoute()
@@ -496,9 +508,14 @@ watch(selectedLayout, (val) => {
           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
         />
       </svg>
-      <p class="text-muted-foreground font-medium">No applications yet</p>
+      <p class="text-muted-foreground font-medium">
+        No applications {{ filtersApplied ? 'matching your filters.' : 'tracked yet.' }}
+      </p>
       <p class="text-sm text-muted-foreground">
-        Add a job manually or use the browser extension to capture from job boards.
+        {{ filtersApplied ? 'Try adjusting your filters or search query.' : `Click "Add Job" or use
+        the
+        <a href="${extensionInstallLink}" class="text-primary hover:underline">browser extension</a>
+        to start tracking your applications.` }}
       </p>
     </div>
 

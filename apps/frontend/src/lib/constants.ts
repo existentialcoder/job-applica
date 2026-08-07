@@ -22,6 +22,75 @@ export const MANDATORY_STAGE_KEYS: string[] = DEFAULT_BOARD_STAGES.map((s) => s.
 export const POSITION_OPTIONS = ['Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager']
 export const WORK_MODEL_OPTIONS = ['On-site', 'Remote', 'Hybrid']
 
+export interface AtsTier {
+  key: string
+  label: string
+  min: number
+  max: number
+  badgeClass: string
+  color: string
+  // Selected-chip look only — unselected chips stay the plain default outline style.
+  // Kept as a fully literal string (not built via template interpolation) since
+  // Tailwind's JIT scanner only picks up class names it can see statically in source.
+  chipActiveClass: string
+}
+
+// Single source of truth for ATS score tiers — used for the score badge/gauge display
+// (JobDetailPanel.vue) and the tier-chip filter (JobFiltersPanel.vue), so the two can't
+// silently drift apart the way atsScoreColor/atsTierLabel previously did.
+export const ATS_SCORE_TIERS: AtsTier[] = [
+  {
+    key: 'low',
+    label: 'Low',
+    min: 0,
+    max: 50,
+    color: '#ef4444',
+    badgeClass: 'bg-red-500/10 text-red-400',
+    chipActiveClass: 'border-red-500 text-red-500 bg-red-500/10'
+  },
+  {
+    key: 'good',
+    label: 'Good',
+    min: 50,
+    max: 85,
+    color: '#f97316',
+    badgeClass: 'bg-orange-500/10 text-orange-500',
+    chipActiveClass: 'border-orange-500 text-orange-500 bg-orange-500/10'
+  },
+  {
+    key: 'excellent',
+    label: 'Excellent',
+    min: 85,
+    max: 100,
+    color: '#22c55e',
+    badgeClass: 'bg-green-500/10 text-green-500',
+    chipActiveClass: 'border-green-500 text-green-500 bg-green-500/10'
+  }
+]
+
+export function getAtsTier(score: number): AtsTier {
+  for (let i = ATS_SCORE_TIERS.length - 1; i >= 0; i--) {
+    if (score >= ATS_SCORE_TIERS[i].min) return ATS_SCORE_TIERS[i]
+  }
+  return ATS_SCORE_TIERS[0]
+}
+
+// Multi-select tiers map to ONE contiguous ats_score_min/max range on the backend (it
+// doesn't support OR-ing multiple disjoint ranges). For adjacent selections (e.g.
+// Good+Excellent) this is exact. For a non-adjacent selection (Low+Excellent without
+// Good) it widens to the full span and also matches Good-range jobs — a known
+// limitation given the current single-range backend filter.
+export function atsTiersFilterRange(tierKeys: string[]): { min: number; max: number } | null {
+  const selected = ATS_SCORE_TIERS.filter((t) => tierKeys.includes(t.key))
+  if (!selected.length) return null
+  const topTier = ATS_SCORE_TIERS[ATS_SCORE_TIERS.length - 1]
+  const max = Math.max(...selected.map((t) => t.max))
+  return {
+    min: Math.min(...selected.map((t) => t.min)),
+    max: selected.some((t) => t === topTier) ? max : max - 0.01
+  }
+}
+
 export const COUNTRY_OPTIONS = [
   'Afghanistan',
   'Albania',

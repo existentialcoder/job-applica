@@ -1,40 +1,39 @@
 export type DateRangePreset = '7d' | '14d' | '30d' | 'custom' | ''
 
+export interface DateRange {
+  from: string
+  to: string
+}
+
 export interface JobFiltersFormValues {
   boardIds: string[]
   status: string[]
-  location: string
+  city: string
   country: string[]
-  company: string
+  company: string[]
   workModel: string[]
   position: string[]
   appliedPreset: DateRangePreset
-  appliedFrom: string
-  appliedTo: string
+  appliedRange: DateRange
   createdPreset: DateRangePreset
-  createdFrom: string
-  createdTo: string
-  atsScoreMin: string
-  atsScoreMax: string
+  createdRange: DateRange
+  atsScoreTiers: string[]
 }
 
 export function emptyJobFilters(): JobFiltersFormValues {
   return {
     boardIds: [],
     status: [],
-    location: '',
+    city: '',
     country: [],
-    company: '',
+    company: [],
     workModel: [],
     position: [],
     appliedPreset: '',
-    appliedFrom: '',
-    appliedTo: '',
+    appliedRange: { from: '', to: '' },
     createdPreset: '',
-    createdFrom: '',
-    createdTo: '',
-    atsScoreMin: '',
-    atsScoreMax: ''
+    createdRange: { from: '', to: '' },
+    atsScoreTiers: []
   }
 }
 
