@@ -13,6 +13,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Pagination,
+  PaginationEllipsis,
+  PaginationFirst,
+  PaginationLast,
+  PaginationList,
+  PaginationListItem,
+  PaginationNext,
+  PaginationPrev
+} from '@/components/ui/pagination';
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -53,11 +63,13 @@ const isModalOpen = ref(false);
 const isPanelOpen = ref(false);
 const editingJob = ref<JobData | null>(null);
 const panelInitialTab = ref<'details' | 'ats'>('details');
+const boardRef = ref<InstanceType<typeof BoardApplications> | null>(null);
 
 const searchQuery = ref('');
 const filterPlatform = ref('__all__');
 const currentPage = ref(1);
-const pageSize = 20;
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const pageSize = ref(20);
 
 const isFiltersPanelOpen = ref(false);
 const jobFilters = reactive<JobFiltersFormValues>(emptyJobFilters());
@@ -89,12 +101,8 @@ const noApplicationsMessage = computed(() =>
     : `Click <b>Add Job</b> or use the <a href="${extensionInstallLink}" class="text-primary hover:underline">browser extension</a> to start tracking your applications.`
 );
 
-async function loadJobs() {
-  isLoading.value = true;
-  const filters: JobFilters = {
-    page: currentPage.value,
-    per_page: pageSize
-  };
+function buildBaseFilters(): JobFilters {
+  const filters: JobFilters = {};
   if (searchQuery.value.trim()) filters.query = searchQuery.value.trim();
   if (filterPlatform.value && filterPlatform.value !== '__all__')
     filters.source_platform = filterPlatform.value;
@@ -132,7 +140,24 @@ async function loadJobs() {
     filters.ats_score_max = atsTier.max;
   }
 
-  const res = await dataservice.getJobs(filters);
+  return filters;
+}
+
+// Board view groups jobs by status into columns, so the general status filter
+// (a table-view concept) is dropped — each column already scopes itself to one status.
+const boardBaseFilters = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { status: _status, ...rest } = buildBaseFilters();
+  return rest;
+});
+
+async function loadJobs() {
+  isLoading.value = true;
+  const res = await dataservice.getJobs({
+    ...buildBaseFilters(),
+    page: currentPage.value,
+    per_page: pageSize.value
+  });
   allJobs.value = res.items;
   totalJobs.value = res.total;
   isLoading.value = false;
@@ -149,6 +174,12 @@ watch([searchQuery, filterPlatform], () => {
   currentPage.value = 1;
   loadJobs();
 });
+
+function onPageSizeChange(value: string) {
+  pageSize.value = Number(value);
+  currentPage.value = 1;
+  loadJobs();
+}
 
 function onTableSelectionChange(val: JobData[]) {
   selectedJobs.value = val;
@@ -321,6 +352,7 @@ async function handleQuickAddJob(payload: {
     await dataservice.createJob(fullPayload);
     await companiesStore.refresh();
     await loadJobs();
+    boardRef.value?.refreshColumn(payload.status);
     toast.success('Job added');
   } catch {
     toast.error('Failed to add job');
@@ -362,6 +394,9 @@ onMounted(async () => {
   if (settings.view_mode === 'board' || settings.view_mode === 'list') {
     selectedLayout.value = settings.view_mode as 'list' | 'board';
   }
+  if (PAGE_SIZE_OPTIONS.includes(settings.per_page as number)) {
+    pageSize.value = settings.per_page as number;
+  }
   if (settings.saved_job_filters && typeof settings.saved_job_filters === 'object') {
     Object.assign(jobFilters, emptyJobFilters(), settings.saved_job_filters);
   }
@@ -383,6 +418,10 @@ onMounted(async () => {
 
 watch(selectedLayout, (val) => {
   dataservice.updateSettings({ view_mode: val });
+});
+
+watch(pageSize, (val) => {
+  dataservice.updateSettings({ per_page: val });
 });
 </script>
 
@@ -447,7 +486,7 @@ watch(selectedLayout, (val) => {
     </div>
 
     <!-- Stats row -->
-    <div v-if="totalJobs > 0" class="text-sm text-muted-foreground">
+    <div v-if="totalJobs > 0  && selectedLayout === 'list'" class="text-sm text-muted-foreground">
       Showing {{ allJobs.length }} of {{ totalJobs }} applications
     </div>
 
@@ -531,7 +570,6 @@ watch(selectedLayout, (val) => {
       <p class="text-sm text-muted-foreground" v-html="noApplicationsMessage"></p>
     </div>
 
-    <!-- Table view -->
     <TableApplications
       v-else-if="selectedLayout === 'list'"
       :jobs="allJobs"
@@ -542,10 +580,10 @@ watch(selectedLayout, (val) => {
       @add-quick="handleQuickAddJob"
     />
 
-    <!-- Board view -->
     <BoardApplications
       v-else-if="selectedLayout === 'board'"
-      :jobs="allJobs"
+      ref="boardRef"
+      :base-filters="boardBaseFilters"
       :stages="stages"
       @edit="openEditModal"
       @status-change="handleStatusChange"
@@ -556,7 +594,50 @@ watch(selectedLayout, (val) => {
       @add-job="handleQuickAddJob"
     />
 
-    <!-- Add job modal (new job only) -->
+    <div v-if="selectedLayout === 'list' && totalJobs > 0" class="flex items-center justify-between py-4">
+      <div class="flex items-center gap-2">
+        <Label class="text-sm text-muted-foreground">Rows per page</Label>
+        <Select :model-value="String(pageSize)" @update:model-value="onPageSizeChange">
+          <SelectTrigger class="w-20">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem v-for="size in PAGE_SIZE_OPTIONS" :key="size" :value="String(size)">
+                {{ size }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Pagination
+        v-if="totalJobs > pageSize"
+        v-slot="{ page }"
+        :total="totalJobs"
+        :items-per-page="pageSize"
+        :sibling-count="1"
+        :page="currentPage"
+        show-edges
+        @update:page="(p) => { currentPage = p; loadJobs(); }"
+      >
+        <PaginationList v-slot="{ items }" class="flex items-center gap-1">
+          <PaginationFirst />
+          <PaginationPrev />
+          <template v-for="(item, index) in items" :key="index">
+            <PaginationListItem v-if="item.type === 'page'" :value="item.value" as-child>
+              <Button class="w-10 h-10 p-0" :variant="item.value === page ? 'default' : 'outline'">
+                {{ item.value }}
+              </Button>
+            </PaginationListItem>
+            <PaginationEllipsis v-else :index="index" />
+          </template>
+          <PaginationNext />
+          <PaginationLast />
+        </PaginationList>
+      </Pagination>
+    </div>
+
     <AddJobModal
       v-model:open="isModalOpen"
       :status-options="statusOptions"
@@ -564,7 +645,6 @@ watch(selectedLayout, (val) => {
       @save="handleSaveJob"
     />
 
-    <!-- Job detail slide-over (view/edit existing) -->
     <JobDetailPanel
       v-model:open="isPanelOpen"
       :job="editingJob"
@@ -575,7 +655,6 @@ watch(selectedLayout, (val) => {
       @score-updated="handleScoreUpdated"
     />
 
-    <!-- Filters side panel -->
     <JobFiltersPanel
       v-model:open="isFiltersPanelOpen"
       :model-value="jobFilters"

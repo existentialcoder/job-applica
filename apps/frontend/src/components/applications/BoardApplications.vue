@@ -7,7 +7,7 @@ import {
   ScrollAreaThumb,
   ScrollAreaCorner
 } from 'radix-vue';
-import { computed, ref, nextTick } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +18,11 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { DEFAULT_COMPANY_LOGO_URL, MANDATORY_STAGE_KEYS } from '@/lib/constants';
+import dataservice, { type JobFilters } from '@/lib/dataservice';
 import type { JobData, StageData } from '@/lib/types';
+
+const PAGE_SIZE = 10;
+const SCROLL_THRESHOLD_PX = 80;
 
 const DEFAULT_COLUMNS: StageData[] = [
   { key: 'Saved', label: 'Saved', color: 'bg-slate-500' },
@@ -32,7 +36,7 @@ const DEFAULT_COLUMNS: StageData[] = [
 ];
 
 const props = defineProps<{
-  jobs: JobData[]
+  baseFilters: JobFilters
   stages?: StageData[]
 }>();
 
@@ -157,22 +161,66 @@ function cancelQuickAdd() {
 
 const COLUMNS = computed(() => (props.stages?.length ? props.stages : DEFAULT_COLUMNS));
 
-const jobsByStatus = computed(() => {
-  const map: Record<string, JobData[]> = {};
+interface ColumnState {
+  jobs: JobData[]
+  page: number
+  total: number
+  loading: boolean
+}
+
+const columnState = reactive<Record<string, ColumnState>>({});
+
+function hasMore(key: string): boolean {
+  const state = columnState[key];
+  return !!state && state.jobs.length < state.total;
+}
+
+async function fetchColumnPage(key: string, page: number) {
+  const state = columnState[key];
+  if (!state || state.loading) {
+    return;
+  }
+  state.loading = true;
+  try {
+    const res = await dataservice.getJobs({ ...props.baseFilters, status: key, page, per_page: PAGE_SIZE });
+    state.jobs = page === 1 ? res.items : [...state.jobs, ...res.items];
+    state.page = page;
+    state.total = res.total;
+  } finally {
+    state.loading = false;
+  }
+}
+
+function resetAndLoadAllColumns() {
   COLUMNS.value.forEach((col) => {
-    map[col.key] = [];
+    columnState[col.key] = { jobs: [], page: 0, total: 0, loading: false };
+    fetchColumnPage(col.key, 1);
   });
-  const firstKey = COLUMNS.value[0]?.key ?? 'Saved';
-  props.jobs.forEach((job) => {
-    if (map[job.status] !== undefined) {
-      map[job.status].push(job);
-    } else {
-      if (!map[firstKey]) map[firstKey] = [];
-      map[firstKey].push(job);
-    }
-  });
-  return map;
-});
+}
+
+function refreshColumn(key: string) {
+  columnState[key] = { jobs: [], page: 0, total: 0, loading: false };
+  fetchColumnPage(key, 1);
+}
+
+function onColumnScroll(event: Event, key: string) {
+  const el = event.target as HTMLElement;
+  const state = columnState[key];
+  if (!state || state.loading || !hasMore(key)) return;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - SCROLL_THRESHOLD_PX) {
+    fetchColumnPage(key, state.page + 1);
+  }
+}
+
+onMounted(resetAndLoadAllColumns);
+
+watch(
+  () => [COLUMNS.value.map((c) => c.key).join(','), props.baseFilters],
+  resetAndLoadAllColumns,
+  { deep: true }
+);
+
+defineExpose({ refreshColumn });
 
 // ── Drag-and-drop ─────────────────────────────────────────────────────────────
 let draggedJob: JobData | null = null;
@@ -194,9 +242,35 @@ function onDrop(event: DragEvent, targetStatus: string) {
   event.preventDefault()
   ;(event.currentTarget as HTMLElement).classList.remove('ring-2', 'ring-primary/50');
   if (draggedJob && draggedJob.status !== targetStatus) {
-    emit('status-change', draggedJob.id, targetStatus);
+    const job = draggedJob;
+    const sourceState = columnState[job.status];
+    const targetState = columnState[targetStatus];
+    if (sourceState) {
+      const idx = sourceState.jobs.findIndex((j) => j.id === job.id);
+      if (idx !== -1) {
+        sourceState.jobs.splice(idx, 1);
+        sourceState.total = Math.max(0, sourceState.total - 1);
+      }
+    }
+    if (targetState) {
+      targetState.jobs.unshift({ ...job, status: targetStatus });
+      targetState.total += 1;
+    }
+    emit('status-change', job.id, targetStatus);
   }
   draggedJob = null;
+}
+
+function handleDelete(job: JobData) {
+  const state = columnState[job.status];
+  if (state) {
+    const idx = state.jobs.findIndex((j) => j.id === job.id);
+    if (idx !== -1) {
+      state.jobs.splice(idx, 1);
+      state.total = Math.max(0, state.total - 1);
+    }
+  }
+  emit('delete', job.id);
 }
 
 function openUrl(url: string) {
@@ -262,7 +336,7 @@ function locationText(job: JobData): string {
 
             <div class="flex items-center gap-1 flex-shrink-0">
               <span class="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-                {{ jobsByStatus[col.key]?.length ?? 0 }}
+                {{ columnState[col.key]?.total ?? 0 }}
               </span>
               <button
                 v-if="stages && stages.length > 1 && !isMandatory(col.key)"
@@ -285,14 +359,15 @@ function locationText(job: JobData): string {
 
           <!-- Drop zone -->
           <div
-            class="flex flex-col gap-2 min-h-[100px] rounded-lg bg-muted/40 p-2 transition-all"
+            class="flex flex-col gap-2 min-h-[100px] max-h-[calc(100vh-260px)] overflow-y-auto rounded-lg bg-muted/40 p-2 transition-all"
             @dragover="onDragOver"
             @dragleave="onDragLeave"
             @drop="onDrop($event, col.key)"
+            @scroll="onColumnScroll($event, col.key)"
           >
             <!-- Job cards -->
             <div
-              v-for="job in jobsByStatus[col.key]"
+              v-for="job in columnState[col.key]?.jobs ?? []"
               :key="job.id"
               draggable="true"
               @dragstart="onDragStart(job)"
@@ -326,7 +401,7 @@ function locationText(job: JobData): string {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     class="text-destructive focus:text-destructive"
-                    @click.stop="$emit('delete', job.id)"
+                    @click.stop="handleDelete(job)"
                     >Delete</DropdownMenuItem
                   >
                 </DropdownMenuContent>
@@ -370,9 +445,16 @@ function locationText(job: JobData): string {
 
             <!-- Empty column placeholder -->
             <div
-              v-if="jobsByStatus[col.key]?.length === 0"
+              v-if="(columnState[col.key]?.jobs.length ?? 0) === 0 && !columnState[col.key]?.loading"
               class="flex items-center justify-center h-12 text-xs text-muted-foreground/50 border-2 border-dashed border-muted-foreground/20 rounded-md"
             ></div>
+
+            <div
+              v-if="columnState[col.key]?.loading"
+              class="flex items-center justify-center h-8 text-xs text-muted-foreground/60"
+            >
+              Loading…
+            </div>
           </div>
 
           <!-- Quick-add card area -->
@@ -497,7 +579,6 @@ function locationText(job: JobData): string {
       </div>
     </ScrollAreaViewport>
 
-    <!-- Horizontal scrollbar (shadcn style) -->
     <ScrollAreaScrollbar
       orientation="horizontal"
       class="flex h-2.5 touch-none select-none flex-col border-t border-t-transparent p-px transition-colors"
