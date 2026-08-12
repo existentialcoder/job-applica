@@ -5,24 +5,24 @@ Revises: m6n0o4p8q2r6
 Create Date: 2026-08-05 13:17:37.428744
 
 """
-from typing import Sequence, Union
 
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
-
 
 # revision identifiers, used by Alembic.
 revision: str = '83c1ba4c87e9'
-down_revision: Union[str, Sequence[str], None] = 'm6n0o4p8q2r6'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = 'm6n0o4p8q2r6'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
     """Upgrade schema."""
     # Create location column in jobs table
-    op.add_column('jobs', sa.Column('location', JSONB(), nullable=True))
+    op.add_column('jobs', sa.Column('location', JSONB(), nullable=True, server_default=sa.text("'{}'::jsonb")))
 
     # Migrate data from locations table to jobs table
     op.execute(
@@ -45,7 +45,6 @@ def upgrade() -> None:
 
     # Drop the locations table
     op.drop_table('locations')
-
 
 
 def downgrade() -> None:
@@ -74,4 +73,3 @@ def downgrade() -> None:
         WHERE location IS NOT NULL
         """
     )
-

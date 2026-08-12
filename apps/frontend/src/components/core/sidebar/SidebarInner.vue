@@ -1,33 +1,33 @@
 <script setup lang="ts">
-import { Toggle } from '@/components/ui/toggle'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import router from '@/router'
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { ALL_MENU_ITEMS, SETTINGS_MENU_ITEM } from '@/config/app'
-import { ArrowLeftToLine, ChevronRight } from 'lucide-vue-next'
-import { useAppStore } from '@/stores/app'
-import { useFeatureStore } from '@/stores/features'
-import AppLogo from '@/components/core/AppLogo.vue'
+import { ArrowLeftToLine, ChevronRight } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import AppLogo from '@/components/core/AppLogo.vue';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Toggle } from '@/components/ui/toggle';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ALL_MENU_ITEMS, SETTINGS_MENU_ITEM } from '@/config/app';
+import router from '@/router';
+import { useAppStore } from '@/stores/app';
+import { useFeatureStore } from '@/stores/features';
 
-const route = useRoute()
-const featureStore = useFeatureStore()
+const route = useRoute();
+const featureStore = useFeatureStore();
 
-const menus = computed(() => ALL_MENU_ITEMS.filter((m) => !m.flag || featureStore.flags[m.flag]))
+const menus = computed(() => ALL_MENU_ITEMS.filter((m) => !m.flag || featureStore.flags[m.flag]));
 
 const handleNavigate = (path: string) => {
-  router.push(path)
+  router.push(path);
   if (window.innerWidth < 1025) {
-    store.toggleSidebar()
+    store.toggleSidebar();
   }
-}
+};
 
-const store = useAppStore()
+const store = useAppStore();
 
 const toggleSidebar = () => {
-  store.toggleSidebar()
-}
+  store.toggleSidebar();
+};
 </script>
 
 <template>

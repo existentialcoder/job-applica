@@ -1,53 +1,53 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useForm } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/zod'
-import * as z from 'zod'
-import { useAuthStore } from '@/stores/auth'
-import AuthSplitLayout from '@/components/core/AuthSplitLayout.vue'
-import AppLogo from '@/components/core/AppLogo.vue'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { FormControl, FormField, FormLabel, FormItem, FormMessage } from '@/components/ui/form'
-import { Separator } from '@/components/ui/separator'
+import { toTypedSchema } from '@vee-validate/zod';
+import { useForm } from 'vee-validate';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import * as z from 'zod';
+import AppLogo from '@/components/core/AppLogo.vue';
+import AuthSplitLayout from '@/components/core/AuthSplitLayout.vue';
+import { Button } from '@/components/ui/button';
+import { FormControl, FormField, FormLabel, FormItem, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { useAuthStore } from '@/stores/auth';
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
-const loginError = ref('')
-const isLoading = ref(false)
+const loginError = ref('');
+const isLoading = ref(false);
 
 const formSchema = toTypedSchema(
   z.object({
     username: z.string().min(1, 'Username or email is required'),
     password: z.string().min(1, 'Password is required')
   })
-)
+);
 
-const form = useForm({ validationSchema: formSchema })
+const form = useForm({ validationSchema: formSchema });
 
 const onSubmit = form.handleSubmit(async (values) => {
-  loginError.value = ''
-  isLoading.value = true
-  const result = await authStore.login(values.username, values.password)
-  isLoading.value = false
+  loginError.value = '';
+  isLoading.value = true;
+  const result = await authStore.login(values.username, values.password);
+  isLoading.value = false;
 
   if (result.ok) {
-    router.push('/home')
+    router.push('/home');
   } else {
-    loginError.value = result.error || 'Login failed. Please check your credentials.'
+    loginError.value = result.error || 'Login failed. Please check your credentials.';
   }
-})
+});
 
 function loginWithGoogle() {
-  window.location.href = `${API_BASE}/auth/google?origin=web`
+  window.location.href = `${API_BASE}/auth/google?origin=web`;
 }
 
 function loginWithLinkedIn() {
-  window.location.href = `${API_BASE}/auth/linkedin?origin=web`
+  window.location.href = `${API_BASE}/auth/linkedin?origin=web`;
 }
 </script>
 

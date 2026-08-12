@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineSlots<{ default: () => unknown }>()
+defineSlots<{ default: () => unknown }>();
 </script>
 
 <template>

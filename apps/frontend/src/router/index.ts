@@ -1,8 +1,8 @@
-import { createRouter, createWebHistory, type RouteMeta } from 'vue-router'
-import AppLayoutVue from '@/layouts/app.vue'
-import { useAuthStore } from '@/stores/auth'
-import { useFeatureStore } from '@/stores/features'
-import type { FeatureFlags } from '@/stores/features'
+import { createRouter, createWebHistory, type RouteMeta } from 'vue-router';
+import AppLayoutVue from '@/layouts/app.vue';
+import { useAuthStore } from '@/stores/auth';
+import { useFeatureStore } from '@/stores/features';
+import type { FeatureFlags } from '@/stores/features';
 
 interface IRouteMeta {
   title: string
@@ -116,11 +116,11 @@ const router = createRouter({
       } as RouteMeta & IRouteMeta
     }
   ]
-})
+});
 
 router.beforeEach((to, _from, next) => {
-  document.title = to.meta.title as string
-  const authStore = useAuthStore()
+  document.title = to.meta.title as string;
+  const authStore = useAuthStore();
   const publicRoutes = [
     'login',
     'signup',
@@ -128,29 +128,29 @@ router.beforeEach((to, _from, next) => {
     'not-found',
     'auth-callback',
     'auth-relay'
-  ]
+  ];
 
   if (
     !authStore.isAuthenticated &&
     !publicRoutes.includes(to.name as string) &&
     to.path !== '/login'
   ) {
-    return next('/login')
+    return next('/login');
   }
   if (authStore.isAuthenticated && to.path === '/login') {
-    return next('/boards')
+    return next('/boards');
   }
 
   // Feature flag guard — redirect to home if route's flag is disabled
-  const flag = to.meta.flag as keyof FeatureFlags | undefined
+  const flag = to.meta.flag as keyof FeatureFlags | undefined;
   if (flag) {
-    const featureStore = useFeatureStore()
+    const featureStore = useFeatureStore();
     if (featureStore.loaded && !featureStore.flags[flag]) {
-      return next('/home')
+      return next('/home');
     }
   }
 
-  next()
-})
+  next();
+});
 
-export default router
+export default router;

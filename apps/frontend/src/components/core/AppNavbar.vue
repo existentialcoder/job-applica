@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { LogOut, User, Bell, Sun, MoonStar, Monitor, Menu, Github } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import Breadcrumb from '@/components/ui/Breadcrumb.vue';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,25 +12,22 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import Breadcrumb from '@/components/ui/Breadcrumb.vue'
-import { LogOut, User, Bell, Sun, MoonStar, Monitor, Menu, Github } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/stores/app'
-import { useAuthStore } from '@/stores/auth'
+} from '@/components/ui/dropdown-menu';
+import { useAppStore } from '@/stores/app';
+import { useAuthStore } from '@/stores/auth';
 
-const store = useAppStore()
-const authStore = useAuthStore()
-const router = useRouter()
+const store = useAppStore();
+const authStore = useAuthStore();
+const router = useRouter();
 
 const initials = computed(() => {
-  const u = authStore.user
-  if (!u) return '?'
-  return `${u.first_name?.[0] ?? ''}${u.last_name?.[0] ?? ''}`.toUpperCase()
-})
+  const u = authStore.user;
+  if (!u) return '?';
+  return `${u.first_name?.[0] ?? ''}${u.last_name?.[0] ?? ''}`.toUpperCase();
+});
 
 async function handleLogout() {
-  await authStore.logout()
+  await authStore.logout();
 }
 </script>
 

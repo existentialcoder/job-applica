@@ -1,8 +1,8 @@
 import enum
 
 from sqlalchemy import JSON, Column, Date, Enum, Float, ForeignKey, Integer, Table, Text, text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.base_class import Base
 from .board import Board

@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
-import type { JobData, JobCreatePayload } from '@/lib/types'
+import { ref, watch, computed, onMounted } from 'vue';
+import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -18,38 +19,37 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Combobox } from '@/components/ui/combobox'
-import CompanyCombobox from './CompanyCombobox.vue'
-import { DatePicker } from '@/components/ui/date-picker'
-import { useCompaniesStore } from '@/stores/companies'
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   DEFAULT_BOARD_STAGES,
   POSITION_OPTIONS,
   WORK_MODEL_OPTIONS,
   COUNTRY_OPTIONS
-} from '@/lib/constants'
+} from '@/lib/constants';
+import type { JobData, JobCreatePayload } from '@/lib/types';
+import { useCompaniesStore } from '@/stores/companies';
+import CompanyCombobox from './CompanyCombobox.vue';
 
-const COUNTRY_COMBOBOX_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }))
+const COUNTRY_COMBOBOX_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }));
 
 const props = defineProps<{
   open: boolean
   editJob?: JobData | null
   statusOptions?: string[]
   defaultStatus?: string
-}>()
+}>();
 
 const emit = defineEmits<{
   (e: 'update:open', val: boolean): void
   (e: 'save', payload: JobCreatePayload): void
-}>()
+}>();
 
-const companiesStore = useCompaniesStore()
+const companiesStore = useCompaniesStore();
 
 const STATUS_OPTIONS = computed(() =>
   props.statusOptions?.length ? props.statusOptions : DEFAULT_BOARD_STAGES.map((s) => s.label)
-)
+);
 const PLATFORM_OPTIONS = [
   'LinkedIn',
   'Indeed',
@@ -58,52 +58,52 @@ const PLATFORM_OPTIONS = [
   'ZipRecruiter',
   'Jobscan',
   'Other'
-]
+];
 
-const title = ref('')
-const companyName = ref('')
-const locationCity = ref('')
-const locationCountry = ref('')
-const status = ref(props.defaultStatus ?? STATUS_OPTIONS.value[0] ?? 'Saved')
-const position = ref('')
-const workModel = ref('')
-const salaryRange = ref('')
-const sourcePlatform = ref('')
-const sourceUrl = ref('')
-const appliedDate = ref('')
-const description = ref('')
-const notes = ref('')
+const title = ref('');
+const companyName = ref('');
+const locationCity = ref('');
+const locationCountry = ref('');
+const status = ref(props.defaultStatus ?? STATUS_OPTIONS.value[0] ?? 'Saved');
+const position = ref('');
+const workModel = ref('');
+const salaryRange = ref('');
+const sourcePlatform = ref('');
+const sourceUrl = ref('');
+const appliedDate = ref('');
+const description = ref('');
+const notes = ref('');
 
 function resetForm() {
-  title.value = ''
-  companyName.value = ''
-  locationCity.value = ''
-  locationCountry.value = ''
-  status.value = props.defaultStatus ?? STATUS_OPTIONS.value[0] ?? 'Saved'
-  position.value = ''
-  workModel.value = ''
-  salaryRange.value = ''
-  sourcePlatform.value = ''
-  sourceUrl.value = ''
-  appliedDate.value = ''
-  description.value = ''
-  notes.value = ''
+  title.value = '';
+  companyName.value = '';
+  locationCity.value = '';
+  locationCountry.value = '';
+  status.value = props.defaultStatus ?? STATUS_OPTIONS.value[0] ?? 'Saved';
+  position.value = '';
+  workModel.value = '';
+  salaryRange.value = '';
+  sourcePlatform.value = '';
+  sourceUrl.value = '';
+  appliedDate.value = '';
+  description.value = '';
+  notes.value = '';
 }
 
 function populateFromEdit(job: JobData) {
-  title.value = job.title || ''
-  companyName.value = job.company?.name || ''
-  locationCity.value = job.location?.city || ''
-  locationCountry.value = job.location?.country || ''
-  status.value = job.status || 'Saved'
-  position.value = job.position || ''
-  workModel.value = job.work_model || ''
-  salaryRange.value = job.salary_range || ''
-  sourcePlatform.value = job.source_platform || ''
-  sourceUrl.value = job.source_url || ''
-  appliedDate.value = job.applied_date || ''
-  description.value = job.description || ''
-  notes.value = job.notes || ''
+  title.value = job.title || '';
+  companyName.value = job.company?.name || '';
+  locationCity.value = job.location?.city || '';
+  locationCountry.value = job.location?.country || '';
+  status.value = job.status || 'Saved';
+  position.value = job.position || '';
+  workModel.value = job.work_model || '';
+  salaryRange.value = job.salary_range || '';
+  sourcePlatform.value = job.source_platform || '';
+  sourceUrl.value = job.source_url || '';
+  appliedDate.value = job.applied_date || '';
+  description.value = job.description || '';
+  notes.value = job.notes || '';
 }
 
 watch(
@@ -111,24 +111,24 @@ watch(
   (open) => {
     if (open) {
       if (props.editJob) {
-        populateFromEdit(props.editJob)
+        populateFromEdit(props.editJob);
       } else {
-        resetForm()
+        resetForm();
       }
     }
   }
-)
+);
 
-onMounted(companiesStore.fetch)
+onMounted(companiesStore.fetch);
 
 function handleSave() {
-  if (!title.value.trim() || !companyName.value.trim()) return
+  if (!title.value.trim() || !companyName.value.trim()) return;
   const autoDate =
     status.value === 'Applied' && !appliedDate.value
       ? new Date().toISOString().slice(0, 10)
-      : appliedDate.value || undefined
-  const city = locationCity.value.trim()
-  const country = locationCountry.value.trim()
+      : appliedDate.value || undefined;
+  const city = locationCity.value.trim();
+  const country = locationCountry.value.trim();
   const payload: JobCreatePayload = {
     title: title.value.trim(),
     company_name: companyName.value.trim() || undefined,
@@ -143,9 +143,9 @@ function handleSave() {
     applied_date: autoDate,
     description: description.value.trim() || undefined,
     notes: notes.value.trim() || undefined
-  }
-  emit('save', payload)
-  emit('update:open', false)
+  };
+  emit('save', payload);
+  emit('update:open', false);
 }
 </script>
 

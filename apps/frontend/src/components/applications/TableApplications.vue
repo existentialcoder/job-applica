@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { h, ref, nextTick } from 'vue'
-import type { JobData } from '@/lib/types'
-import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants'
-import { DataTable, type ColumnDef } from '@/components/ui/data-table'
-import { Checkbox } from '@/components/ui/checkbox'
-import DataTableHeader from '@/components/ui/data-table/DataTableHeader.vue'
-import type { Column } from '@tanstack/vue-table'
+import type { Column } from '@tanstack/vue-table';
+import { h, ref, nextTick } from 'vue';
+import { Badge } from '@/components/ui/badge';
+// DropdownMenu imports kept for the actions column
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DataTable, type ColumnDef } from '@/components/ui/data-table';
+import DataTableHeader from '@/components/ui/data-table/DataTableHeader.vue';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
-// DropdownMenu imports kept for the actions column
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -23,62 +21,63 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import StatusDropdownCell from './StatusDropdownCell.vue'
+} from '@/components/ui/select';
+import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
+import type { JobData } from '@/lib/types';
+import StatusDropdownCell from './StatusDropdownCell.vue';
 
 const props = defineProps<{
-  jobs: JobData[]
-  statusOptions?: string[]
-}>()
+  jobs: JobData[];
+  statusOptions?: string[];
+}>();
 
 const emit = defineEmits<{
-  (e: 'selection-change', jobs: JobData[]): void
-  (e: 'edit', job: JobData): void
-  (e: 'status-change', jobId: number, status: string): void
-  (e: 'add-quick', payload: { title: string; company_name?: string; status: string }): void
-}>()
+  (e: 'selection-change', jobs: JobData[]): void;
+  (e: 'edit', job: JobData): void;
+  (e: 'status-change', jobId: number, status: string): void;
+  (e: 'add-quick', payload: { title: string; company_name?: string; status: string }): void;
+}>();
 
-// ── Inline new-row state ──────────────────────────────────────────────────────
-const showAddRow = ref(false)
-const addTitle = ref('')
-const addCompany = ref('')
-const addStatus = ref('')
-const addTitleRef = ref<HTMLInputElement | null>(null)
+const showAddRow = ref(false);
+const addTitle = ref('');
+const addCompany = ref('');
+const addStatus = ref('');
+const addTitleRef = ref<HTMLInputElement | null>(null);
 
 async function openAddRow() {
-  addTitle.value = ''
-  addCompany.value = ''
-  addStatus.value = props.statusOptions?.[0] ?? 'Saved'
-  showAddRow.value = true
-  await nextTick()
-  addTitleRef.value?.focus()
+  addTitle.value = '';
+  addCompany.value = '';
+  addStatus.value = props.statusOptions?.[0] ?? 'Saved';
+  showAddRow.value = true;
+  await nextTick();
+  addTitleRef.value?.focus();
 }
 
 function submitAdd() {
-  if (!addTitle.value.trim() || !addCompany.value.trim()) return
+  if (!addTitle.value.trim() || !addCompany.value.trim()) return;
   emit('add-quick', {
     title: addTitle.value.trim(),
     company_name: addCompany.value.trim() || undefined,
     status: addStatus.value || props.statusOptions?.[0] || 'Saved'
-  })
-  showAddRow.value = false
+  });
+  showAddRow.value = false;
 }
 
 function cancelAdd() {
-  showAddRow.value = false
+  showAddRow.value = false;
 }
 
 // Mapped from JobData for the table
 interface RowData {
-  _raw: JobData
-  id: number
-  title: string
-  company: string
-  company_logo?: string
-  location: string
-  status: string
-  platform: string
-  work_model: string
+  _raw: JobData;
+  id: number;
+  title: string;
+  company: string;
+  company_logo?: string;
+  location: string;
+  status: string;
+  platform: string;
+  work_model: string;
 }
 
 const statusVariants: Record<string, string> = {
@@ -90,7 +89,7 @@ const statusVariants: Record<string, string> = {
   Offer: 'success',
   Rejected: 'danger',
   Withdrawn: 'outline'
-}
+};
 
 const columns: ColumnDef<RowData>[] = [
   {
@@ -99,11 +98,11 @@ const columns: ColumnDef<RowData>[] = [
       h(Checkbox, {
         checked: table.getIsAllPageRowsSelected(),
         'onUpdate:checked': (val: boolean) => {
-          table.toggleAllPageRowsSelected(!!val)
+          table.toggleAllPageRowsSelected(!!val);
           emit(
             'selection-change',
             table.getSelectedRowModel().flatRows.map((r) => r.original._raw)
-          )
+          );
         },
         ariaLabel: 'Select All',
         class: 'translate-y-0.5'
@@ -112,11 +111,11 @@ const columns: ColumnDef<RowData>[] = [
       h(Checkbox, {
         checked: row.getIsSelected(),
         'onUpdate:checked': (val: boolean) => {
-          row.toggleSelected(!!val)
+          row.toggleSelected(!!val);
           emit(
             'selection-change',
             table.getSelectedRowModel().flatRows.map((r) => r.original._raw)
-          )
+          );
         },
         ariaLabel: 'Select row',
         class: 'translate-y-0.5'
@@ -144,15 +143,15 @@ const columns: ColumnDef<RowData>[] = [
     cell: ({ row }) =>
       row.original.company
         ? h('div', { class: 'flex items-center gap-1.5 max-w-[150px]' }, [
-            h('img', {
-              src: row.original.company_logo || DEFAULT_COMPANY_LOGO_URL,
-              class: 'w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted',
-              onError: (e: Event) => {
-                ;(e.target as HTMLImageElement).style.display = 'none'
-              }
-            }),
-            h('span', { class: 'truncate text-sm' }, row.original.company)
-          ])
+          h('img', {
+            src: row.original.company_logo || DEFAULT_COMPANY_LOGO_URL,
+            class: 'w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted',
+            onError: (e: Event) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }
+          }),
+          h('span', { class: 'truncate text-sm' }, row.original.company)
+        ])
         : h('span', { class: 'text-muted-foreground text-sm' }, '—'),
     enableSorting: false
   },
@@ -206,19 +205,19 @@ const columns: ColumnDef<RowData>[] = [
               row.original._raw.source_url ? h(DropdownMenuSeparator) : null,
               row.original._raw.source_url
                 ? h(
-                    DropdownMenuItem,
-                    {
-                      onClick: () => window.open(row.original._raw.source_url, '_blank')
-                    },
-                    () => 'Open Job URL'
-                  )
+                  DropdownMenuItem,
+                  {
+                    onClick: () => window.open(row.original._raw.source_url, '_blank')
+                  },
+                  () => 'Open Job URL'
+                )
                 : null
             ])
           ]
         }
       )
   }
-]
+];
 
 function transformRows(jobs: JobData[]): RowData[] {
   return jobs.map((job) => ({
@@ -231,7 +230,7 @@ function transformRows(jobs: JobData[]): RowData[] {
     status: job.status,
     platform: job.source_platform || '',
     work_model: job.work_model || ''
-  }))
+  }));
 }
 </script>
 
@@ -239,7 +238,6 @@ function transformRows(jobs: JobData[]): RowData[] {
   <div class="flex flex-col">
     <DataTable :columns="columns" :data="transformRows(jobs)" />
 
-    <!-- Inline new-row (Airtable/Notion style) -->
     <div class="border border-t-0 border-border rounded-b-md overflow-hidden">
       <!-- Collapsed trigger -->
       <button

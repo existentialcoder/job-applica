@@ -4,7 +4,6 @@ import httpx
 from fastapi import HTTPException
 from pydantic import HttpUrl
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -60,7 +59,7 @@ async def transform_required_skills(db: AsyncSession, required_skills: list[str]
         if len(matched_skills) > 0:
             resolved = matched_skills[0]
         else:
-            resolved = await skill_service.create_skill(db, SkillCreate(name=skill, label=skill), source='internal')
+            resolved = await skill_service.create_skill(db, SkillCreate(label=skill), source='internal')
         # Two different incoming labels can resolve to the same skill (e.g. after
         # normalization collisions) — dedupe so we never insert the same (job_id,
         # skill_id) pair twice.
@@ -94,9 +93,7 @@ async def _retrieve_company_in_request(db: AsyncSession, data: dict) -> Company 
     return None
 
 
-async def get_jobs(
-    db: AsyncSession, user: UserBase, pagination: dict, filter: JobFilterParams | None = None
-) -> PaginatedJobs:
+async def get_jobs(db: AsyncSession, user: UserBase, pagination: dict, filter: JobFilterParams | None = None) -> dict:
     base_q = select(Job).where(Job.user_id == user.id)
 
     if filter:
@@ -117,7 +114,7 @@ async def get_jobs(
         if filter.status:
             base_q = base_q.where(Job.status.in_(filter.status))
         if filter.source_platform:
-            base_q = base_q.where(Job.source_platform.in_(filter.source_platform))
+            base_q = base_q.where(Job.source_platform == filter.source_platform)
         if filter.work_model:
             base_q = base_q.where(Job.work_model.in_(filter.work_model))
         if filter.board_id:
@@ -132,7 +129,7 @@ async def get_jobs(
             base_q = base_q.where(Job.ats_score <= filter.ats_score_max)
 
     count_result = await db.execute(select(func.count()).select_from(base_q.subquery()))
-    total = count_result.scalar()
+    total = count_result.scalar() or 0
 
     result = await db.execute(paginate_query(_eager(base_q), pagination))
     jobs = [JobBase.model_validate(job) for job in result.scalars().all()]
@@ -161,6 +158,7 @@ async def get_transformed_job(db: AsyncSession, job_in: JobCreate | JobUpdate, u
     data['user_id'] = user.id
 
     if 'board_id' not in data and isinstance(job_in, JobCreate):
+        assert user.id is not None
         data['board_id'] = await get_default_board_id(db, user.id)
 
     if isinstance(data.get('company_name'), str) and not data['company_name'].strip():

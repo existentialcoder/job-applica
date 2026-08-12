@@ -1,8 +1,8 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import tailwind from 'tailwindcss'
-import autoprefixer from 'autoprefixer'
+import vue from '@vitejs/plugin-vue';
+import autoprefixer from 'autoprefixer';
+import tailwind from 'tailwindcss';
+import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const rootDir = path.resolve(__dirname, 'src');
@@ -15,21 +15,21 @@ export default defineConfig(({ mode }) => {
     appType: 'spa',
     publicDir: path.resolve(__dirname, 'public'),
     plugins: [
-      vue(),
+      vue()
     ],
     css: {
       postcss: {
         plugins: [
           autoprefixer(),
-          tailwind(),
-        ],
-      },
+          tailwind()
+        ]
+      }
     },
     resolve: {
       alias: {
         '@job-applica/ui': path.resolve(__dirname, '../../packages/ui/src'),
         '@/components/ui': path.resolve(__dirname, '../../packages/ui/src/components/ui'),
-        '@': rootDir,
+        '@': rootDir
       }
     },
     server: {
@@ -37,14 +37,14 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/uploads': {
           target: 'http://localhost:8000',
-          changeOrigin: true,
-        },
-      },
+          changeOrigin: true
+        }
+      }
     },
     build: {
       minify: production,
       sourcemap: production,
-      outDir: path.resolve(rootDir, '..', 'dist'),
-    },
-  }
+      outDir: path.resolve(rootDir, '..', 'dist')
+    }
+  };
 });

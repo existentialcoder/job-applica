@@ -859,7 +859,7 @@ const platformBadgeVariant: Record<string, any> = {
           <Textarea id="notes" v-model="notes" placeholder="Optional notes..." class="resize-none" rows="2" />
         </div>
 
-        <!-- ATS Score card -->
+        <!-- Match Score card -->
         <div class="rounded-md border border-border bg-muted/30 p-3 flex items-center gap-3">
           <!-- Score gauge -->
           <template v-if="atsReport">
@@ -882,7 +882,7 @@ const platformBadgeVariant: Record<string, any> = {
               </div>
             </div>
             <div class="flex flex-col">
-              <span class="text-xs font-semibold">ATS Match</span>
+              <span class="text-xs font-semibold">Match Score</span>
               <span class="text-xs text-muted-foreground">Score on how your CV matches with this JD</span>
             </div>
           </template>

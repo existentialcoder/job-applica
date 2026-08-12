@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import type { BoardData } from '@/lib/types'
-import dataservice from '@/lib/dataservice'
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import Applications from '@/views/Applications.vue'
-import { useAppStore } from '@/stores/app'
+} from '@/components/ui/dropdown-menu';
+import dataservice from '@/lib/dataservice';
+import type { BoardData } from '@/lib/types';
+import { useAppStore } from '@/stores/app';
+import Applications from '@/views/Applications.vue';
 
-const router = useRouter()
-const appStore = useAppStore()
+const router = useRouter();
+const appStore = useAppStore();
 
-const allBoards = ref<BoardData[]>([])
-const isBoardSwitcherOpen = ref(false)
+const allBoards = ref<BoardData[]>([]);
+const isBoardSwitcherOpen = ref(false);
 
 function switchBoard(target: BoardData) {
-  isBoardSwitcherOpen.value = false
-  router.push(`/boards/${target.id}`)
+  isBoardSwitcherOpen.value = false;
+  router.push(`/boards/${target.id}`);
 }
 
 onMounted(async () => {
-  appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: 'All Applications' }])
-  allBoards.value = await dataservice.getBoards()
-})
+  appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: 'All Applications' }]);
+  allBoards.value = await dataservice.getBoards();
+});
 
 onUnmounted(() => {
-  appStore.setBreadcrumbs([])
-})
+  appStore.setBreadcrumbs([]);
+});
 </script>
 
 <template>

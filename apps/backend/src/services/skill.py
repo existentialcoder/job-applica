@@ -26,9 +26,11 @@ def extract_skill_name_from_label(label: str) -> str:
     return name
 
 
-async def get_skills(db: AsyncSession, pagination: dict, filter: SkillFilterParams = None, source: str = 'api'):
+async def get_skills(
+    db: AsyncSession, pagination: dict | None, filter: SkillFilterParams | None = None, source: str = 'api'
+):
     count_result = await db.execute(select(func.count()).select_from(Skill))
-    total = count_result.scalar()
+    total = count_result.scalar() or 0
 
     q = select(Skill)
     if pagination:
@@ -43,7 +45,7 @@ async def get_skills(db: AsyncSession, pagination: dict, filter: SkillFilterPara
     return build_paginated_response(items=skills, total=total, **pagination) if pagination else skills
 
 
-async def create_skill(db: AsyncSession, skill_data: SkillCreate, source: str = 'api') -> SkillBase:
+async def create_skill(db: AsyncSession, skill_data: SkillCreate, source: str = 'api') -> SkillBase | Skill:
     skill_name = extract_skill_name_from_label(skill_data.label)
 
     result = await db.execute(select(Skill).where(Skill.name == skill_name))

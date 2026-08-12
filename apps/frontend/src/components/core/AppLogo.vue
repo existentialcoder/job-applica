@@ -10,7 +10,7 @@ withDefaults(
     showIcon: true,
     showBrandName: true
   }
-)
+);
 </script>
 
 <template>

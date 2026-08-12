@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useForm } from 'vee-validate'
-import { toTypedSchema } from '@vee-validate/zod'
-import * as z from 'zod'
-import { useAuthStore } from '@/stores/auth'
-import AuthSplitLayout from '@/components/core/AuthSplitLayout.vue'
-import AppLogo from '@/components/core/AppLogo.vue'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { FormControl, FormField, FormLabel, FormItem, FormMessage } from '@/components/ui/form'
+import { toTypedSchema } from '@vee-validate/zod';
+import { useForm } from 'vee-validate';
+import { ref, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import * as z from 'zod';
+import AppLogo from '@/components/core/AppLogo.vue';
+import AuthSplitLayout from '@/components/core/AuthSplitLayout.vue';
+import { Button } from '@/components/ui/button';
+import { FormControl, FormField, FormLabel, FormItem, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -17,21 +16,22 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { useAuthStore } from '@/stores/auth';
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
-const signupError = ref('')
-const isLoading = ref(false)
+const signupError = ref('');
+const isLoading = ref(false);
 
-const securityQuestions = ref<string[]>([])
+const securityQuestions = ref<string[]>([]);
 onMounted(async () => {
-  securityQuestions.value = await authStore.getSecurityQuestions()
-})
+  securityQuestions.value = await authStore.getSecurityQuestions();
+});
 
 const formSchema = toTypedSchema(
   z
@@ -60,50 +60,50 @@ const formSchema = toTypedSchema(
       message: 'Required when not providing an email',
       path: ['security_answer']
     })
-)
+);
 
-const form = useForm({ validationSchema: formSchema })
+const form = useForm({ validationSchema: formSchema });
 
 // ── Username availability ────────────────────────────────────────────────────
-const usernameStatus = ref<'idle' | 'checking' | 'available' | 'taken'>('idle')
-let usernameCheckTimer: ReturnType<typeof setTimeout> | null = null
-let usernameCheckToken = 0 // guards against a stale response overwriting a newer check
+const usernameStatus = ref<'idle' | 'checking' | 'available' | 'taken'>('idle');
+let usernameCheckTimer: ReturnType<typeof setTimeout> | null = null;
+let usernameCheckToken = 0; // guards against a stale response overwriting a newer check
 
 watch(
   () => form.values.user_name,
   (userName) => {
-    if (usernameCheckTimer) clearTimeout(usernameCheckTimer)
-    usernameStatus.value = 'idle'
+    if (usernameCheckTimer) clearTimeout(usernameCheckTimer);
+    usernameStatus.value = 'idle';
 
     // Don't bother checking until it's at least plausibly valid — matches the zod rule.
-    if (!userName || userName.length < 3 || /\s/.test(userName)) return
+    if (!userName || userName.length < 3 || /\s/.test(userName)) return;
 
     usernameCheckTimer = setTimeout(async () => {
-      usernameStatus.value = 'checking'
-      const myToken = ++usernameCheckToken
-      const isAvailable = await authStore.checkUsernameAvailability(userName)
-      if (myToken !== usernameCheckToken) return
+      usernameStatus.value = 'checking';
+      const myToken = ++usernameCheckToken;
+      const isAvailable = await authStore.checkUsernameAvailability(userName);
+      if (myToken !== usernameCheckToken) return;
 
       if (isAvailable === null) {
-        usernameStatus.value = 'idle'
-        return
+        usernameStatus.value = 'idle';
+        return;
       }
-      usernameStatus.value = isAvailable ? 'available' : 'taken'
+      usernameStatus.value = isAvailable ? 'available' : 'taken';
       if (!isAvailable) {
-        form.setFieldError('user_name', 'Username is already taken')
+        form.setFieldError('user_name', 'Username is already taken');
       }
-    }, 500)
+    }, 500);
   }
-)
+);
 
 const onSubmit = form.handleSubmit(async (values) => {
   if (usernameStatus.value === 'taken') {
-    form.setFieldError('user_name', 'Username is already taken')
-    return
+    form.setFieldError('user_name', 'Username is already taken');
+    return;
   }
 
-  signupError.value = ''
-  isLoading.value = true
+  signupError.value = '';
+  isLoading.value = true;
 
   const result = await authStore.signup({
     first_name: values.first_name,
@@ -114,29 +114,29 @@ const onSubmit = form.handleSubmit(async (values) => {
     signup_key: values.email ? 'EMAIL' : 'USER_NAME',
     security_question: values.security_question || undefined,
     security_answer: values.security_answer || undefined
-  })
+  });
 
-  isLoading.value = false
+  isLoading.value = false;
 
   if (result.ok) {
     // Auto-login after signup
-    const loginResult = await authStore.login(values.user_name, values.password)
+    const loginResult = await authStore.login(values.user_name, values.password);
     if (loginResult.ok) {
-      router.push('/applications')
+      router.push('/applications');
     } else {
-      router.push('/login')
+      router.push('/login');
     }
   } else {
-    signupError.value = result.error || 'Signup failed. Please try again.'
+    signupError.value = result.error || 'Signup failed. Please try again.';
   }
-})
+});
 
 function loginWithGoogle() {
-  window.location.href = `${API_BASE}/auth/google?origin=web`
+  window.location.href = `${API_BASE}/auth/google?origin=web`;
 }
 
 function loginWithLinkedIn() {
-  window.location.href = `${API_BASE}/auth/linkedin?origin=web`
+  window.location.href = `${API_BASE}/auth/linkedin?origin=web`;
 }
 </script>
 

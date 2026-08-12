@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { reactive, watch, computed } from 'vue'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { MultiSelect } from '@/components/ui/multi-select'
+import { reactive, watch, computed } from 'vue';
+import { Button } from '@/components/ui/button';
+import { DateRangePicker } from '@/components/ui/daterange-picker';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { MultiSelect } from '@/components/ui/multi-select';
 import {
   Select,
   SelectContent,
@@ -12,109 +12,110 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import { DateRangePicker } from '@/components/ui/daterange-picker'
+} from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import {
+  ATS_SCORE_TIERS,
   POSITION_OPTIONS,
   WORK_MODEL_OPTIONS,
-  COUNTRY_OPTIONS,
-  ATS_SCORE_TIERS
-} from '@/lib/constants'
-import { useCompaniesStore } from '@/stores/companies'
-import { emptyJobFilters, resolvePresetRange, type JobFiltersFormValues } from '@/lib/jobFilters'
-
-import dataservice from '@/lib/dataservice'
-import { toast } from '@/lib/toast'
+  COUNTRY_OPTIONS
+} from '@/lib/constants';
+import dataservice from '@/lib/dataservice';
+import { emptyJobFilters, resolvePresetRange, type JobFiltersFormValues } from '@/lib/jobFilters';
+import { toast } from '@/lib/toast';
+import { useCompaniesStore } from '@/stores/companies';
 
 const props = defineProps<{
-  open: boolean
-  modelValue: JobFiltersFormValues
-  statusOptions: string[]
-  boardOptions?: { label: string; value: string }[]
-}>()
+  open: boolean;
+  modelValue: JobFiltersFormValues;
+  statusOptions: string[];
+  boardOptions?: { label: string; value: string }[];
+}>();
 
-const companiesStore = useCompaniesStore()
+const companiesStore = useCompaniesStore();
 
 const emit = defineEmits<{
-  (e: 'update:open', val: boolean): void
-  (e: 'update:modelValue', val: JobFiltersFormValues): void
-}>()
+  (e: 'update:open', val: boolean): void;
+  (e: 'update:modelValue', val: JobFiltersFormValues): void;
+}>();
 
 const DATE_PRESET_OPTIONS = [
   { value: '7d', label: 'Last 1 week' },
   { value: '14d', label: 'Last 2 weeks' },
   { value: '30d', label: 'Last 1 month' },
   { value: 'custom', label: 'Custom range' }
-]
+];
 
-const draft = reactive<JobFiltersFormValues>({ ...props.modelValue })
+const draft = reactive<JobFiltersFormValues>({ ...props.modelValue });
 
 watch(
   () => props.open,
   (open) => {
-    if (open) Object.assign(draft, props.modelValue)
+    if (open) Object.assign(draft, props.modelValue);
   }
-)
+);
 
 function statusMultiOptions() {
-  return props.statusOptions.map((s) => ({ label: s, value: s }))
+  return props.statusOptions.map((s) => ({ label: s, value: s }));
 }
 
-const WORK_MODEL_MULTI_OPTIONS = WORK_MODEL_OPTIONS.map((w) => ({ label: w, value: w }))
-const POSITION_MULTI_OPTIONS = POSITION_OPTIONS.map((p) => ({ label: p, value: p }))
-const COUNTRY_MULTI_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }))
+const WORK_MODEL_MULTI_OPTIONS = WORK_MODEL_OPTIONS.map((w) => ({ label: w, value: w }));
+const POSITION_MULTI_OPTIONS = POSITION_OPTIONS.map((p) => ({ label: p, value: p }));
+const COUNTRY_MULTI_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }));
 const COMPANY_MULTI_OPTIONS = computed(() =>
   companiesStore.companies.map((c) => ({ label: c.name, value: c.name }))
-)
+);
 
 function onAppliedPresetChange(preset: string) {
-  draft.appliedPreset = preset as JobFiltersFormValues['appliedPreset']
-  const range = resolvePresetRange(draft.appliedPreset)
-  if (range) draft.appliedRange = range
+  draft.appliedPreset = preset as JobFiltersFormValues['appliedPreset'];
+  const range = resolvePresetRange(draft.appliedPreset);
+  if (range) draft.appliedRange = range;
 }
 
 function onCreatedPresetChange(preset: string) {
-  draft.createdPreset = preset as JobFiltersFormValues['createdPreset']
-  const range = resolvePresetRange(draft.createdPreset)
-  if (range) draft.createdRange = range
+  draft.createdPreset = preset as JobFiltersFormValues['createdPreset'];
+  const range = resolvePresetRange(draft.createdPreset);
+  if (range) draft.createdRange = range;
 }
 
 function toggleAtsTier(tierKey: string) {
-  const idx = draft.atsScoreTiers.indexOf(tierKey)
-  if (idx === -1) draft.atsScoreTiers.push(tierKey)
-  else draft.atsScoreTiers.splice(idx, 1)
+  if (draft.atsScoreTier === tierKey) {
+    return (draft.atsScoreTier = '');
+  }
+
+  draft.atsScoreTier = tierKey;
 }
 
 function atsChipClass(tier: (typeof ATS_SCORE_TIERS)[number]) {
-  return draft.atsScoreTiers.includes(tier.key) ? tier.chipActiveClass : ''
+  return draft.atsScoreTier === tier.key ? tier.chipActiveClass : '';
 }
 
 function apply() {
-  emit('update:modelValue', { ...draft })
-  emit('update:open', false)
+  emit('update:modelValue', { ...draft });
+  emit('update:open', false);
 }
 
 function clear() {
-  Object.assign(draft, emptyJobFilters())
-  emit('update:modelValue', { ...draft })
-  emit('update:open', false)
+  Object.assign(draft, emptyJobFilters());
+  emit('update:modelValue', { ...draft });
+  emit('update:open', false);
 }
 
 async function saveAsDefault() {
   try {
-    await dataservice.updateSettings({ saved_job_filters: { ...draft } })
-    toast.success('Saved as your default filter')
+    await dataservice.updateSettings({ saved_job_filters: { ...draft } });
+    toast.success('Saved as your default filter');
   } catch {
-    toast.error('Failed to save filter')
+    toast.error('Failed to save filter');
   }
 }
 
 async function clearSavedDefault() {
   try {
-    await dataservice.updateSettings({ saved_job_filters: null })
-    toast.success('Saved default filter cleared')
+    await dataservice.updateSettings({ saved_job_filters: null });
+    toast.success('Saved default filter cleared');
   } catch {
-    toast.error('Failed to clear saved filter')
+    toast.error('Failed to clear saved filter');
   }
 }
 </script>
@@ -218,7 +219,7 @@ async function clearSavedDefault() {
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <Label>ATS score</Label>
+          <Label>Match score</Label>
           <div class="flex flex-wrap gap-1.5">
             <Button
               v-for="tier in ATS_SCORE_TIERS"

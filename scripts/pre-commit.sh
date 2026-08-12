@@ -50,7 +50,6 @@ if [ -n "$FRONTEND_FILES" ]; then
   RELATIVE_FRONTEND_FILES=$(echo "$FRONTEND_FILES" | sed 's|^apps/frontend/||')
 
   (cd apps/frontend && echo "$RELATIVE_FRONTEND_FILES" | xargs npx eslint --fix --ignore-path .gitignore) || true
-  (cd apps/frontend && echo "$RELATIVE_FRONTEND_FILES" | xargs npx prettier --write) || true
   echo "$FRONTEND_FILES" | xargs git add
 
   if ! (cd apps/frontend && echo "$RELATIVE_FRONTEND_FILES" | xargs npx eslint --ignore-path .gitignore); then

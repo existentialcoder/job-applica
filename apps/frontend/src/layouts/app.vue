@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import AppSidebar from '@/components/core/sidebar/AppSidebar.vue'
-import AppNavbar from '@/components/core/AppNavbar.vue'
-import { useAppStore } from '@/stores/app'
+import AppNavbar from '@/components/core/AppNavbar.vue';
+import AppSidebar from '@/components/core/sidebar/AppSidebar.vue';
+import { useAppStore } from '@/stores/app';
 
-const store = useAppStore()
+const store = useAppStore();
 </script>
 
 <template>

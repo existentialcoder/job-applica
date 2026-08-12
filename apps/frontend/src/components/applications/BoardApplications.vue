@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { computed, ref, nextTick } from 'vue'
-import { MapPin } from 'lucide-vue-next'
-import type { JobData, StageData } from '@/lib/types'
-import { DEFAULT_COMPANY_LOGO_URL, MANDATORY_STAGE_KEYS } from '@/lib/constants'
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
+import { MapPin } from 'lucide-vue-next';
 import {
   ScrollAreaRoot,
   ScrollAreaViewport,
   ScrollAreaScrollbar,
   ScrollAreaThumb,
   ScrollAreaCorner
-} from 'radix-vue'
+} from 'radix-vue';
+import { computed, ref, nextTick } from 'vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { DEFAULT_COMPANY_LOGO_URL, MANDATORY_STAGE_KEYS } from '@/lib/constants';
+import type { JobData, StageData } from '@/lib/types';
 
 const DEFAULT_COLUMNS: StageData[] = [
   { key: 'Saved', label: 'Saved', color: 'bg-slate-500' },
@@ -29,12 +29,12 @@ const DEFAULT_COLUMNS: StageData[] = [
   { key: 'Offer', label: 'Offer', color: 'bg-emerald-500' },
   { key: 'Rejected', label: 'Rejected', color: 'bg-red-500' },
   { key: 'Withdrawn', label: 'Withdrawn', color: 'bg-zinc-400' }
-]
+];
 
 const props = defineProps<{
   jobs: JobData[]
   stages?: StageData[]
-}>()
+}>();
 
 const emit = defineEmits<{
   (e: 'edit', job: JobData): void
@@ -44,7 +44,7 @@ const emit = defineEmits<{
   (e: 'add-stage', stage: StageData): void
   (e: 'update-stage', payload: { oldKey: string; stage: StageData }): void
   (e: 'add-job', payload: { title: string; company_name?: string; status: string }): void
-}>()
+}>();
 
 const STAGE_COLORS = [
   'bg-slate-500',
@@ -57,159 +57,159 @@ const STAGE_COLORS = [
   'bg-cyan-500',
   'bg-pink-500',
   'bg-teal-500'
-]
+];
 
 // ── Add stage state ───────────────────────────────────────────────────────────
-const showAddStage = ref(false)
-const newStageName = ref('')
-const addStageInputRef = ref<HTMLInputElement | null>(null)
+const showAddStage = ref(false);
+const newStageName = ref('');
+const addStageInputRef = ref<HTMLInputElement | null>(null);
 
 // ── Stage rename state ────────────────────────────────────────────────────────
-const editingStageKey = ref<string | null>(null)
-const editingStageLabel = ref('')
+const editingStageKey = ref<string | null>(null);
+const editingStageLabel = ref('');
 
 // ── Quick-add card state ──────────────────────────────────────────────────────
-const addingJobForStatus = ref<string | null>(null)
-const quickAddTitle = ref('')
-const quickAddCompany = ref('')
-const quickTitleInputRef = ref<HTMLInputElement | null>(null)
+const addingJobForStatus = ref<string | null>(null);
+const quickAddTitle = ref('');
+const quickAddCompany = ref('');
+const quickTitleInputRef = ref<HTMLInputElement | null>(null);
 
 function isMandatory(key: string): boolean {
-  return MANDATORY_STAGE_KEYS.includes(key)
+  return MANDATORY_STAGE_KEYS.includes(key);
 }
 
 function getNextColor(): string {
-  const used = (props.stages ?? DEFAULT_COLUMNS).map((s) => s.color)
-  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0]
+  const used = (props.stages ?? DEFAULT_COLUMNS).map((s) => s.color);
+  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0];
 }
 
 async function openAddStage() {
-  showAddStage.value = true
-  await nextTick()
-  addStageInputRef.value?.focus()
+  showAddStage.value = true;
+  await nextTick();
+  addStageInputRef.value?.focus();
 }
 
 function cancelAddStage() {
-  showAddStage.value = false
-  newStageName.value = ''
+  showAddStage.value = false;
+  newStageName.value = '';
 }
 
 function submitAddStage() {
-  const key = newStageName.value.trim()
-  if (!key) return
-  emit('add-stage', { key, label: key, color: getNextColor() })
-  newStageName.value = ''
-  showAddStage.value = false
+  const key = newStageName.value.trim();
+  if (!key) return;
+  emit('add-stage', { key, label: key, color: getNextColor() });
+  newStageName.value = '';
+  showAddStage.value = false;
 }
 
 function startEditStage(stage: StageData) {
-  if (isMandatory(stage.key)) return
-  editingStageKey.value = stage.key
-  editingStageLabel.value = stage.label
+  if (isMandatory(stage.key)) return;
+  editingStageKey.value = stage.key;
+  editingStageLabel.value = stage.label;
 }
 
 function commitEditStage() {
-  if (!editingStageKey.value) return
+  if (!editingStageKey.value) return;
   if (isMandatory(editingStageKey.value)) {
-    cancelEditStage()
-    return
+    cancelEditStage();
+    return;
   }
-  const label = editingStageLabel.value.trim()
+  const label = editingStageLabel.value.trim();
   if (!label) {
-    cancelEditStage()
-    return
+    cancelEditStage();
+    return;
   }
-  const stage = (props.stages ?? DEFAULT_COLUMNS).find((s) => s.key === editingStageKey.value)
+  const stage = (props.stages ?? DEFAULT_COLUMNS).find((s) => s.key === editingStageKey.value);
   if (stage && label !== stage.label) {
-    const oldKey = stage.key
-    emit('update-stage', { oldKey, stage: { ...stage, key: label, label } })
+    const oldKey = stage.key;
+    emit('update-stage', { oldKey, stage: { ...stage, key: label, label } });
   }
-  editingStageKey.value = null
+  editingStageKey.value = null;
 }
 
 function cancelEditStage() {
-  editingStageKey.value = null
-  editingStageLabel.value = ''
+  editingStageKey.value = null;
+  editingStageLabel.value = '';
 }
 
 async function startQuickAdd(statusKey: string) {
-  addingJobForStatus.value = statusKey
-  quickAddTitle.value = ''
-  quickAddCompany.value = ''
-  await nextTick()
-  quickTitleInputRef.value?.focus()
+  addingJobForStatus.value = statusKey;
+  quickAddTitle.value = '';
+  quickAddCompany.value = '';
+  await nextTick();
+  quickTitleInputRef.value?.focus();
 }
 
 function commitQuickAdd() {
   if (!quickAddTitle.value.trim() || !quickAddCompany.value.trim() || !addingJobForStatus.value)
-    return
+    return;
   emit('add-job', {
     title: quickAddTitle.value.trim(),
     company_name: quickAddCompany.value.trim() || undefined,
     status: addingJobForStatus.value
-  })
-  addingJobForStatus.value = null
+  });
+  addingJobForStatus.value = null;
 }
 
 function cancelQuickAdd() {
-  addingJobForStatus.value = null
+  addingJobForStatus.value = null;
 }
 
-const COLUMNS = computed(() => (props.stages?.length ? props.stages : DEFAULT_COLUMNS))
+const COLUMNS = computed(() => (props.stages?.length ? props.stages : DEFAULT_COLUMNS));
 
 const jobsByStatus = computed(() => {
-  const map: Record<string, JobData[]> = {}
+  const map: Record<string, JobData[]> = {};
   COLUMNS.value.forEach((col) => {
-    map[col.key] = []
-  })
-  const firstKey = COLUMNS.value[0]?.key ?? 'Saved'
+    map[col.key] = [];
+  });
+  const firstKey = COLUMNS.value[0]?.key ?? 'Saved';
   props.jobs.forEach((job) => {
     if (map[job.status] !== undefined) {
-      map[job.status].push(job)
+      map[job.status].push(job);
     } else {
-      if (!map[firstKey]) map[firstKey] = []
-      map[firstKey].push(job)
+      if (!map[firstKey]) map[firstKey] = [];
+      map[firstKey].push(job);
     }
-  })
-  return map
-})
+  });
+  return map;
+});
 
 // ── Drag-and-drop ─────────────────────────────────────────────────────────────
-let draggedJob: JobData | null = null
+let draggedJob: JobData | null = null;
 
 function onDragStart(job: JobData) {
-  draggedJob = job
+  draggedJob = job;
 }
 
 function onDragOver(event: DragEvent) {
   event.preventDefault()
-  ;(event.currentTarget as HTMLElement).classList.add('ring-2', 'ring-primary/50')
+  ;(event.currentTarget as HTMLElement).classList.add('ring-2', 'ring-primary/50');
 }
 
 function onDragLeave(event: DragEvent) {
-  ;(event.currentTarget as HTMLElement).classList.remove('ring-2', 'ring-primary/50')
+  (event.currentTarget as HTMLElement).classList.remove('ring-2', 'ring-primary/50');
 }
 
 function onDrop(event: DragEvent, targetStatus: string) {
   event.preventDefault()
-  ;(event.currentTarget as HTMLElement).classList.remove('ring-2', 'ring-primary/50')
+  ;(event.currentTarget as HTMLElement).classList.remove('ring-2', 'ring-primary/50');
   if (draggedJob && draggedJob.status !== targetStatus) {
-    emit('status-change', draggedJob.id, targetStatus)
+    emit('status-change', draggedJob.id, targetStatus);
   }
-  draggedJob = null
+  draggedJob = null;
 }
 
 function openUrl(url: string) {
-  window.open(url, '_blank')
+  window.open(url, '_blank');
 }
 
 function formatDate(dateStr?: string) {
-  if (!dateStr) return null
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function locationText(job: JobData): string {
-  return [job.location?.city, job.location?.country].filter(Boolean).join(', ')
+  return [job.location?.city, job.location?.country].filter(Boolean).join(', ');
 }
 </script>
 

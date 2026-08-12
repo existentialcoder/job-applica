@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { toast } from '@/lib/toast'
-import type { JobData, JobCreatePayload, StageData, ATSReport, BoardData } from '@/lib/types'
+import { Filter } from 'lucide-vue-next';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import {
+  TableApplications,
+  BoardApplications,
+  AddJobModal,
+  JobDetailPanel,
+  JobFiltersPanel
+} from '@/components/applications';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -10,70 +19,61 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Filter } from 'lucide-vue-next'
-import dataservice, { type JobFilters } from '@/lib/dataservice'
-import { emptyJobFilters, type JobFiltersFormValues } from '@/lib/jobFilters'
-import { DEFAULT_BOARD_STAGES, atsTiersFilterRange } from '@/lib/constants'
-import {
-  TableApplications,
-  BoardApplications,
-  AddJobModal,
-  JobDetailPanel,
-  JobFiltersPanel
-} from '@/components/applications'
-import { useCompaniesStore } from '@/stores/companies'
-import { useExtensionLink } from '@/composables/useExtensionLink'
+} from '@/components/ui/select';
+import { useExtensionLink } from '@/composables/useExtensionLink';
+import { ATS_SCORE_TIERS, DEFAULT_BOARD_STAGES } from '@/lib/constants';
+import dataservice, { type JobFilters } from '@/lib/dataservice';
+import { emptyJobFilters, type JobFiltersFormValues } from '@/lib/jobFilters';
+import { toast } from '@/lib/toast';
+import type { JobData, JobCreatePayload, StageData, ATSReport, BoardData } from '@/lib/types';
+import { useCompaniesStore } from '@/stores/companies';
 
-const companiesStore = useCompaniesStore()
-const { storeUrl: extensionInstallLink } = useExtensionLink()
+const companiesStore = useCompaniesStore();
+const { storeUrl: extensionInstallLink } = useExtensionLink();
 
 const props = defineProps<{
-  boardId?: number
-  stages?: StageData[]
-  defaultStatus?: string
-}>()
+  boardId?: number;
+  stages?: StageData[];
+  defaultStatus?: string;
+}>();
 
 const emit = defineEmits<{
-  (e: 'stages-updated', stages: StageData[]): void
-}>()
+  (e: 'stages-updated', stages: StageData[]): void;
+}>();
 
-const selectedLayout = ref<'list' | 'board'>('list')
+const selectedLayout = ref<'list' | 'board'>('list');
 
-const allJobs = ref<JobData[]>([])
-const totalJobs = ref(0)
-const isLoading = ref(false)
-const filtersApplied = ref(false)
+const allJobs = ref<JobData[]>([]);
+const totalJobs = ref(0);
+const isLoading = ref(false);
+const filtersApplied = ref(false);
 
-const selectedJobs = ref<JobData[]>([])
-const isModalOpen = ref(false) // add new job modal
-const isPanelOpen = ref(false) // job detail slide-over
-const editingJob = ref<JobData | null>(null)
-const panelInitialTab = ref<'details' | 'ats'>('details')
+const selectedJobs = ref<JobData[]>([]);
+const isModalOpen = ref(false);
+const isPanelOpen = ref(false);
+const editingJob = ref<JobData | null>(null);
+const panelInitialTab = ref<'details' | 'ats'>('details');
 
-const searchQuery = ref('')
-const filterPlatform = ref('__all__')
-const currentPage = ref(1)
-const pageSize = 20
+const searchQuery = ref('');
+const filterPlatform = ref('__all__');
+const currentPage = ref(1);
+const pageSize = 20;
 
-const isFiltersPanelOpen = ref(false)
-const jobFilters = reactive<JobFiltersFormValues>(emptyJobFilters())
-const boardOptions = ref<{ label: string; value: string }[]>([])
+const isFiltersPanelOpen = ref(false);
+const jobFilters = reactive<JobFiltersFormValues>(emptyJobFilters());
+const boardOptions = ref<{ label: string; value: string }[]>([]);
 
 const statusOptions = ref<string[]>(
   props.stages?.map((s) => s.label) ?? DEFAULT_BOARD_STAGES.map((s) => s.label)
-)
+);
 
 watch(
   () => props.stages,
   (stages) => {
-    if (stages?.length) statusOptions.value = stages.map((s) => s.label)
+    if (stages?.length) statusOptions.value = stages.map((s) => s.label);
   },
   { immediate: true }
-)
+);
 
 const LIST_FILTER_KEY_MAP = [
   ['status', 'status'],
@@ -81,217 +81,234 @@ const LIST_FILTER_KEY_MAP = [
   ['company', 'company'],
   ['workModel', 'work_model'],
   ['position', 'position']
-] as const
+] as const;
+
+const noApplicationsMessage = computed(() =>
+  filtersApplied.value
+    ? 'Try adjusting your filters or search query.'
+    : `Click <b>Add Job</b> or use the <a href="${extensionInstallLink}" class="text-primary hover:underline">browser extension</a> to start tracking your applications.`
+);
 
 async function loadJobs() {
-  isLoading.value = true
+  isLoading.value = true;
   const filters: JobFilters = {
     page: currentPage.value,
     per_page: pageSize
-  }
-  if (searchQuery.value.trim()) filters.query = searchQuery.value.trim()
+  };
+  if (searchQuery.value.trim()) filters.query = searchQuery.value.trim();
   if (filterPlatform.value && filterPlatform.value !== '__all__')
-    filters.source_platform = filterPlatform.value
+    filters.source_platform = filterPlatform.value;
 
   if (props.boardId) {
-    filters.board_id = props.boardId
+    filters.board_id = props.boardId;
   } else if (jobFilters.boardIds.length) {
-    filters.board_ids = jobFilters.boardIds.join(',')
+    filters.board_ids = jobFilters.boardIds.join(',');
   }
 
   for (const [formKey, apiKey] of LIST_FILTER_KEY_MAP) {
-    const values = jobFilters[formKey]
-    if (values.length) filters[apiKey] = values.join(',')
+    const values = jobFilters[formKey];
+    if (values.length) filters[apiKey] = values.join(',');
   }
 
-  if (jobFilters.city.trim()) filters.city = jobFilters.city.trim()
-  if (jobFilters.appliedRange.from) filters.applied_from = jobFilters.appliedRange.from
-  if (jobFilters.appliedRange.to) filters.applied_to = jobFilters.appliedRange.to
-  if (jobFilters.createdRange.from) filters.created_from = jobFilters.createdRange.from
-  if (jobFilters.createdRange.to) filters.created_to = jobFilters.createdRange.to
-  const atsRange = atsTiersFilterRange(jobFilters.atsScoreTiers)
-  if (atsRange) {
-    filters.ats_score_min = atsRange.min
-    filters.ats_score_max = atsRange.max
+  if (jobFilters.city.trim()) {
+    filters.city = jobFilters.city.trim();
+  }
+  if (jobFilters.appliedRange.from) {
+    filters.applied_from = jobFilters.appliedRange.from;
+  }
+  if (jobFilters.appliedRange.to) {
+    filters.applied_to = jobFilters.appliedRange.to;
+  }
+  if (jobFilters.createdRange.from) {
+    filters.created_from = jobFilters.createdRange.from;
+  }
+  if (jobFilters.createdRange.to) {
+    filters.created_to = jobFilters.createdRange.to;
   }
 
-  const res = await dataservice.getJobs(filters)
-  allJobs.value = res.items
-  totalJobs.value = res.total
-  isLoading.value = false
+  const atsTier = ATS_SCORE_TIERS.find((t) => t.key === jobFilters.atsScoreTier);
+  if (atsTier) {
+    filters.ats_score_min = atsTier.min;
+    filters.ats_score_max = atsTier.max;
+  }
+
+  const res = await dataservice.getJobs(filters);
+  allJobs.value = res.items;
+  totalJobs.value = res.total;
+  isLoading.value = false;
 }
 
 function onFiltersApplied(next: JobFiltersFormValues) {
-  filtersApplied.value = true
-  Object.assign(jobFilters, next)
-  currentPage.value = 1
-  loadJobs()
+  filtersApplied.value = true;
+  Object.assign(jobFilters, next);
+  currentPage.value = 1;
+  loadJobs();
 }
 
 watch([searchQuery, filterPlatform], () => {
-  currentPage.value = 1
-  loadJobs()
-})
+  currentPage.value = 1;
+  loadJobs();
+});
 
 function onTableSelectionChange(val: JobData[]) {
-  selectedJobs.value = val
+  selectedJobs.value = val;
 }
 
 async function deleteSelectedJobs() {
-  if (selectedJobs.value.length === 0) return
-  const count = selectedJobs.value.length
+  if (selectedJobs.value.length === 0) return;
+  const count = selectedJobs.value.length;
   try {
-    await Promise.all(selectedJobs.value.map((job) => dataservice.deleteJob(job.id)))
-    selectedJobs.value = []
-    await loadJobs()
-    toast.success(`${count} job${count > 1 ? 's' : ''} deleted`)
+    await Promise.all(selectedJobs.value.map((job) => dataservice.deleteJob(job.id)));
+    selectedJobs.value = [];
+    await loadJobs();
+    toast.success(`${count} job${count > 1 ? 's' : ''} deleted`);
   } catch {
-    toast.error('Failed to delete selected jobs')
+    toast.error('Failed to delete selected jobs');
   }
 }
 
 function openAddModal() {
-  editingJob.value = null
-  isModalOpen.value = true
+  editingJob.value = null;
+  isModalOpen.value = true;
 }
 
 function openEditModal(job: JobData, tab: 'details' | 'ats' = 'details') {
-  editingJob.value = job
-  panelInitialTab.value = tab
-  isPanelOpen.value = true
-  router.replace({ query: { ...route.query, job: String(job.id), tab } })
+  editingJob.value = job;
+  panelInitialTab.value = tab;
+  isPanelOpen.value = true;
+  router.replace({ query: { ...route.query, job: String(job.id), tab } });
 }
 
 function handlePanelTabChange(tab: 'details' | 'ats') {
-  router.replace({ query: { ...route.query, tab } })
+  router.replace({ query: { ...route.query, tab } });
 }
 
 watch(isPanelOpen, (open) => {
   if (!open) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { job: _j, tab: _t, ...rest } = route.query
-    router.replace({ query: rest })
+    const { job: _j, tab: _t, ...rest } = route.query;
+    router.replace({ query: rest });
   }
-})
+});
 
 async function handleSaveJob(payload: JobCreatePayload) {
-  if (props.boardId) payload = { ...payload, board_id: props.boardId }
+  if (props.boardId) payload = { ...payload, board_id: props.boardId };
   try {
-    await dataservice.createJob(payload)
-    await companiesStore.refresh()
-    await loadJobs()
-    toast.success('Job added successfully')
+    await dataservice.createJob(payload);
+    await companiesStore.refresh();
+    await loadJobs();
+    toast.success('Job added successfully');
   } catch {
-    toast.error('Failed to add job')
+    toast.error('Failed to add job');
   }
 }
 
 async function handleSaveEdit(jobId: number, payload: JobCreatePayload) {
   if (props.boardId && payload.board_id === undefined)
-    payload = { ...payload, board_id: props.boardId }
-  const updatedJob = await dataservice.updateJob(jobId, payload)
+    payload = { ...payload, board_id: props.boardId };
+  const updatedJob = await dataservice.updateJob(jobId, payload);
   if (updatedJob) {
-    await companiesStore.refresh()
-    toast.success('Job updated successfully')
-    await loadJobs()
+    await companiesStore.refresh();
+    toast.success('Job updated successfully');
+    await loadJobs();
   } else {
-    toast.error('Failed to update job')
+    toast.error('Failed to update job');
   }
 }
 
 function handleScoreUpdated(jobId: number, update: { ats_score: number; ats_report: ATSReport }) {
   if (editingJob.value?.id === jobId) {
-    editingJob.value = { ...editingJob.value, ...update }
+    editingJob.value = { ...editingJob.value, ...update };
   }
 }
 
 async function handleStatusChange(jobId: number, newStatus: string) {
-  const idx = allJobs.value.findIndex((j) => j.id === jobId)
-  const prevStatus = allJobs.value[idx]?.status
-  const today = new Date().toISOString().slice(0, 10)
-  const autoDate = newStatus === 'Applied' && !allJobs.value[idx]?.applied_date ? today : undefined
+  const idx = allJobs.value.findIndex((j) => j.id === jobId);
+  const prevStatus = allJobs.value[idx]?.status;
+  const today = new Date().toISOString().slice(0, 10);
+  const autoDate = newStatus === 'Applied' && !allJobs.value[idx]?.applied_date ? today : undefined;
   if (idx !== -1)
     allJobs.value[idx] = {
       ...allJobs.value[idx],
       status: newStatus,
       ...(autoDate ? { applied_date: autoDate } : {})
-    }
+    };
   try {
     const updated = await dataservice.updateJob(jobId, {
       status: newStatus,
       ...(autoDate ? { applied_date: autoDate } : {})
-    })
+    });
     if (!updated && idx !== -1 && prevStatus !== undefined) {
-      allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus }
-      toast.error('Failed to update status')
+      allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus };
+      toast.error('Failed to update status');
     }
   } catch {
     if (idx !== -1 && prevStatus !== undefined) {
-      allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus }
+      allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus };
     }
-    toast.error('Failed to update status')
+    toast.error('Failed to update status');
   }
 }
 
 async function handleDeleteJob(jobId: number) {
   try {
-    await dataservice.deleteJob(jobId)
-    await loadJobs()
-    toast.success('Job deleted')
+    await dataservice.deleteJob(jobId);
+    await loadJobs();
+    toast.success('Job deleted');
   } catch {
-    toast.error('Failed to delete job')
+    toast.error('Failed to delete job');
   }
 }
 
 async function handleAddStage(stage: StageData) {
-  if (!props.boardId || !props.stages) return
-  const newStages = [...props.stages, stage]
+  if (!props.boardId || !props.stages) return;
+  const newStages = [...props.stages, stage];
   try {
-    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages })
-    if (updated) emit('stages-updated', updated.stages)
-    else toast.error('Failed to add stage')
+    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
+    if (updated) emit('stages-updated', updated.stages);
+    else toast.error('Failed to add stage');
   } catch {
-    toast.error('Failed to add stage')
+    toast.error('Failed to add stage');
   }
 }
 
 async function handleRemoveStage(key: string) {
-  if (!props.boardId || !props.stages) return
-  const newStages = props.stages.filter((s) => s.key !== key)
-  if (newStages.length === 0) return
+  if (!props.boardId || !props.stages) return;
+  const newStages = props.stages.filter((s) => s.key !== key);
+  if (newStages.length === 0) return;
   try {
-    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages })
+    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
     if (updated) {
-      emit('stages-updated', updated.stages)
-      await loadJobs()
+      emit('stages-updated', updated.stages);
+      await loadJobs();
     } else {
-      toast.error('Failed to remove stage')
+      toast.error('Failed to remove stage');
     }
   } catch {
-    toast.error('Failed to remove stage')
+    toast.error('Failed to remove stage');
   }
 }
 
 async function handleUpdateStage(payload: { oldKey: string; stage: StageData }) {
-  if (!props.boardId || !props.stages) return
-  const { oldKey, stage } = payload
-  const newStages = props.stages.map((s) => (s.key === oldKey ? stage : s))
-  const keyRenames = oldKey !== stage.key ? { [oldKey]: stage.key } : undefined
+  if (!props.boardId || !props.stages) return;
+  const { oldKey, stage } = payload;
+  const newStages = props.stages.map((s) => (s.key === oldKey ? stage : s));
+  const keyRenames = oldKey !== stage.key ? { [oldKey]: stage.key } : undefined;
   const updated = await dataservice.updateBoard(props.boardId, {
     stages: newStages,
     key_renames: keyRenames
-  })
+  });
   if (updated) {
-    emit('stages-updated', updated.stages)
-    if (keyRenames) await loadJobs()
+    emit('stages-updated', updated.stages);
+    if (keyRenames) await loadJobs();
   }
 }
 
 async function handleQuickAddJob(payload: {
-  title: string
-  company_name?: string
-  status: string
-  work_model?: string
+  title: string;
+  company_name?: string;
+  status: string;
+  work_model?: string;
 }) {
   const fullPayload: JobCreatePayload = {
     title: payload.title,
@@ -299,24 +316,24 @@ async function handleQuickAddJob(payload: {
     status: payload.status,
     work_model: payload.work_model,
     board_id: props.boardId
-  }
+  };
   try {
-    await dataservice.createJob(fullPayload)
-    await companiesStore.refresh()
-    await loadJobs()
-    toast.success('Job added')
+    await dataservice.createJob(fullPayload);
+    await companiesStore.refresh();
+    await loadJobs();
+    toast.success('Job added');
   } catch {
-    toast.error('Failed to add job')
+    toast.error('Failed to add job');
   }
 }
 
 function clearFilters() {
-  filtersApplied.value = false
-  searchQuery.value = ''
-  filterPlatform.value = '__all__'
-  Object.assign(jobFilters, emptyJobFilters())
-  currentPage.value = 1
-  loadJobs()
+  filtersApplied.value = false;
+  searchQuery.value = '';
+  filterPlatform.value = '__all__';
+  Object.assign(jobFilters, emptyJobFilters());
+  currentPage.value = 1;
+  loadJobs();
 }
 
 const hasActiveFilters = () =>
@@ -334,39 +351,39 @@ const hasActiveFilters = () =>
     jobFilters.appliedRange.to ||
     jobFilters.createdRange.from ||
     jobFilters.createdRange.to ||
-    jobFilters.atsScoreTiers.length
-  )
+    jobFilters.atsScoreTier.length
+  );
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
 onMounted(async () => {
-  const settings = await dataservice.getSettings()
+  const settings = await dataservice.getSettings();
   if (settings.view_mode === 'board' || settings.view_mode === 'list') {
-    selectedLayout.value = settings.view_mode as 'list' | 'board'
+    selectedLayout.value = settings.view_mode as 'list' | 'board';
   }
   if (settings.saved_job_filters && typeof settings.saved_job_filters === 'object') {
-    Object.assign(jobFilters, emptyJobFilters(), settings.saved_job_filters)
+    Object.assign(jobFilters, emptyJobFilters(), settings.saved_job_filters);
   }
   if (!props.boardId) {
-    const boards: BoardData[] = await dataservice.getBoards()
-    boardOptions.value = boards.map((b) => ({ label: b.name, value: String(b.id) }))
+    const boards: BoardData[] = await dataservice.getBoards();
+    boardOptions.value = boards.map((b) => ({ label: b.name, value: String(b.id) }));
   }
-  companiesStore.fetch()
+  companiesStore.fetch();
   if (route.query.query) {
-    searchQuery.value = route.query.query as string
+    searchQuery.value = route.query.query as string;
   }
-  await loadJobs()
+  await loadJobs();
   if (route.query.job) {
-    const job = await dataservice.getJob(Number(route.query.job))
-    const tab = route.query.tab === 'ats' ? 'ats' : 'details'
-    if (job) openEditModal(job, tab)
+    const job = await dataservice.getJob(Number(route.query.job));
+    const tab = route.query.tab === 'ats' ? 'ats' : 'details';
+    if (job) openEditModal(job, tab);
   }
-})
+});
 
 watch(selectedLayout, (val) => {
-  dataservice.updateSettings({ view_mode: val })
-})
+  dataservice.updateSettings({ view_mode: val });
+});
 </script>
 
 <template>
@@ -511,12 +528,7 @@ watch(selectedLayout, (val) => {
       <p class="text-muted-foreground font-medium">
         No applications {{ filtersApplied ? 'matching your filters.' : 'tracked yet.' }}
       </p>
-      <p class="text-sm text-muted-foreground">
-        {{ filtersApplied ? 'Try adjusting your filters or search query.' : `Click "Add Job" or use
-        the
-        <a href="${extensionInstallLink}" class="text-primary hover:underline">browser extension</a>
-        to start tracking your applications.` }}
-      </p>
+      <p class="text-sm text-muted-foreground" v-html="noApplicationsMessage"></p>
     </div>
 
     <!-- Table view -->

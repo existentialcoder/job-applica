@@ -1,148 +1,148 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import type { BoardData, JobData, JobCreatePayload } from '@/lib/types'
-import dataservice from '@/lib/dataservice'
-import { Button } from '@/components/ui/button'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { BoardSettingsModal } from '@/components/applications';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import Applications from '@/views/Applications.vue'
-import { BoardSettingsModal } from '@/components/applications'
-import { useAppStore } from '@/stores/app'
-import { DEFAULT_BOARD_STAGES } from '@/lib/constants'
+} from '@/components/ui/dropdown-menu';
+import { DEFAULT_BOARD_STAGES } from '@/lib/constants';
+import dataservice from '@/lib/dataservice';
+import type { BoardData, JobData, JobCreatePayload } from '@/lib/types';
+import { useAppStore } from '@/stores/app';
+import Applications from '@/views/Applications.vue';
 
 const DEFAULT_COLOR_BY_KEY: Record<string, string> = Object.fromEntries(
   DEFAULT_BOARD_STAGES.map((s) => [s.key, s.color])
-)
+);
 
-const route = useRoute()
-const router = useRouter()
-const appStore = useAppStore()
+const route = useRoute();
+const router = useRouter();
+const appStore = useAppStore();
 
-const boardId = computed(() => Number(route.params.boardId))
-const board = ref<BoardData | null>(null)
-const isLoading = ref(true)
-const isNotFound = ref(false)
+const boardId = computed(() => Number(route.params.boardId));
+const board = ref<BoardData | null>(null);
+const isLoading = ref(true);
+const isNotFound = ref(false);
 
-const allBoards = ref<BoardData[]>([])
-const isBoardSwitcherOpen = ref(false)
+const allBoards = ref<BoardData[]>([]);
+const isBoardSwitcherOpen = ref(false);
 
 function switchBoard(target: BoardData) {
-  isBoardSwitcherOpen.value = false
-  if (target.id !== boardId.value) router.push(`/boards/${target.id}`)
+  isBoardSwitcherOpen.value = false;
+  if (target.id !== boardId.value) router.push(`/boards/${target.id}`);
 }
 
 function goToAllApplications() {
-  isBoardSwitcherOpen.value = false
-  router.push('/boards/all')
+  isBoardSwitcherOpen.value = false;
+  router.push('/boards/all');
 }
 
-const isSettingsOpen = ref(false)
-const isSaving = ref(false)
+const isSettingsOpen = ref(false);
+const isSaving = ref(false);
 
-const isDeleteOpen = ref(false)
-const isDeleting = ref(false)
+const isDeleteOpen = ref(false);
+const isDeleting = ref(false);
 
-const isImporting = ref(false)
-const importInputRef = ref<HTMLInputElement | null>(null)
-const refreshCounter = ref(0)
+const isImporting = ref(false);
+const importInputRef = ref<HTMLInputElement | null>(null);
+const refreshCounter = ref(0);
 
 async function loadBoard() {
-  isLoading.value = true
-  const data = await dataservice.getBoard(boardId.value)
+  isLoading.value = true;
+  const data = await dataservice.getBoard(boardId.value);
   if (!data) {
-    isNotFound.value = true
-    isLoading.value = false
-    return
+    isNotFound.value = true;
+    isLoading.value = false;
+    return;
   }
 
   // Auto-heal stages where key ≠ label (artifact of the old rename bug), and mandatory
   // stages missing a color (artifact of boards created before default colors were locked in).
   // Silently migrate jobs and fix the stored keys/colors so the UI and DB stay in sync.
-  const mismatched = data.stages.filter((s) => s.key !== s.label)
-  const missingColor = data.stages.filter((s) => !s.color && DEFAULT_COLOR_BY_KEY[s.key])
+  const mismatched = data.stages.filter((s) => s.key !== s.label);
+  const missingColor = data.stages.filter((s) => !s.color && DEFAULT_COLOR_BY_KEY[s.key]);
   if (mismatched.length > 0 || missingColor.length > 0) {
-    const keyRenames: Record<string, string> = {}
+    const keyRenames: Record<string, string> = {};
     const fixedStages = data.stages.map((s) => {
-      let fixed = s
+      let fixed = s;
       if (s.key !== s.label) {
-        keyRenames[s.key] = s.label
-        fixed = { ...fixed, key: s.label }
+        keyRenames[s.key] = s.label;
+        fixed = { ...fixed, key: s.label };
       }
       if (!fixed.color && DEFAULT_COLOR_BY_KEY[fixed.key]) {
-        fixed = { ...fixed, color: DEFAULT_COLOR_BY_KEY[fixed.key] }
+        fixed = { ...fixed, color: DEFAULT_COLOR_BY_KEY[fixed.key] };
       }
-      return fixed
-    })
+      return fixed;
+    });
     const fixed = await dataservice.updateBoard(data.id, {
       stages: fixedStages,
       key_renames: keyRenames
-    })
-    board.value = fixed ?? data
+    });
+    board.value = fixed ?? data;
   } else {
-    board.value = data
+    board.value = data;
   }
 
-  appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: board.value!.name }])
-  isLoading.value = false
+  appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: board.value!.name }]);
+  isLoading.value = false;
 }
 
 async function saveSettings(payload: {
-  name: string
-  description: string
-  color: string
-  stages: { key: string; label: string; color: string }[]
-  key_renames: Record<string, string>
+  name: string;
+  description: string;
+  color: string;
+  stages: { key: string; label: string; color: string }[];
+  key_renames: Record<string, string>;
 }) {
-  if (!board.value) return
-  isSaving.value = true
+  if (!board.value) return;
+  isSaving.value = true;
   const updated = await dataservice.updateBoard(board.value.id, {
     name: payload.name,
     color: payload.color,
     description: payload.description || undefined,
     stages: payload.stages,
     key_renames: Object.keys(payload.key_renames).length > 0 ? payload.key_renames : undefined
-  })
-  isSaving.value = false
+  });
+  isSaving.value = false;
   if (updated) {
-    board.value = updated
-    const idx = allBoards.value.findIndex((b) => b.id === updated.id)
-    if (idx !== -1) allBoards.value[idx] = updated
-    appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: updated.name }])
-    isSettingsOpen.value = false
-    if (Object.keys(payload.key_renames).length > 0) refreshCounter.value++
+    board.value = updated;
+    const idx = allBoards.value.findIndex((b) => b.id === updated.id);
+    if (idx !== -1) allBoards.value[idx] = updated;
+    appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: updated.name }]);
+    isSettingsOpen.value = false;
+    if (Object.keys(payload.key_renames).length > 0) refreshCounter.value++;
   }
 }
 
 async function confirmDelete() {
-  if (!board.value) return
-  isDeleting.value = true
-  const ok = await dataservice.deleteBoard(board.value.id)
-  isDeleting.value = false
-  if (ok) router.push('/boards')
+  if (!board.value) return;
+  isDeleting.value = true;
+  const ok = await dataservice.deleteBoard(board.value.id);
+  isDeleting.value = false;
+  if (ok) router.push('/boards');
 }
 
 // ── Download ──────────────────────────────────────────────────────────────────
 function triggerDownload(content: string, filename: string, type: string) {
-  const blob = new Blob([content], { type })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function toCSV(jobs: JobData[]): string {
@@ -157,7 +157,7 @@ function toCSV(jobs: JobData[]): string {
     'source_url',
     'applied_date',
     'notes'
-  ]
+  ];
   const rows = jobs.map((job) =>
     [
       job.title,
@@ -175,72 +175,72 @@ function toCSV(jobs: JobData[]): string {
     ]
       .map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`)
       .join(',')
-  )
-  return [headers.join(','), ...rows].join('\r\n')
+  );
+  return [headers.join(','), ...rows].join('\r\n');
 }
 
 async function getAllBoardJobs() {
-  if (!board.value) return []
-  const PAGE = 100
-  const first = await dataservice.getJobs({ board_id: board.value.id, page: 1, per_page: PAGE })
-  const all = [...first.items]
-  const pages = Math.ceil(first.total / PAGE)
+  if (!board.value) return [];
+  const PAGE = 100;
+  const first = await dataservice.getJobs({ board_id: board.value.id, page: 1, per_page: PAGE });
+  const all = [...first.items];
+  const pages = Math.ceil(first.total / PAGE);
   for (let p = 2; p <= pages; p++) {
-    const res = await dataservice.getJobs({ board_id: board.value.id, page: p, per_page: PAGE })
-    all.push(...res.items)
+    const res = await dataservice.getJobs({ board_id: board.value.id, page: p, per_page: PAGE });
+    all.push(...res.items);
   }
-  return all
+  return all;
 }
 
 async function downloadAs(format: 'json' | 'csv') {
-  if (!board.value) return
-  const jobs = await getAllBoardJobs()
-  const name = board.value.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()
+  if (!board.value) return;
+  const jobs = await getAllBoardJobs();
+  const name = board.value.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
   if (format === 'json') {
-    triggerDownload(JSON.stringify(jobs, null, 2), `${name}-jobs.json`, 'application/json')
+    triggerDownload(JSON.stringify(jobs, null, 2), `${name}-jobs.json`, 'application/json');
   } else {
-    triggerDownload(toCSV(jobs), `${name}-jobs.csv`, 'text/csv;charset=utf-8;')
+    triggerDownload(toCSV(jobs), `${name}-jobs.csv`, 'text/csv;charset=utf-8;');
   }
 }
 
 // ── Import ────────────────────────────────────────────────────────────────────
 function triggerImport() {
-  importInputRef.value?.click()
+  importInputRef.value?.click();
 }
 
 function parseCSVLine(line: string): string[] {
-  const result: string[] = []
-  let current = ''
-  let inQuotes = false
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
     if (line[i] === '"') {
       if (inQuotes && line[i + 1] === '"') {
-        current += '"'
-        i++
-      } else inQuotes = !inQuotes
+        current += '"';
+        i++;
+      } else inQuotes = !inQuotes;
     } else if (line[i] === ',' && !inQuotes) {
-      result.push(current)
-      current = ''
+      result.push(current);
+      current = '';
     } else {
-      current += line[i]
+      current += line[i];
     }
   }
-  result.push(current)
-  return result
+  result.push(current);
+  return result;
 }
 
 async function handleImport(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file || !board.value) return
-  isImporting.value = true
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file || !board.value) return;
+  isImporting.value = true;
   try {
-    const text = await file.text()
-    const ext = file.name.split('.').pop()?.toLowerCase()
-    let payloads: JobCreatePayload[] = []
+    const text = await file.text();
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    let payloads: JobCreatePayload[] = [];
 
     if (ext === 'json') {
-      const data = JSON.parse(text)
-      const items: any[] = Array.isArray(data) ? data : [data]
+      const data = JSON.parse(text);
+      const items: any[] = Array.isArray(data) ? data : [data];
       payloads = items
         .filter((item) => item.title)
         .map((item) => ({
@@ -259,20 +259,20 @@ async function handleImport(event: Event) {
           applied_date: item.applied_date,
           notes: item.notes,
           board_id: board.value!.id
-        }))
+        }));
     } else if (ext === 'csv') {
-      const lines = text.split(/\r?\n/).filter((l) => l.trim())
-      if (lines.length < 2) return
-      const headers = parseCSVLine(lines[0])
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (lines.length < 2) return;
+      const headers = parseCSVLine(lines[0]);
       payloads = lines
         .slice(1)
         .map((line) => {
-          const values = parseCSVLine(line)
-          const row: Record<string, string> = {}
+          const values = parseCSVLine(line);
+          const row: Record<string, string> = {};
           headers.forEach((h, i) => {
-            row[h.trim()] = values[i] ?? ''
-          })
-          if (!row.title) return null
+            row[h.trim()] = values[i] ?? '';
+          });
+          if (!row.title) return null;
           return {
             title: row.title,
             company_name: row.company || undefined,
@@ -285,32 +285,32 @@ async function handleImport(event: Event) {
             applied_date: row.applied_date || undefined,
             notes: row.notes || undefined,
             board_id: board.value!.id
-          } as JobCreatePayload
+          } as JobCreatePayload;
         })
-        .filter((p): p is JobCreatePayload => p !== null)
+        .filter((p): p is JobCreatePayload => p !== null);
     }
 
     if (payloads.length > 0) {
-      await Promise.all(payloads.map((p) => dataservice.createJob(p)))
-      refreshCounter.value++
+      await Promise.all(payloads.map((p) => dataservice.createJob(p)));
+      refreshCounter.value++;
     }
   } catch (e) {
-    console.error('Import failed', e)
+    console.error('Import failed', e);
   } finally {
-    isImporting.value = false
-    if (importInputRef.value) importInputRef.value.value = ''
+    isImporting.value = false;
+    if (importInputRef.value) importInputRef.value.value = '';
   }
 }
 
-watch(boardId, loadBoard, { immediate: true })
+watch(boardId, loadBoard, { immediate: true });
 
 onMounted(async () => {
-  allBoards.value = await dataservice.getBoards()
-})
+  allBoards.value = await dataservice.getBoards();
+});
 
 onUnmounted(() => {
-  appStore.setBreadcrumbs([])
-})
+  appStore.setBreadcrumbs([]);
+});
 </script>
 
 <template>
@@ -456,7 +456,6 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Applications scoped to this board -->
       <Applications
         :key="`${board.id}-${refreshCounter}`"
         :board-id="board.id"
@@ -464,7 +463,7 @@ onUnmounted(() => {
         :default-status="board.stages[0]?.key"
         @stages-updated="
           (s) => {
-            if (board) board.stages = s
+            if (board) board.stages = s;
           }
         "
       />

@@ -1,3 +1,5 @@
+from typing import TypedDict
+
 from pydantic import BaseModel, HttpUrl
 
 from .base import BaseSchema
@@ -23,6 +25,6 @@ class SkillCreate(BaseModel):
     description: str | None = None
 
 
-class SkillFilterParams:
+class SkillFilterParams(TypedDict, total=False):
     name: str | None
     label: str | None

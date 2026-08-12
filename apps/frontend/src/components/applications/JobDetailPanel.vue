@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { toast } from '@/lib/toast'
-import type { JobData, JobCreatePayload, ATSReport, ResumeData, BoardData } from '@/lib/types'
-import { DEFAULT_COMPANY_LOGO_URL, DEFAULT_BOARD_STAGES, getAtsTier } from '@/lib/constants'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -17,36 +14,43 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Combobox } from '@/components/ui/combobox'
-import dataservice from '@/lib/dataservice'
-import { COUNTRY_OPTIONS } from '@/lib/constants'
-import CompanyCombobox from './CompanyCombobox.vue'
-import { DatePicker } from '@/components/ui/date-picker'
-import { useCompaniesStore } from '@/stores/companies'
+} from '@/components/ui/select';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  ATS_SCORE_TIERS,
+  COUNTRY_OPTIONS,
+  DEFAULT_COMPANY_LOGO_URL,
+  DEFAULT_BOARD_STAGES
+} from '@/lib/constants';
+import dataservice from '@/lib/dataservice';
+import { toast } from '@/lib/toast';
+import type { JobData, JobCreatePayload, ATSReport, ResumeData, BoardData } from '@/lib/types';
+import { useCompaniesStore } from '@/stores/companies';
+import CompanyCombobox from './CompanyCombobox.vue';
 
-const COUNTRY_COMBOBOX_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }))
+const COUNTRY_COMBOBOX_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }));
 
-const router = useRouter()
-const companiesStore = useCompaniesStore()
+const router = useRouter();
+const companiesStore = useCompaniesStore();
 
 const props = defineProps<{
-  open: boolean
-  job?: JobData | null
-  statusOptions?: string[]
-  initialTab?: 'details' | 'ats'
-}>()
+  open: boolean;
+  job?: JobData | null;
+  statusOptions?: string[];
+  initialTab?: 'details' | 'ats';
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:open', val: boolean): void
-  (e: 'save', id: number, payload: JobCreatePayload): void
-  (e: 'tab-change', tab: 'details' | 'ats'): void
-  (e: 'score-updated', jobId: number, update: { ats_score: number; ats_report: ATSReport }): void
-}>()
+  (e: 'update:open', val: boolean): void;
+  (e: 'save', id: number, payload: JobCreatePayload): void;
+  (e: 'tab-change', tab: 'details' | 'ats'): void;
+  (e: 'score-updated', jobId: number, update: { ats_score: number; ats_report: ATSReport }): void;
+}>();
 
-const POSITION_OPTIONS = ['Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager']
-const WORK_MODEL_OPTIONS = ['On-site', 'Remote', 'Hybrid']
+const POSITION_OPTIONS = ['Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager'];
+const WORK_MODEL_OPTIONS = ['On-site', 'Remote', 'Hybrid'];
 const PLATFORM_OPTIONS = [
   'LinkedIn',
   'Indeed',
@@ -55,191 +59,196 @@ const PLATFORM_OPTIONS = [
   'ZipRecruiter',
   'Jobscan',
   'Other'
-]
+];
 
-const activeTab = ref<'details' | 'ats'>('details')
+const activeTab = ref<'details' | 'ats'>('details');
 
 // ── Details fields ────────────────────────────────────────────────────────────
-const title = ref('')
-const companyName = ref('')
-const locationCity = ref('')
-const locationCountry = ref('')
-const boardId = ref<number | undefined>(undefined)
-const status = ref('')
-const position = ref('')
-const workModel = ref('')
-const salaryRange = ref('')
-const sourcePlatform = ref('')
-const sourceUrl = ref('')
-const appliedDate = ref('')
-const description = ref('')
-const notes = ref('')
+const title = ref('');
+const companyName = ref('');
+const locationCity = ref('');
+const locationCountry = ref('');
+const boardId = ref<number | undefined>(undefined);
+const status = ref('');
+const position = ref('');
+const workModel = ref('');
+const salaryRange = ref('');
+const sourcePlatform = ref('');
+const sourceUrl = ref('');
+const appliedDate = ref('');
+const description = ref('');
+const notes = ref('');
+
+function getAtsTier(score: number): AtsTier {
+  for (let i = ATS_SCORE_TIERS.length - 1; i >= 0; i--) {
+    if (score >= ATS_SCORE_TIERS[i].min) return ATS_SCORE_TIERS[i];
+  }
+  return ATS_SCORE_TIERS[0];
+}
 
 watch(status, (newVal) => {
   if (newVal === 'Applied' && !appliedDate.value) {
-    appliedDate.value = new Date().toISOString().slice(0, 10)
+    appliedDate.value = new Date().toISOString().slice(0, 10);
   }
-})
+});
 
-// ── Board switcher ────────────────────────────────────────────────────────────
-const allBoards = ref<BoardData[]>([])
+const allBoards = ref<BoardData[]>([]);
 
 onMounted(async () => {
-  allBoards.value = await dataservice.getBoards()
-})
-companiesStore.fetch()
+  allBoards.value = await dataservice.getBoards();
+});
+companiesStore.fetch();
 
 const boardOptions = computed(() =>
   allBoards.value.map((b) => ({ label: b.name, value: String(b.id) }))
-)
+);
 
 const currentBoardStageLabels = computed(() => {
-  const currentBoard = allBoards.value.find((b) => b.id === boardId.value)
-  if (currentBoard?.stages.length) return currentBoard.stages.map((s) => s.label)
+  const currentBoard = allBoards.value.find((b) => b.id === boardId.value);
+  if (currentBoard?.stages.length) return currentBoard.stages.map((s) => s.label);
   return props.statusOptions?.length
     ? props.statusOptions
-    : DEFAULT_BOARD_STAGES.map((s) => s.label)
-})
+    : DEFAULT_BOARD_STAGES.map((s) => s.label);
+});
 
 function onBoardChange(val: string) {
-  boardId.value = Number(val)
+  boardId.value = Number(val);
   if (!currentBoardStageLabels.value.includes(status.value)) {
-    status.value = currentBoardStageLabels.value[0] ?? 'Saved'
+    status.value = currentBoardStageLabels.value[0] ?? 'Saved';
   }
 }
 
 // ── Inline URL edit ──────────────────────────────────────────────────────────
-const isEditingUrl = ref(false)
-const pendingUrl = ref('')
-const urlInputRef = ref<HTMLInputElement | null>(null)
+const isEditingUrl = ref(false);
+const pendingUrl = ref('');
+const urlInputRef = ref<HTMLInputElement | null>(null);
 
 function startEditUrl() {
-  pendingUrl.value = sourceUrl.value
-  isEditingUrl.value = true
-  nextTick(() => urlInputRef.value?.focus())
+  pendingUrl.value = sourceUrl.value;
+  isEditingUrl.value = true;
+  nextTick(() => urlInputRef.value?.focus());
 }
 
 function confirmUrl() {
-  sourceUrl.value = pendingUrl.value.trim()
-  isEditingUrl.value = false
+  sourceUrl.value = pendingUrl.value.trim();
+  isEditingUrl.value = false;
 }
 
 function cancelUrl() {
-  isEditingUrl.value = false
+  isEditingUrl.value = false;
 }
 
-// ── ATS state ─────────────────────────────────────────────────────────────────
-const resumes = ref<ResumeData[]>([])
-const resumesLoaded = ref(false)
-const selectedResumeId = ref<string>('')
-const atsReport = ref<ATSReport | null>(null)
-const isScoring = ref(false)
+const resumes = ref<ResumeData[]>([]);
+const resumesLoaded = ref(false);
+const selectedResumeId = ref<string>('');
+const atsReport = ref<ATSReport | null>(null);
+const isScoring = ref(false);
 
 const selectedResumeName = computed(() => {
-  if (!selectedResumeId.value) return ''
-  const r = resumes.value.find((r) => String(r.id) === selectedResumeId.value)
-  return r?.original_name ?? ''
-})
+  if (!selectedResumeId.value) return '';
+  const r = resumes.value.find((r) => String(r.id) === selectedResumeId.value);
+  return r?.original_name ?? '';
+});
 
-const hasDescription = computed(() => !!description.value.trim())
-const hasLinkedCv = computed(() => !!selectedResumeId.value)
-const canScore = computed(() => hasDescription.value && hasLinkedCv.value && !isScoring.value)
+const hasDescription = computed(() => !!description.value.trim());
+const hasLinkedCv = computed(() => !!selectedResumeId.value);
+const canScore = computed(() => hasDescription.value && hasLinkedCv.value && !isScoring.value);
 
 function atsScoreColor(score: number) {
-  return getAtsTier(score).color
+  return getAtsTier(score).color;
 }
 
 function atsTierLabel(score: number) {
-  const tier = getAtsTier(score)
-  return { label: tier.label, cls: tier.badgeClass }
+  const tier = getAtsTier(score);
+  return { label: tier.label, cls: tier.badgeClass };
 }
 
 // SVG gauge helpers — full circle circumference for r=42: 2π*42 ≈ 263.9
-const CIRC = 263.9
+const CIRC = 263.9;
 function gaugeOffset(score: number) {
-  return CIRC - (score / 100) * CIRC
+  return CIRC - (score / 100) * CIRC;
 }
 
 async function loadResumes() {
-  if (resumesLoaded.value) return
-  resumes.value = await dataservice.getResumes()
-  resumesLoaded.value = true
+  if (resumesLoaded.value) return;
+  resumes.value = await dataservice.getResumes();
+  resumesLoaded.value = true;
   // Pre-select the linked resume if set, else default
   if (props.job?.ats_resume_id) {
-    selectedResumeId.value = String(props.job.ats_resume_id)
+    selectedResumeId.value = String(props.job.ats_resume_id);
   } else {
-    const def = resumes.value.find((r) => (r as any).is_default)
-    if (def) selectedResumeId.value = String(def.id)
+    const def = resumes.value.find((r) => (r as any).is_default);
+    if (def) selectedResumeId.value = String(def.id);
     else if (resumes.value.length) {
-      selectedResumeId.value = String(resumes.value[0].id)
+      selectedResumeId.value = String(resumes.value[0].id);
     }
   }
 }
 
 async function calculateScore() {
-  if (!props.job || !canScore.value) return
-  isScoring.value = true
+  if (!props.job || !canScore.value) return;
+  isScoring.value = true;
   try {
     const report = await dataservice.calculateAtsScore(
       props.job.id,
       selectedResumeId.value ? Number(selectedResumeId.value) : null
-    )
-    atsReport.value = report
-    emit('score-updated', props.job.id, { ats_score: report.score, ats_report: report })
-    toast.success(`ATS score: ${Math.round(report.score)}/100`)
+    );
+    atsReport.value = report;
+    emit('score-updated', props.job.id, { ats_score: report.score, ats_report: report });
+    toast.success(`Match score: ${Math.round(report.score)}/100`);
   } catch (err: any) {
-    toast.error(err.message ?? 'Scoring failed')
+    toast.error(err.message ?? 'Scoring failed');
   } finally {
-    isScoring.value = false
+    isScoring.value = false;
   }
 }
 
 watch(activeTab, (tab) => {
-  emit('tab-change', tab)
-  if (tab === 'ats') loadResumes()
-})
+  emit('tab-change', tab);
+  if (tab === 'ats') loadResumes();
+});
 
 watch(
   () => props.open,
   (open) => {
     if (!open) {
-      isEditingUrl.value = false
-      atsReport.value = null
-      resumesLoaded.value = false
-      selectedResumeId.value = ''
-      return
+      isEditingUrl.value = false;
+      atsReport.value = null;
+      resumesLoaded.value = false;
+      selectedResumeId.value = '';
+      return;
     }
-    activeTab.value = props.initialTab ?? 'details'
-    const job = props.job
-    if (!job) return
-    title.value = job.title || ''
-    companyName.value = job.company?.name || ''
-    locationCity.value = job.location?.city || ''
-    locationCountry.value = job.location?.country || ''
-    boardId.value = job.board_id
-    status.value = job.status || 'Saved'
-    position.value = job.position || ''
-    workModel.value = job.work_model || ''
-    salaryRange.value = job.salary_range || ''
-    sourcePlatform.value = job.source_platform || ''
-    sourceUrl.value = job.source_url || ''
-    appliedDate.value = job.applied_date || ''
-    description.value = job.description || ''
-    notes.value = job.notes || ''
+    activeTab.value = props.initialTab ?? 'details';
+    const job = props.job;
+    if (!job) return;
+    title.value = job.title || '';
+    companyName.value = job.company?.name || '';
+    locationCity.value = job.location?.city || '';
+    locationCountry.value = job.location?.country || '';
+    boardId.value = job.board_id;
+    status.value = job.status || 'Saved';
+    position.value = job.position || '';
+    workModel.value = job.work_model || '';
+    salaryRange.value = job.salary_range || '';
+    sourcePlatform.value = job.source_platform || '';
+    sourceUrl.value = job.source_url || '';
+    appliedDate.value = job.applied_date || '';
+    description.value = job.description || '';
+    notes.value = job.notes || '';
 
     // Restore persisted ATS report
     if (job.ats_report) {
-      atsReport.value = job.ats_report as ATSReport
+      atsReport.value = job.ats_report as ATSReport;
     }
 
-    if (activeTab.value === 'ats') loadResumes()
+    if (activeTab.value === 'ats') loadResumes();
   }
-)
+);
 
 function handleSave() {
-  if (!props.job || !title.value.trim() || !companyName.value.trim()) return
-  const city = locationCity.value.trim()
-  const country = locationCountry.value.trim()
+  if (!props.job || !title.value.trim() || !companyName.value.trim()) return;
+  const city = locationCity.value.trim();
+  const country = locationCountry.value.trim();
   emit('save', props.job.id, {
     title: title.value.trim(),
     company_name: companyName.value.trim() || undefined,
@@ -255,7 +264,7 @@ function handleSave() {
     applied_date: appliedDate.value || undefined,
     description: description.value.trim() || undefined,
     notes: notes.value.trim() || undefined
-  })
+  });
 }
 
 const statusVariantMap: Record<string, string> = {
@@ -267,7 +276,7 @@ const statusVariantMap: Record<string, string> = {
   Offer: 'success',
   Rejected: 'danger',
   Withdrawn: 'outline'
-}
+};
 </script>
 
 <template>
@@ -442,7 +451,7 @@ const statusVariantMap: Record<string, string> = {
             <TabsList>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="ats">
-                ATS Score
+                Match Score
                 <span
                   v-if="job?.ats_score != null"
                   class="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
@@ -743,8 +752,8 @@ const statusVariantMap: Record<string, string> = {
                 isScoring
                   ? 'Analysing…'
                   : atsReport
-                    ? 'Recalculate ATS Score'
-                    : 'Link & Calculate ATS Score'
+                    ? 'Recalculate Match Score'
+                    : 'Link & Calculate Match Score'
               }}
             </Button>
 
@@ -979,7 +988,7 @@ const statusVariantMap: Record<string, string> = {
                 </div>
                 <p class="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
                   Select a CV above and click
-                  <span class="font-medium text-foreground">Calculate ATS Score</span> to see how
+                  <span class="font-medium text-foreground">Calculate Match Score</span> to see how
                   well you match this role.
                 </p>
               </div>

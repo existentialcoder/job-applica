@@ -63,7 +63,7 @@
     },
     "stage_key": "Rejected",
     "position": "Junior",
-    "salary_range": "\u20ac82k - \u20ac166k",
+    "salary_range": "€82k - €166k",
     "work_model": "Remote",
     "required_skills": [],
     "description": "Nightowl Media is hiring a Account Executive to help us grow our Media & Entertainment offering. Ideal candidates are comfortable with ambiguity, enjoy mentoring others, and can balance speed with quality.",
@@ -123,8 +123,7 @@
     "ats_score": 53.5,
     "ats_report": {
       "score": 53.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "CI/CD",
         "REST APIs",
         "SEO",
@@ -134,7 +133,13 @@
         "Redis",
         "AWS"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "4ac8b044235f2cd8b0c040f5",
+      "_version": 6
     },
     "created_at": "2026-07-07"
   },
@@ -201,7 +206,7 @@
     },
     "stage_key": "Offer",
     "position": "Senior",
-    "salary_range": "\u00a391k",
+    "salary_range": "£91k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -334,8 +339,7 @@
     "ats_score": 45.2,
     "ats_report": {
       "score": 45.2,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Python",
         "Jira",
         "Azure",
@@ -344,10 +348,16 @@
         "Vue.js",
         "REST APIs"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kafka",
         "Go"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "2c0251c7f1e1ef38a0629ccc",
+      "_version": 6
     },
     "created_at": "2026-06-18"
   },
@@ -385,18 +395,23 @@
     "ats_score": 50.6,
     "ats_report": {
       "score": 50.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Terraform",
         "TypeScript",
         "Agile / Scrum"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Redis",
         "Agile / Scrum",
         "Python",
         "Rust"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "b90731bdc31f92d906ae09d4",
+      "_version": 6
     },
     "created_at": "2026-04-17"
   },
@@ -436,8 +451,7 @@
     "ats_score": 84.4,
     "ats_report": {
       "score": 84.4,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "PostgreSQL",
         "Kotlin",
         "CI/CD",
@@ -445,11 +459,17 @@
         "GraphQL",
         "Agile / Scrum"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Apache Spark",
         "Go",
         "Kotlin"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "d6b8f788cef02ad3dc6a3867",
+      "_version": 6
     },
     "created_at": "2026-03-14"
   },
@@ -496,8 +516,7 @@
     "ats_score": 76.1,
     "ats_report": {
       "score": 76.1,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Python",
         "Java",
         "Kafka",
@@ -506,9 +525,15 @@
         "Figma",
         "Airflow"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Machine Learning"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "0400464930bddc091ef42e92",
+      "_version": 6
     },
     "created_at": "2026-04-16"
   },
@@ -563,8 +588,7 @@
     "ats_score": 71.8,
     "ats_report": {
       "score": 71.8,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "A/B Testing",
         "FastAPI",
         "Go",
@@ -573,12 +597,18 @@
         "Django",
         "Rust"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Rust",
         "Kafka",
         "Machine Learning",
         "Vue.js"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "63cd8f52c3695836bda37bf0",
+      "_version": 6
     },
     "created_at": "2026-07-23"
   },
@@ -689,7 +719,7 @@
     },
     "stage_key": "Applied",
     "position": "Manager",
-    "salary_range": "\u20ac88k - \u20ac155k",
+    "salary_range": "€88k - €155k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -718,20 +748,25 @@
     "source_url": "https://jobs.example.com/momentum-analytics/14",
     "source_platform": "Glassdoor",
     "applied_date": "2026-06-09",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 92.0,
     "ats_report": {
       "score": 92.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Java",
         "Linux",
         "TensorFlow"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "JavaScript",
         "Python"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "fe534f05f7ea757e2d469244",
+      "_version": 6
     },
     "created_at": "2026-06-01"
   },
@@ -789,7 +824,7 @@
     },
     "stage_key": "Saved",
     "position": "Mid",
-    "salary_range": "\u00a365k",
+    "salary_range": "£65k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -849,7 +884,7 @@
     },
     "stage_key": "Rejected",
     "position": "Mid",
-    "salary_range": "\u00a348k",
+    "salary_range": "£48k",
     "work_model": "Remote",
     "required_skills": [],
     "description": null,
@@ -860,7 +895,7 @@
     "source_url": "https://jobs.example.com/hearth-financial/17",
     "source_platform": "ZipRecruiter",
     "applied_date": "2026-06-02",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-05-28"
@@ -951,8 +986,7 @@
     "ats_score": 60.7,
     "ats_report": {
       "score": 60.7,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "AWS",
         "HubSpot",
         "React",
@@ -960,9 +994,15 @@
         "PyTorch",
         "gRPC"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "CI/CD"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "9023c2f6b328e8e419c0cea0",
+      "_version": 6
     },
     "created_at": "2026-05-23"
   },
@@ -1013,8 +1053,7 @@
     "ats_score": 67.5,
     "ats_report": {
       "score": 67.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "CI/CD",
         "Terraform",
         "Java",
@@ -1024,7 +1063,13 @@
         "PostgreSQL",
         "Node.js"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "a8ecb7f1effccd1cb4e438d7",
+      "_version": 6
     },
     "created_at": "2026-06-25"
   },
@@ -1087,18 +1132,23 @@
     "ats_score": 50.7,
     "ats_report": {
       "score": 50.7,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Apache Spark",
         "React",
         "A/B Testing"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Jira",
         "Azure",
         "SQL",
         "CI/CD"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "4936ec99a00cda28f35e6305",
+      "_version": 6
     },
     "created_at": "2026-03-28"
   },
@@ -1121,7 +1171,7 @@
     },
     "stage_key": "Applied",
     "position": "Mid",
-    "salary_range": "\u00a3114k",
+    "salary_range": "£114k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -1149,14 +1199,19 @@
     "ats_score": 69.0,
     "ats_report": {
       "score": 69.0,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Node.js",
         "Redis",
         "gRPC",
         "MySQL"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "dc77a9cd5268ed0a9aa69e6b",
+      "_version": 6
     },
     "created_at": "2026-05-30"
   },
@@ -1227,7 +1282,7 @@
     },
     "stage_key": "Withdrawn",
     "position": "Senior",
-    "salary_range": "\u20ac90k - \u20ac171k",
+    "salary_range": "€90k - €171k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -1248,18 +1303,23 @@
     "ats_score": 75.5,
     "ats_report": {
       "score": 75.5,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Apache Spark",
         "Django",
         "Go",
         "Docker"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Azure",
         "MySQL",
         "Apache Spark"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "4d799f59633103317805cb67",
+      "_version": 6
     },
     "created_at": "2026-03-16"
   },
@@ -1366,7 +1426,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Senior",
-    "salary_range": "\u00a391k",
+    "salary_range": "£91k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -1506,18 +1566,23 @@
     "ats_score": 94.7,
     "ats_report": {
       "score": 94.7,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Kafka",
         "PyTorch",
         "Figma"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kafka",
         "Airflow",
         "Figma",
         "SQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c9e65ba12a45cafa2d2dd169",
+      "_version": 6
     },
     "created_at": "2026-05-29"
   },
@@ -1577,7 +1642,7 @@
     },
     "stage_key": "Saved",
     "position": "Senior",
-    "salary_range": "\u20ac111k - \u20ac166k",
+    "salary_range": "€111k - €166k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -1594,17 +1659,22 @@
     "ats_score": 37.9,
     "ats_report": {
       "score": 37.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "HubSpot",
         "AWS",
         "React"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kotlin",
         "Python",
         "SEO"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "2bf6797d5e692bf7af247649",
+      "_version": 6
     },
     "created_at": "2026-03-24"
   },
@@ -1627,7 +1697,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Senior",
-    "salary_range": "\u00a383k",
+    "salary_range": "£83k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -1667,20 +1737,25 @@
     "ats_score": 70.5,
     "ats_report": {
       "score": 70.5,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Java",
         "Kafka",
         "Vue.js",
         "HubSpot",
         "PyTorch"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Jira",
         "CI/CD",
         "Redis",
         "A/B Testing"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "05319acf3be90ee71bc04b94",
+      "_version": 6
     },
     "created_at": "2026-07-25"
   },
@@ -1740,8 +1815,7 @@
     "ats_score": 78.4,
     "ats_report": {
       "score": 78.4,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "AWS",
         "JavaScript",
         "Redis",
@@ -1749,7 +1823,13 @@
         "Agile / Scrum",
         "Apache Spark"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "ce831e826a4775dd4935b644",
+      "_version": 6
     },
     "created_at": "2026-08-07"
   },
@@ -1772,7 +1852,7 @@
     },
     "stage_key": "Rejected",
     "position": "Lead",
-    "salary_range": "\u00a377k",
+    "salary_range": "£77k",
     "work_model": "On-site",
     "required_skills": [],
     "description": "Substratum Data is hiring a Frontend Engineer to help us grow our Data Infrastructure offering. Ideal candidates are comfortable with ambiguity, enjoy mentoring others, and can balance speed with quality.",
@@ -1784,19 +1864,24 @@
     "ats_score": 64.5,
     "ats_report": {
       "score": 64.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Machine Learning",
         "Kubernetes",
         "User Research",
         "Salesforce",
         "Figma"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Java",
         "Jira",
         "JavaScript"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "588663b2de5eeca69da1408a",
+      "_version": 6
     },
     "created_at": "2026-03-15"
   },
@@ -1819,7 +1904,7 @@
     },
     "stage_key": "Interview",
     "position": "Intern",
-    "salary_range": "\u00a3105k",
+    "salary_range": "£105k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -1897,19 +1982,24 @@
     "ats_score": 54.8,
     "ats_report": {
       "score": 54.8,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Vue.js",
         "Machine Learning",
         "User Research",
         "Python",
         "Salesforce"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "PyTorch",
         "Go",
         "PostgreSQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "e3468c29725fc2715e48c5b8",
+      "_version": 6
     },
     "created_at": "2026-03-20"
   },
@@ -1932,7 +2022,7 @@
     },
     "stage_key": "Interview",
     "position": "Senior",
-    "salary_range": "\u00a376k",
+    "salary_range": "£76k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -1957,8 +2047,7 @@
     "ats_score": 35.9,
     "ats_report": {
       "score": 35.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Java",
         "Redis",
         "Vue.js",
@@ -1966,11 +2055,17 @@
         "Jira",
         "Node.js"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "AWS",
         "User Research",
         "Kubernetes"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "3c860dd6764d55e4ca03b3ae",
+      "_version": 6
     },
     "created_at": "2026-06-07"
   },
@@ -2109,19 +2204,24 @@
     "ats_score": 84.2,
     "ats_report": {
       "score": 84.2,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Terraform",
         "CI/CD",
         "Machine Learning",
         "Java",
         "Salesforce"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Azure",
         "Linux",
         "Figma"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "7d5d00741cf6f69c9246e72d",
+      "_version": 6
     },
     "created_at": "2026-06-29"
   },
@@ -2144,7 +2244,7 @@
     },
     "stage_key": "Interview",
     "position": "Junior",
-    "salary_range": "\u00a3112k",
+    "salary_range": "£112k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -2169,16 +2269,21 @@
     "ats_score": 53.9,
     "ats_report": {
       "score": 53.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "JavaScript",
         "Azure",
         "Go"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "GraphQL",
         "REST APIs"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "a3c5fc540f6df3e71562a6f1",
+      "_version": 6
     },
     "created_at": "2026-07-13"
   },
@@ -2312,7 +2417,7 @@
     },
     "stage_key": "Withdrawn",
     "position": "Junior",
-    "salary_range": "\u00a373k",
+    "salary_range": "£73k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -2349,8 +2454,7 @@
     "ats_score": 43.3,
     "ats_report": {
       "score": 43.3,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "REST APIs",
         "A/B Testing",
         "User Research",
@@ -2359,10 +2463,16 @@
         "Docker",
         "Airflow"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Terraform",
         "Vue.js"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "be8406bfe5adb34b168d30b7",
+      "_version": 6
     },
     "created_at": "2026-05-16"
   },
@@ -2413,8 +2523,7 @@
     "ats_score": 36.6,
     "ats_report": {
       "score": 36.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Azure",
         "CI/CD",
         "Redis",
@@ -2423,7 +2532,13 @@
         "GCP",
         "PyTorch"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "da84bb47d86296b283635143",
+      "_version": 6
     },
     "created_at": "2026-07-11"
   },
@@ -2446,7 +2561,7 @@
     },
     "stage_key": "Rejected",
     "position": "Intern",
-    "salary_range": "\u20ac113k - \u20ac150k",
+    "salary_range": "€113k - €150k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -2482,8 +2597,7 @@
     "ats_score": 58.3,
     "ats_report": {
       "score": 58.3,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "SQL",
         "Kafka",
         "REST APIs",
@@ -2491,10 +2605,16 @@
         "Jira",
         "Salesforce"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Go",
         "Machine Learning"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "f7f11f1844af6dd29ddc765e",
+      "_version": 6
     },
     "created_at": "2026-04-25"
   },
@@ -2592,8 +2712,7 @@
     "ats_score": 84.0,
     "ats_report": {
       "score": 84.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Agile / Scrum",
         "Kotlin",
         "SQL",
@@ -2602,10 +2721,16 @@
         "JavaScript",
         "A/B Testing"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Apache Spark",
         "TypeScript"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "41ba84ea1206a0c19d40d9ae",
+      "_version": 6
     },
     "created_at": "2026-07-09"
   },
@@ -2708,18 +2833,23 @@
     "source_url": "https://jobs.example.com/hearth-financial/51",
     "source_platform": "Other",
     "applied_date": "2026-05-25",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 51.1,
     "ats_report": {
       "score": 51.1,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Airflow",
         "Rust",
         "Java",
         "TensorFlow"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "6f97f400ace22232d5564daa",
+      "_version": 6
     },
     "created_at": "2026-05-19"
   },
@@ -2753,7 +2883,7 @@
     "source_url": "https://jobs.example.com/slateworks/52",
     "source_platform": "Other",
     "applied_date": "2026-06-16",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-06-14"
@@ -2817,8 +2947,7 @@
     "ats_score": 89.8,
     "ats_report": {
       "score": 89.8,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Machine Learning",
         "Rust",
         "Node.js",
@@ -2827,11 +2956,17 @@
         "A/B Testing",
         "MySQL"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "PyTorch",
         "Apache Spark",
         "Terraform"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "84ba867ddaf7b462388f0353",
+      "_version": 6
     },
     "created_at": "2026-05-13"
   },
@@ -2894,8 +3029,7 @@
     "ats_score": 52.8,
     "ats_report": {
       "score": 52.8,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Agile / Scrum",
         "Figma",
         "A/B Testing",
@@ -2905,7 +3039,13 @@
         "Machine Learning",
         "Go"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "4ed9b81404a23b3e5a86dce1",
+      "_version": 6
     },
     "created_at": "2026-07-09"
   },
@@ -2952,18 +3092,23 @@
     "ats_score": 39.9,
     "ats_report": {
       "score": 39.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "SEO",
         "TensorFlow",
         "Machine Learning",
         "Linux",
         "PyTorch"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Vue.js",
         "Machine Learning"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "f8b9e8fa179c107a38293802",
+      "_version": 6
     },
     "created_at": "2026-08-03"
   },
@@ -2998,8 +3143,7 @@
     "ats_score": 42.2,
     "ats_report": {
       "score": 42.2,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "PostgreSQL",
         "GraphQL",
         "CI/CD",
@@ -3008,10 +3152,16 @@
         "Kotlin",
         "Agile / Scrum"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "PostgreSQL",
         "Django"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "d2d694834a276c5edbc72ceb",
+      "_version": 6
     },
     "created_at": "2026-06-25"
   },
@@ -3034,7 +3184,7 @@
     },
     "stage_key": "Applied",
     "position": "Intern",
-    "salary_range": "\u20ac100k - \u20ac177k",
+    "salary_range": "€100k - €177k",
     "work_model": "On-site",
     "required_skills": [],
     "description": null,
@@ -3042,7 +3192,7 @@
     "source_url": "https://jobs.example.com/lumenary-optics/57",
     "source_platform": null,
     "applied_date": "2026-04-16",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-04-09"
@@ -3066,7 +3216,7 @@
     },
     "stage_key": "Interview",
     "position": "Lead",
-    "salary_range": "\u00a3115k",
+    "salary_range": "£115k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -3385,15 +3535,20 @@
     "ats_score": 65.3,
     "ats_report": {
       "score": 65.3,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "HubSpot",
         "Kotlin",
         "A/B Testing",
         "Vue.js",
         "AWS"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "cbe5840fab6d606fe8465abb",
+      "_version": 6
     },
     "created_at": "2026-07-03"
   },
@@ -3444,16 +3599,21 @@
     "ats_score": 40.1,
     "ats_report": {
       "score": 40.1,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "TypeScript",
         "Azure",
         "Kotlin",
         "Terraform"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "React"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "b958dc1000bcbb1c6e64212e",
+      "_version": 6
     },
     "created_at": "2026-05-04"
   },
@@ -3504,8 +3664,7 @@
     "ats_score": 85.0,
     "ats_report": {
       "score": 85.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Rust",
         "Vue.js",
         "Figma",
@@ -3513,12 +3672,18 @@
         "TypeScript",
         "User Research"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kafka",
         "Node.js",
         "AWS",
         "TensorFlow"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "7b3c4345ec7ffffa7bc63511",
+      "_version": 6
     },
     "created_at": "2026-06-07"
   },
@@ -3541,7 +3706,7 @@
     },
     "stage_key": "Applied",
     "position": "Mid",
-    "salary_range": "\u20ac137k - \u20ac156k",
+    "salary_range": "€137k - €156k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -3574,17 +3739,22 @@
     "source_url": "https://jobs.example.com/pixelforge-studios/67",
     "source_platform": "Monster",
     "applied_date": "2026-07-26",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 76.4,
     "ats_report": {
       "score": 76.4,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Agile / Scrum",
         "Terraform",
         "React"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "2a9584462e82c05c2ba9eb9e",
+      "_version": 6
     },
     "created_at": "2026-07-21"
   },
@@ -3607,7 +3777,7 @@
     },
     "stage_key": "Archived",
     "position": "Manager",
-    "salary_range": "\u00a3101k",
+    "salary_range": "£101k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -3635,17 +3805,22 @@
     "ats_score": 82.5,
     "ats_report": {
       "score": 82.5,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "AWS",
         "GraphQL",
         "Go",
         "Terraform"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Vue.js",
         "REST APIs"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "5ebc6ad34253d878d29623eb",
+      "_version": 6
     },
     "created_at": "2026-03-21"
   },
@@ -3693,8 +3868,7 @@
     "ats_score": 53.6,
     "ats_report": {
       "score": 53.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Jira",
         "TensorFlow",
         "FastAPI",
@@ -3702,7 +3876,13 @@
         "GraphQL",
         "Agile / Scrum"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "adc3630b773121ffbc44d571",
+      "_version": 6
     },
     "created_at": "2026-07-12"
   },
@@ -3749,8 +3929,7 @@
     "ats_score": 49.9,
     "ats_report": {
       "score": 49.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "REST APIs",
         "Linux",
         "gRPC",
@@ -3760,10 +3939,16 @@
         "SQL",
         "CI/CD"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "SQL",
         "Rust"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c51bdd20d36726d3b002bb97",
+      "_version": 6
     },
     "created_at": "2026-04-17"
   },
@@ -3810,8 +3995,7 @@
     "ats_score": 73.5,
     "ats_report": {
       "score": 73.5,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Figma",
         "PostgreSQL",
         "Vue.js",
@@ -3821,7 +4005,13 @@
         "Django",
         "HubSpot"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "79a72eee5ec573015a52b8d8",
+      "_version": 6
     },
     "created_at": "2026-06-02"
   },
@@ -3844,7 +4034,7 @@
     },
     "stage_key": "Rejected",
     "position": "Manager",
-    "salary_range": "\u20ac116k - \u20ac178k",
+    "salary_range": "€116k - €178k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -3869,15 +4059,20 @@
     "ats_score": 69.9,
     "ats_report": {
       "score": 69.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Apache Spark",
         "HubSpot",
         "React",
         "CI/CD",
         "Java"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "37b72a348efdbaae21ca677f",
+      "_version": 6
     },
     "created_at": "2026-06-08"
   },
@@ -3985,7 +4180,7 @@
     "source_url": "https://jobs.example.com/vantage-point-consulting/74",
     "source_platform": "LinkedIn",
     "applied_date": "2026-05-31",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-05-29"
@@ -4009,7 +4204,7 @@
     },
     "stage_key": "Accepted",
     "position": "Mid",
-    "salary_range": "\u00a3127k",
+    "salary_range": "£127k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -4065,20 +4260,25 @@
     "ats_score": 89.3,
     "ats_report": {
       "score": 89.3,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "GraphQL",
         "Machine Learning",
         "React",
         "REST APIs",
         "User Research"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kotlin",
         "Azure",
         "Kafka",
         "Apache Spark"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "a112e36de8f0fa5ee84030f2",
+      "_version": 6
     },
     "created_at": "2026-05-12"
   },
@@ -4101,7 +4301,7 @@
     },
     "stage_key": "Offer",
     "position": "Intern",
-    "salary_range": "\u20ac91k - \u20ac176k",
+    "salary_range": "€91k - €176k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -4133,8 +4333,7 @@
     "ats_score": 67.4,
     "ats_report": {
       "score": 67.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "GCP",
         "Figma",
         "TypeScript",
@@ -4142,11 +4341,17 @@
         "Machine Learning",
         "User Research"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kafka",
         "MySQL",
         "Agile / Scrum"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "b78dcc7ef46a8603864fd01e",
+      "_version": 6
     },
     "created_at": "2026-06-20"
   },
@@ -4169,7 +4374,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Junior",
-    "salary_range": "\u20ac132k - \u20ac177k",
+    "salary_range": "€132k - €177k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -4197,8 +4402,7 @@
     "ats_score": 59.3,
     "ats_report": {
       "score": 59.3,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "HubSpot",
         "Kubernetes",
         "Vue.js",
@@ -4206,10 +4410,16 @@
         "Kotlin",
         "Machine Learning"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Terraform",
         "HubSpot"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "377413494f0fa30af6611bfc",
+      "_version": 6
     },
     "created_at": "2026-05-07"
   },
@@ -4232,7 +4442,7 @@
     },
     "stage_key": "Offer",
     "position": "Mid",
-    "salary_range": "\u00a3125k",
+    "salary_range": "£125k",
     "work_model": "Remote",
     "required_skills": [],
     "description": null,
@@ -4247,8 +4457,7 @@
     "ats_score": 87.2,
     "ats_report": {
       "score": 87.2,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Figma",
         "SEO",
         "GCP",
@@ -4257,7 +4466,13 @@
         "REST APIs",
         "Terraform"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "a139b443c0d8d3937ca2de7f",
+      "_version": 6
     },
     "created_at": "2026-05-23"
   },
@@ -4328,7 +4543,7 @@
     },
     "stage_key": "Applied",
     "position": "Mid",
-    "salary_range": "\u00a3114k",
+    "salary_range": "£114k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -4397,8 +4612,7 @@
     "ats_score": 93.8,
     "ats_report": {
       "score": 93.8,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Kubernetes",
         "AWS",
         "Vue.js",
@@ -4408,9 +4622,15 @@
         "Machine Learning",
         "GraphQL"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "AWS"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "10d3ab9b4c0be43677a5a25e",
+      "_version": 6
     },
     "created_at": "2026-05-18"
   },
@@ -4461,17 +4681,22 @@
     "source_url": "https://jobs.example.com/fablehaus/83",
     "source_platform": "ZipRecruiter",
     "applied_date": null,
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 49.7,
     "ats_report": {
       "score": 49.7,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "PyTorch",
         "Terraform",
         "Airflow"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "8d342c6f10c1c3e791440567",
+      "_version": 6
     },
     "created_at": "2026-03-25"
   },
@@ -4494,7 +4719,7 @@
     },
     "stage_key": "Offer",
     "position": "Lead",
-    "salary_range": "\u20ac68k - \u20ac166k",
+    "salary_range": "€68k - €166k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -4518,16 +4743,21 @@
     "ats_score": 87.8,
     "ats_report": {
       "score": 87.8,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Machine Learning",
         "Figma",
         "Django"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "JavaScript",
         "Python"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "6c2e64d2eb2f6da527a75d24",
+      "_version": 6
     },
     "created_at": "2026-07-29"
   },
@@ -4563,23 +4793,28 @@
     "source_url": "https://jobs.example.com/cinderline-retail/85",
     "source_platform": "Monster",
     "applied_date": "2026-06-05",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 56.2,
     "ats_report": {
       "score": 56.2,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "SEO",
         "PostgreSQL",
         "Django",
         "CI/CD",
         "Linux"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "TensorFlow",
         "User Research",
         "Azure"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "aa83d0f1fe5f533c2746f9d5",
+      "_version": 6
     },
     "created_at": "2026-06-03"
   },
@@ -4690,7 +4925,7 @@
     },
     "stage_key": "Applied",
     "position": "Lead",
-    "salary_range": "\u00a3102k",
+    "salary_range": "£102k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -4726,12 +4961,11 @@
     "source_url": "https://jobs.example.com/vantage-point-consulting/88",
     "source_platform": "ZipRecruiter",
     "applied_date": "2026-03-17",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 69.5,
     "ats_report": {
       "score": 69.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "PostgreSQL",
         "SEO",
         "Salesforce",
@@ -4740,11 +4974,17 @@
         "Azure",
         "A/B Testing"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Vue.js",
         "MySQL",
         "Agile / Scrum"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "139387eaee87a5577ac52b24",
+      "_version": 6
     },
     "created_at": "2026-03-16"
   },
@@ -4791,17 +5031,22 @@
     "ats_score": 56.7,
     "ats_report": {
       "score": 56.7,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Salesforce",
         "Go",
         "Rust"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "JavaScript",
         "AWS",
         "PyTorch"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "4cf5a5e3aa242dad457d3ee4",
+      "_version": 6
     },
     "created_at": "2026-07-20"
   },
@@ -4873,7 +5118,7 @@
     },
     "stage_key": "Accepted",
     "position": "Junior",
-    "salary_range": "\u00a3114k",
+    "salary_range": "£114k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -4890,15 +5135,20 @@
     "ats_score": 41.4,
     "ats_report": {
       "score": 41.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "SQL",
         "Jira",
         "Go"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "JavaScript"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "a6b2bd2a2d5dae9e2b6081e2",
+      "_version": 6
     },
     "created_at": "2026-08-03"
   },
@@ -4921,7 +5171,7 @@
     },
     "stage_key": "Archived",
     "position": "Mid",
-    "salary_range": "\u00a393k",
+    "salary_range": "£93k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -4941,8 +5191,7 @@
     "ats_score": 52.3,
     "ats_report": {
       "score": 52.3,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Agile / Scrum",
         "Django",
         "TensorFlow",
@@ -4951,11 +5200,17 @@
         "Go",
         "GraphQL"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "A/B Testing",
         "Azure",
         "PyTorch"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "6e3449be7d59f888fa944177",
+      "_version": 6
     },
     "created_at": "2026-03-27"
   },
@@ -4993,18 +5248,23 @@
     "ats_score": 55.8,
     "ats_report": {
       "score": 55.8,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "SQL",
         "REST APIs",
         "Java"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "PostgreSQL",
         "Go",
         "Kubernetes",
         "gRPC"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "bb61ab03874015052df343c9",
+      "_version": 6
     },
     "created_at": "2026-04-30"
   },
@@ -5133,23 +5393,28 @@
     "source_url": "https://jobs.example.com/substratum-data/96",
     "source_platform": "Indeed",
     "applied_date": "2026-03-18",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 47.4,
     "ats_report": {
       "score": 47.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "gRPC",
         "SEO",
         "Kafka",
         "Figma"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Terraform",
         "Docker",
         "Figma",
         "Apache Spark"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "7097275f8620a5f17f21bb20",
+      "_version": 6
     },
     "created_at": "2026-03-12"
   },
@@ -5187,15 +5452,20 @@
     "ats_score": 66.9,
     "ats_report": {
       "score": 66.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Go",
         "CI/CD",
         "Linux",
         "Airflow",
         "Figma"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "af0a916c032b342f2df7b27a",
+      "_version": 6
     },
     "created_at": "2026-06-30"
   },
@@ -5218,7 +5488,7 @@
     },
     "stage_key": "Saved",
     "position": "Mid",
-    "salary_range": "\u20ac105k - \u20ac150k",
+    "salary_range": "€105k - €150k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -5294,8 +5564,7 @@
     "ats_score": 88.3,
     "ats_report": {
       "score": 88.3,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Terraform",
         "SEO",
         "Kotlin",
@@ -5305,10 +5574,16 @@
         "MySQL",
         "Airflow"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "JavaScript",
         "Rust"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "9d7a4f76d05cc25b3841ab66",
+      "_version": 6
     },
     "created_at": "2026-08-05"
   },
@@ -5331,7 +5606,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Manager",
-    "salary_range": "\u20ac72k - \u20ac189k",
+    "salary_range": "€72k - €189k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -5412,8 +5687,7 @@
     "ats_score": 71.9,
     "ats_report": {
       "score": 71.9,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Java",
         "CI/CD",
         "AWS",
@@ -5421,10 +5695,16 @@
         "Rust",
         "Linux"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Node.js",
         "gRPC"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "a8cf7e38e812b7d6a8e69326",
+      "_version": 6
     },
     "created_at": "2026-05-03"
   },
@@ -5447,7 +5727,7 @@
     },
     "stage_key": "Saved",
     "position": "Senior",
-    "salary_range": "\u20ac65k - \u20ac180k",
+    "salary_range": "€65k - €180k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -5467,8 +5747,7 @@
     "ats_score": 69.9,
     "ats_report": {
       "score": 69.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Kotlin",
         "TypeScript",
         "Java",
@@ -5476,12 +5755,18 @@
         "HubSpot",
         "Jira"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Jira",
         "Azure",
         "gRPC",
         "Python"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "f4e9be45c181a945431d291d",
+      "_version": 6
     },
     "created_at": "2026-04-19"
   },
@@ -5504,7 +5789,7 @@
     },
     "stage_key": "Saved",
     "position": "Junior",
-    "salary_range": "\u00a383k",
+    "salary_range": "£83k",
     "work_model": "Remote",
     "required_skills": [],
     "description": "We're looking for a UX Researcher to join our AI / Analytics team. You'll work closely with cross-functional partners to ship high-impact features, own critical systems end to end, and help define technical direction as we scale.",
@@ -5519,17 +5804,22 @@
     "ats_score": 65.5,
     "ats_report": {
       "score": 65.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "REST APIs",
         "Docker",
         "Kafka"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Jira",
         "CI/CD",
         "PostgreSQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "10c77a735c2d3bdffb1c8cd0",
+      "_version": 6
     },
     "created_at": "2026-05-29"
   },
@@ -5552,7 +5842,7 @@
     },
     "stage_key": "Ghosted",
     "position": "Intern",
-    "salary_range": "\u00a3117k",
+    "salary_range": "£117k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -5572,18 +5862,23 @@
     "ats_score": 95.8,
     "ats_report": {
       "score": 95.8,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "AWS",
         "Linux",
         "Figma",
         "SEO",
         "Kafka"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "gRPC",
         "Kubernetes"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "2b17dbd698afff51a6ac498f",
+      "_version": 6
     },
     "created_at": "2026-06-17"
   },
@@ -5642,8 +5937,7 @@
     "ats_score": 76.5,
     "ats_report": {
       "score": 76.5,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "TensorFlow",
         "gRPC",
         "Rust",
@@ -5653,11 +5947,17 @@
         "Salesforce",
         "User Research"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Salesforce",
         "JavaScript",
         "REST APIs"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c9be308662da0160001f09dd",
+      "_version": 6
     },
     "created_at": "2026-05-22"
   },
@@ -5725,7 +6025,7 @@
     },
     "stage_key": "Saved",
     "position": "Manager",
-    "salary_range": "\u20ac69k - \u20ac146k",
+    "salary_range": "€69k - €146k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -5765,18 +6065,23 @@
     "ats_score": 56.6,
     "ats_report": {
       "score": 56.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "A/B Testing",
         "Airflow",
         "GraphQL",
         "Kotlin"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "SQL",
         "Azure",
         "Rust"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c55131023dde274a2a0e8108",
+      "_version": 6
     },
     "created_at": "2026-07-02"
   },
@@ -5847,7 +6152,7 @@
     },
     "stage_key": "Applied",
     "position": "Senior",
-    "salary_range": "\u20ac133k - \u20ac170k",
+    "salary_range": "€133k - €170k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -5945,7 +6250,7 @@
     },
     "stage_key": "Applied",
     "position": "Senior",
-    "salary_range": "\u00a3101k",
+    "salary_range": "£101k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -5970,17 +6275,22 @@
     "ats_score": 57.6,
     "ats_report": {
       "score": 57.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Figma",
         "React",
         "PostgreSQL"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "HubSpot",
         "User Research",
         "Figma"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "0a97e8515b810862eadf8b05",
+      "_version": 6
     },
     "created_at": "2026-04-14"
   },
@@ -6003,7 +6313,7 @@
     },
     "stage_key": "Applied",
     "position": "Lead",
-    "salary_range": "\u00a359k",
+    "salary_range": "£59k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -6084,18 +6394,23 @@
     "ats_score": 97.6,
     "ats_report": {
       "score": 97.6,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "MySQL",
         "Agile / Scrum",
         "GraphQL",
         "CI/CD"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "FastAPI",
         "CI/CD",
         "React"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "d77c6bbcf6ee738a304763e7",
+      "_version": 6
     },
     "created_at": "2026-05-10"
   },
@@ -6178,7 +6493,7 @@
     },
     "stage_key": "Applied",
     "position": "Intern",
-    "salary_range": "\u20ac66k - \u20ac174k",
+    "salary_range": "€66k - €174k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -6269,7 +6584,7 @@
     },
     "stage_key": "Interview",
     "position": "Manager",
-    "salary_range": "\u00a357k",
+    "salary_range": "£57k",
     "work_model": "Remote",
     "required_skills": [],
     "description": "We're looking for a Growth Marketer to join our Hardware team. You'll work closely with cross-functional partners to ship high-impact features, own critical systems end to end, and help define technical direction as we scale.",
@@ -6281,19 +6596,24 @@
     "ats_score": 90.1,
     "ats_report": {
       "score": 90.1,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Java",
         "REST APIs",
         "Docker",
         "FastAPI",
         "Go"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Linux",
         "GCP",
         "Redis"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "63c34c961319dff4009d97ee",
+      "_version": 6
     },
     "created_at": "2026-07-05"
   },
@@ -6316,7 +6636,7 @@
     },
     "stage_key": "Interview",
     "position": "Junior",
-    "salary_range": "\u00a394k",
+    "salary_range": "£94k",
     "work_model": "On-site",
     "required_skills": [],
     "description": "We're looking for a Marketing Manager to join our Fintech team. You'll work closely with cross-functional partners to ship high-impact features, own critical systems end to end, and help define technical direction as we scale.",
@@ -6375,8 +6695,7 @@
     "ats_score": 35.5,
     "ats_report": {
       "score": 35.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "FastAPI",
         "SQL",
         "GraphQL",
@@ -6386,7 +6705,13 @@
         "CI/CD",
         "Agile / Scrum"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "dadc81f8985283b02977af23",
+      "_version": 6
     },
     "created_at": "2026-07-02"
   },
@@ -6409,7 +6734,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Junior",
-    "salary_range": "\u20ac118k - \u20ac169k",
+    "salary_range": "€118k - €169k",
     "work_model": "On-site",
     "required_skills": [],
     "description": "We're looking for a Senior Software Engineer to join our Developer Tools team. You'll work closely with cross-functional partners to ship high-impact features, own critical systems end to end, and help define technical direction as we scale.",
@@ -6417,7 +6742,7 @@
     "source_url": "https://jobs.example.com/slateworks/120",
     "source_platform": "Indeed",
     "applied_date": "2026-04-02",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-03-30"
@@ -6441,7 +6766,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Intern",
-    "salary_range": "\u00a3120k",
+    "salary_range": "£120k",
     "work_model": "Remote",
     "required_skills": [],
     "description": "We're looking for a Engineering Manager to join our Healthcare team. You'll work closely with cross-functional partners to ship high-impact features, own critical systems end to end, and help define technical direction as we scale.",
@@ -6449,7 +6774,7 @@
     "source_url": "https://jobs.example.com/meridian-health-group/121",
     "source_platform": "Monster",
     "applied_date": "2026-05-14",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-05-06"
@@ -6545,7 +6870,7 @@
     },
     "stage_key": "Saved",
     "position": "Mid",
-    "salary_range": "\u20ac122k - \u20ac149k",
+    "salary_range": "€122k - €149k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -6566,8 +6891,7 @@
     "ats_score": 95.0,
     "ats_report": {
       "score": 95.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "A/B Testing",
         "Docker",
         "FastAPI",
@@ -6576,7 +6900,13 @@
         "Kubernetes",
         "Vue.js"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "ddfc3c849257810804ea52c5",
+      "_version": 6
     },
     "created_at": "2026-08-05"
   },
@@ -6655,7 +6985,7 @@
     },
     "stage_key": "Applied",
     "position": "Senior",
-    "salary_range": "\u00a381k",
+    "salary_range": "£81k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -6695,13 +7025,18 @@
     "ats_score": 66.6,
     "ats_report": {
       "score": 66.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Django",
         "Redis",
         "A/B Testing"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c24838e65760641496aad176",
+      "_version": 6
     },
     "created_at": "2026-07-19"
   },
@@ -6744,17 +7079,22 @@
     "ats_score": 60.8,
     "ats_report": {
       "score": 60.8,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Salesforce",
         "GraphQL",
         "Linux",
         "Python"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Python",
         "gRPC"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "d0a56eeb95438fd2659c361e",
+      "_version": 6
     },
     "created_at": "2026-06-06"
   },
@@ -6777,7 +7117,7 @@
     },
     "stage_key": "Withdrawn",
     "position": "Manager",
-    "salary_range": "\u20ac65k - \u20ac182k",
+    "salary_range": "€65k - €182k",
     "work_model": "On-site",
     "required_skills": [],
     "description": null,
@@ -6788,7 +7128,7 @@
     "source_url": "https://jobs.example.com/momentum-analytics/128",
     "source_platform": "Indeed",
     "applied_date": "2026-04-02",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-03-27"
@@ -6840,13 +7180,18 @@
     "ats_score": 52.1,
     "ats_report": {
       "score": 52.1,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "PostgreSQL",
         "React",
         "Agile / Scrum"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "951f20584a9203e9ecf8c07c",
+      "_version": 6
     },
     "created_at": "2026-04-29"
   },
@@ -6885,24 +7230,29 @@
     "source_url": "https://jobs.example.com/palisade-security/130",
     "source_platform": "LinkedIn",
     "applied_date": "2026-05-31",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 87.7,
     "ats_report": {
       "score": 87.7,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Node.js",
         "Java",
         "Kafka",
         "GraphQL",
         "Machine Learning"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Go",
         "GCP",
         "Docker",
         "Django"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "4e850e16584ad9a5c84cd404",
+      "_version": 6
     },
     "created_at": "2026-05-22"
   },
@@ -6946,7 +7296,7 @@
     "source_url": "https://jobs.example.com/hearth-financial/131",
     "source_platform": null,
     "applied_date": "2026-07-26",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-07-17"
@@ -6982,18 +7332,23 @@
     "ats_score": 46.8,
     "ats_report": {
       "score": 46.8,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "SQL",
         "Node.js",
         "JavaScript",
         "CI/CD",
         "Kafka"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Figma",
         "PyTorch"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "9111c3f3dc303eea8154be72",
+      "_version": 6
     },
     "created_at": "2026-06-24"
   },
@@ -7016,7 +7371,7 @@
     },
     "stage_key": "Archived",
     "position": "Mid",
-    "salary_range": "\u00a3119k",
+    "salary_range": "£119k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -7033,8 +7388,7 @@
     "ats_score": 65.5,
     "ats_report": {
       "score": 65.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "User Research",
         "Azure",
         "gRPC",
@@ -7043,12 +7397,18 @@
         "TypeScript",
         "CI/CD"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Redis",
         "TypeScript",
         "Kubernetes",
         "Go"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "4a8cac76c49b9acb98a1f28f",
+      "_version": 6
     },
     "created_at": "2026-05-08"
   },
@@ -7171,18 +7531,23 @@
     "ats_score": 65.1,
     "ats_report": {
       "score": 65.1,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "CI/CD",
         "PostgreSQL",
         "React",
         "Terraform",
         "Django"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Go",
         "TypeScript"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c9ff9cded01f2b79de4d217c",
+      "_version": 6
     },
     "created_at": "2026-06-12"
   },
@@ -7258,15 +7623,20 @@
     "ats_score": 66.3,
     "ats_report": {
       "score": 66.3,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Rust",
         "Kafka",
         "GraphQL",
         "Azure",
         "FastAPI"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "0fa3f0d888687ca72685a9d5",
+      "_version": 6
     },
     "created_at": "2026-03-16"
   },
@@ -7314,19 +7684,24 @@
     "ats_score": 61.4,
     "ats_report": {
       "score": 61.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "PyTorch",
         "Figma",
         "gRPC",
         "GraphQL"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "gRPC",
         "Kotlin",
         "Airflow",
         "SEO"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c0913819047cb107eeb702e4",
+      "_version": 6
     },
     "created_at": "2026-05-01"
   },
@@ -7349,7 +7724,7 @@
     },
     "stage_key": "Saved",
     "position": "Junior",
-    "salary_range": "\u20ac107k - \u20ac189k",
+    "salary_range": "€107k - €189k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -7378,8 +7753,7 @@
     "ats_score": 97.1,
     "ats_report": {
       "score": 97.1,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "TypeScript",
         "TensorFlow",
         "FastAPI",
@@ -7387,7 +7761,13 @@
         "Jira",
         "Go"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "4e959473837ed1e5b9a2073f",
+      "_version": 6
     },
     "created_at": "2026-07-15"
   },
@@ -7410,7 +7790,7 @@
     },
     "stage_key": "Saved",
     "position": "Senior",
-    "salary_range": "\u20ac117k - \u20ac187k",
+    "salary_range": "€117k - €187k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -7434,14 +7814,19 @@
     "ats_score": 36.6,
     "ats_report": {
       "score": 36.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Linux",
         "AWS",
         "Java",
         "Airflow"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "5ca03779975a1ea9b4d37aec",
+      "_version": 6
     },
     "created_at": "2026-04-07"
   },
@@ -7574,20 +7959,25 @@
     "ats_score": 72.5,
     "ats_report": {
       "score": 72.5,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Rust",
         "Java",
         "gRPC",
         "HubSpot",
         "Machine Learning"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Azure",
         "Kubernetes",
         "A/B Testing",
         "Apache Spark"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "9135624d811501665388c68e",
+      "_version": 6
     },
     "created_at": "2026-06-17"
   },
@@ -7610,7 +8000,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Mid",
-    "salary_range": "\u20ac90k - \u20ac176k",
+    "salary_range": "€90k - €176k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -7647,8 +8037,7 @@
     "ats_score": 60.4,
     "ats_report": {
       "score": 60.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Jira",
         "Machine Learning",
         "JavaScript",
@@ -7657,11 +8046,17 @@
         "Kafka",
         "Go"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kubernetes",
         "REST APIs",
         "TypeScript"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "5d9e3c9538676f95049f7842",
+      "_version": 6
     },
     "created_at": "2026-04-08"
   },
@@ -7704,15 +8099,20 @@
     "ats_score": 45.0,
     "ats_report": {
       "score": 45.0,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "User Research",
         "Machine Learning",
         "React",
         "A/B Testing",
         "SEO"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "589810166d76246526c59e99",
+      "_version": 6
     },
     "created_at": "2026-05-04"
   },
@@ -7750,17 +8150,22 @@
     "ats_score": 72.4,
     "ats_report": {
       "score": 72.4,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Airflow",
         "Agile / Scrum",
         "HubSpot",
         "GraphQL"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "FastAPI",
         "Docker"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "615b4704cab4ed50caf36353",
+      "_version": 6
     },
     "created_at": "2026-07-31"
   },
@@ -7783,7 +8188,7 @@
     },
     "stage_key": "Saved",
     "position": "Mid",
-    "salary_range": "\u20ac82k - \u20ac174k",
+    "salary_range": "€82k - €174k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -7807,19 +8212,24 @@
     "ats_score": 43.3,
     "ats_report": {
       "score": 43.3,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Jira",
         "Python",
         "Redis",
         "Docker"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "GCP",
         "Kubernetes",
         "TensorFlow",
         "gRPC"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "0f948b6e94d7f28ffdfddaea",
+      "_version": 6
     },
     "created_at": "2026-08-05"
   },
@@ -7866,8 +8276,7 @@
     "ats_score": 52.4,
     "ats_report": {
       "score": 52.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "GCP",
         "PostgreSQL",
         "Node.js",
@@ -7877,9 +8286,15 @@
         "Machine Learning",
         "Azure"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "TypeScript"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "1b669c3d9542c0ec1ecb08bd",
+      "_version": 6
     },
     "created_at": "2026-05-29"
   },
@@ -7957,8 +8372,7 @@
     "ats_score": 71.9,
     "ats_report": {
       "score": 71.9,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Vue.js",
         "Airflow",
         "Go",
@@ -7966,9 +8380,15 @@
         "Rust",
         "CI/CD"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "User Research"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "6a992be7d83696bf9128ec9b",
+      "_version": 6
     },
     "created_at": "2026-04-22"
   },
@@ -8031,18 +8451,23 @@
     "ats_score": 74.8,
     "ats_report": {
       "score": 74.8,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Azure",
         "Linux",
         "Go",
         "Python"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kubernetes",
         "MySQL",
         "FastAPI"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "6c782b8358e172e615bd596c",
+      "_version": 6
     },
     "created_at": "2026-07-18"
   },
@@ -8204,7 +8629,7 @@
     },
     "stage_key": "Saved",
     "position": "Lead",
-    "salary_range": "\u00a3124k",
+    "salary_range": "£124k",
     "work_model": "Hybrid",
     "required_skills": [],
     "description": "We're looking for a Technical Writer to join our Hardware team. You'll work closely with cross-functional partners to ship high-impact features, own critical systems end to end, and help define technical direction as we scale.",
@@ -8216,18 +8641,23 @@
     "ats_score": 78.2,
     "ats_report": {
       "score": 78.2,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "GCP",
         "PyTorch",
         "Kotlin"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kubernetes",
         "CI/CD",
         "Jira",
         "React"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "5f383b52a0e44acd8dd5af60",
+      "_version": 6
     },
     "created_at": "2026-06-29"
   },
@@ -8265,8 +8695,7 @@
     "ats_score": 37.5,
     "ats_report": {
       "score": 37.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "MySQL",
         "Airflow",
         "Terraform",
@@ -8274,7 +8703,13 @@
         "Python",
         "SEO"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "7996b4daff3209ef0fca508c",
+      "_version": 6
     },
     "created_at": "2026-05-08"
   },
@@ -8312,8 +8747,7 @@
     "ats_score": 77.6,
     "ats_report": {
       "score": 77.6,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Vue.js",
         "Kotlin",
         "JavaScript",
@@ -8321,10 +8755,16 @@
         "React",
         "FastAPI"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "GraphQL",
         "SQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "9d442b8cfd7acd91e9394d6d",
+      "_version": 6
     },
     "created_at": "2026-07-28"
   },
@@ -8444,8 +8884,7 @@
     "ats_score": 54.8,
     "ats_report": {
       "score": 54.8,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "A/B Testing",
         "SEO",
         "CI/CD",
@@ -8455,11 +8894,17 @@
         "HubSpot",
         "Kotlin"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kafka",
         "Airflow",
         "GraphQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c4461af8ebc40eff223dcb92",
+      "_version": 6
     },
     "created_at": "2026-07-27"
   },
@@ -8510,8 +8955,7 @@
     "ats_score": 49.8,
     "ats_report": {
       "score": 49.8,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "SQL",
         "SEO",
         "Linux",
@@ -8519,10 +8963,16 @@
         "Figma",
         "Jira"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Vue.js",
         "Figma"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "052cc97ccd1ff96eaee8573c",
+      "_version": 6
     },
     "created_at": "2026-05-03"
   },
@@ -8845,7 +9295,7 @@
     },
     "stage_key": "Saved",
     "position": "Lead",
-    "salary_range": "\u20ac59k - \u20ac167k",
+    "salary_range": "€59k - €167k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -8878,7 +9328,7 @@
     "source_url": "https://jobs.example.com/momentum-analytics/167",
     "source_platform": "ZipRecruiter",
     "applied_date": null,
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-07-23"
@@ -8919,8 +9369,7 @@
     "ats_score": 50.8,
     "ats_report": {
       "score": 50.8,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "SQL",
         "Redis",
         "REST APIs",
@@ -8929,10 +9378,16 @@
         "PostgreSQL",
         "HubSpot"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "SQL",
         "Django"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "b6d613d1270440f788a22a4e",
+      "_version": 6
     },
     "created_at": "2026-03-19"
   },
@@ -8979,14 +9434,19 @@
     "ats_score": 79.7,
     "ats_report": {
       "score": 79.7,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "JavaScript",
         "Node.js",
         "Azure",
         "Jira"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "a6f1868b7658a48ef83bb88f",
+      "_version": 6
     },
     "created_at": "2026-06-03"
   },
@@ -9041,19 +9501,24 @@
     "ats_score": 48.9,
     "ats_report": {
       "score": 48.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Terraform",
         "REST APIs",
         "AWS",
         "MySQL"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "A/B Testing",
         "Airflow",
         "HubSpot",
         "Python"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "d1054e6e1e1f24be632e0c4a",
+      "_version": 6
     },
     "created_at": "2026-03-23"
   },
@@ -9180,20 +9645,25 @@
     "ats_score": 60.5,
     "ats_report": {
       "score": 60.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "TypeScript",
         "gRPC",
         "Vue.js",
         "Salesforce",
         "Python"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Rust",
         "Agile / Scrum",
         "JavaScript",
         "GraphQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "305c7250f2efe7a3e028d28d",
+      "_version": 6
     },
     "created_at": "2026-04-25"
   },
@@ -9227,7 +9697,7 @@
     "source_url": "https://jobs.example.com/nightowl-media/174",
     "source_platform": "Indeed",
     "applied_date": "2026-03-25",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-03-21"
@@ -9352,8 +9822,7 @@
     "ats_score": 63.4,
     "ats_report": {
       "score": 63.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "GCP",
         "Agile / Scrum",
         "Node.js",
@@ -9362,11 +9831,17 @@
         "REST APIs",
         "Azure"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "FastAPI",
         "Python",
         "Azure"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "bb6f54a68aa0d12001ac2860",
+      "_version": 6
     },
     "created_at": "2026-07-21"
   },
@@ -9481,13 +9956,18 @@
     "ats_score": 66.6,
     "ats_report": {
       "score": 66.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Machine Learning",
         "REST APIs",
         "User Research"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "8094e9510439a6a95acc9b8d",
+      "_version": 6
     },
     "created_at": "2026-03-10"
   },
@@ -9550,8 +10030,7 @@
     "ats_score": 77.1,
     "ats_report": {
       "score": 77.1,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "REST APIs",
         "gRPC",
         "Airflow",
@@ -9560,7 +10039,13 @@
         "SEO",
         "Azure"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "20c2a0c5c7c0d750d39ff44c",
+      "_version": 6
     },
     "created_at": "2026-05-05"
   },
@@ -9623,7 +10108,7 @@
     },
     "stage_key": "Saved",
     "position": "Senior",
-    "salary_range": "\u00a371k",
+    "salary_range": "£71k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -9813,7 +10298,7 @@
     },
     "stage_key": "Applied",
     "position": "Intern",
-    "salary_range": "\u00a381k",
+    "salary_range": "£81k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -9842,8 +10327,7 @@
     "ats_score": 94.1,
     "ats_report": {
       "score": 94.1,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "gRPC",
         "GraphQL",
         "Agile / Scrum",
@@ -9851,9 +10335,15 @@
         "Kotlin",
         "TensorFlow"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Docker"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "7aa52544a92b0cfbef6140a1",
+      "_version": 6
     },
     "created_at": "2026-07-27"
   },
@@ -9896,8 +10386,7 @@
     "ats_score": 41.7,
     "ats_report": {
       "score": 41.7,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Agile / Scrum",
         "Docker",
         "CI/CD",
@@ -9905,12 +10394,18 @@
         "TensorFlow",
         "REST APIs"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kubernetes",
         "Machine Learning",
         "MySQL",
         "PyTorch"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "85dedc927c26f7c216595488",
+      "_version": 6
     },
     "created_at": "2026-05-19"
   },
@@ -9945,15 +10440,20 @@
     "ats_score": 67.0,
     "ats_report": {
       "score": 67.0,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "HubSpot",
         "CI/CD",
         "Go",
         "FastAPI",
         "gRPC"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "f8a8b1ce6555f5d2b233799f",
+      "_version": 6
     },
     "created_at": "2026-06-27"
   },
@@ -9976,7 +10476,7 @@
     },
     "stage_key": "Interview",
     "position": "Intern",
-    "salary_range": "\u20ac131k - \u20ac177k",
+    "salary_range": "€131k - €177k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -10008,16 +10508,21 @@
     "ats_score": 83.7,
     "ats_report": {
       "score": 83.7,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Linux",
         "Figma",
         "SQL",
         "Python"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "A/B Testing"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "b45abbdacc50770fb97371b7",
+      "_version": 6
     },
     "created_at": "2026-05-26"
   },
@@ -10065,18 +10570,23 @@
     "ats_score": 81.4,
     "ats_report": {
       "score": 81.4,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Java",
         "HubSpot",
         "AWS"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Agile / Scrum",
         "GraphQL",
         "Kubernetes",
         "Redis"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c202fe3c1a750a95a3499dc1",
+      "_version": 6
     },
     "created_at": "2026-03-10"
   },
@@ -10123,7 +10633,7 @@
     "source_url": "https://jobs.example.com/solace-wellness/191",
     "source_platform": null,
     "applied_date": "2026-06-11",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-06-03"
@@ -10147,7 +10657,7 @@
     },
     "stage_key": "Applied",
     "position": "Mid",
-    "salary_range": "\u20ac121k - \u20ac179k",
+    "salary_range": "€121k - €179k",
     "work_model": "On-site",
     "required_skills": [],
     "description": null,
@@ -10199,17 +10709,22 @@
     "ats_score": 91.3,
     "ats_report": {
       "score": 91.3,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Django",
         "PostgreSQL",
         "Figma",
         "Kafka",
         "Docker"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Redis"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "fd918073ceb73031c897f88b",
+      "_version": 6
     },
     "created_at": "2026-04-08"
   },
@@ -10272,8 +10787,7 @@
     "ats_score": 97.0,
     "ats_report": {
       "score": 97.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Kubernetes",
         "Machine Learning",
         "Redis",
@@ -10282,11 +10796,17 @@
         "Go",
         "A/B Testing"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Airflow",
         "Salesforce",
         "JavaScript"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "0af442b832aaffc3fd051d03",
+      "_version": 6
     },
     "created_at": "2026-03-13"
   },
@@ -10309,7 +10829,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Junior",
-    "salary_range": "\u20ac128k - \u20ac153k",
+    "salary_range": "€128k - €153k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -10341,18 +10861,23 @@
     "ats_score": 73.6,
     "ats_report": {
       "score": 73.6,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Django",
         "Figma",
         "TensorFlow",
         "MySQL",
         "PyTorch"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "REST APIs",
         "Machine Learning"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "19fbc912e5fd4fc8c9aca87d",
+      "_version": 6
     },
     "created_at": "2026-06-08"
   },
@@ -10375,7 +10900,7 @@
     },
     "stage_key": "Archived",
     "position": "Mid",
-    "salary_range": "\u00a3116k",
+    "salary_range": "£116k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -10460,8 +10985,7 @@
     "ats_score": 42.6,
     "ats_report": {
       "score": 42.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Jira",
         "PostgreSQL",
         "SEO",
@@ -10471,10 +10995,16 @@
         "AWS",
         "GraphQL"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "User Research",
         "Figma"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "cae672f92ce7df35de4d9d53",
+      "_version": 6
     },
     "created_at": "2026-06-03"
   },
@@ -10574,13 +11104,18 @@
     "ats_score": 60.0,
     "ats_report": {
       "score": 60.0,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Rust",
         "Airflow",
         "HubSpot"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "e6e85f27b9eca779eb56f9d2",
+      "_version": 6
     },
     "created_at": "2026-07-18"
   },
@@ -10636,19 +11171,24 @@
     "ats_score": 76.8,
     "ats_report": {
       "score": 76.8,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Airflow",
         "Apache Spark",
         "Salesforce",
         "Kubernetes",
         "HubSpot"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "React",
         "Salesforce",
         "Django"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "4251293a6dc2915f4f7b351c",
+      "_version": 6
     },
     "created_at": "2026-06-25"
   },
@@ -10695,14 +11235,19 @@
     "ats_score": 68.0,
     "ats_report": {
       "score": 68.0,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "GraphQL",
         "AWS",
         "Airflow",
         "Salesforce"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "e17fece09df7ebe23ff022de",
+      "_version": 6
     },
     "created_at": "2026-06-29"
   },
@@ -10781,7 +11326,7 @@
     },
     "stage_key": "Applied",
     "position": "Mid",
-    "salary_range": "\u00a347k",
+    "salary_range": "£47k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -10821,7 +11366,7 @@
     },
     "stage_key": "Saved",
     "position": "Junior",
-    "salary_range": "\u20ac62k - \u20ac162k",
+    "salary_range": "€62k - €162k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -10861,15 +11406,20 @@
     "ats_score": 66.1,
     "ats_report": {
       "score": 66.1,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "PyTorch",
         "GCP",
         "Figma",
         "REST APIs",
         "Apache Spark"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "d1d7bc54f1a40bfe7dacd4e0",
+      "_version": 6
     },
     "created_at": "2026-07-15"
   },
@@ -10912,12 +11462,11 @@
     "source_url": "https://jobs.example.com/wren-&-co/205",
     "source_platform": "Jobscan",
     "applied_date": "2026-08-02",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 83.6,
     "ats_report": {
       "score": 83.6,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "MySQL",
         "Airflow",
         "gRPC",
@@ -10926,12 +11475,18 @@
         "FastAPI",
         "JavaScript"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "A/B Testing",
         "Vue.js",
         "Docker",
         "Airflow"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "631013f6033da779f9d26024",
+      "_version": 6
     },
     "created_at": "2026-07-30"
   },
@@ -11031,7 +11586,7 @@
     "source_url": "https://jobs.example.com/ledgerly/207",
     "source_platform": "ZipRecruiter",
     "applied_date": null,
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-03-23"
@@ -11055,7 +11610,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Lead",
-    "salary_range": "\u20ac101k - \u20ac174k",
+    "salary_range": "€101k - €174k",
     "work_model": "Remote",
     "required_skills": [],
     "description": "Rivergate Studios is hiring a Marketing Manager to help us grow our Gaming offering. Ideal candidates are comfortable with ambiguity, enjoy mentoring others, and can balance speed with quality.",
@@ -11066,12 +11621,11 @@
     "source_url": "https://jobs.example.com/rivergate-studios/208",
     "source_platform": "Glassdoor",
     "applied_date": "2026-03-17",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 55.4,
     "ats_report": {
       "score": 55.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Kubernetes",
         "Jira",
         "HubSpot",
@@ -11079,9 +11633,15 @@
         "Rust",
         "A/B Testing"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "SQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "f697324c032baf38eea8e8c7",
+      "_version": 6
     },
     "created_at": "2026-03-15"
   },
@@ -11137,7 +11697,7 @@
     "source_url": "https://jobs.example.com/meridian-health-group/209",
     "source_platform": "Indeed",
     "applied_date": null,
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-03-23"
@@ -11181,8 +11741,7 @@
     "ats_score": 71.0,
     "ats_report": {
       "score": 71.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Figma",
         "A/B Testing",
         "Agile / Scrum",
@@ -11190,9 +11749,15 @@
         "Go",
         "REST APIs"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Jira"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c985a883d457dd6be41308ca",
+      "_version": 6
     },
     "created_at": "2026-06-19"
   },
@@ -11299,12 +11864,11 @@
     "source_url": "https://jobs.example.com/auric-trading/212",
     "source_platform": "Other",
     "applied_date": null,
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 66.8,
     "ats_report": {
       "score": 66.8,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "FastAPI",
         "Salesforce",
         "Jira",
@@ -11314,11 +11878,17 @@
         "HubSpot",
         "REST APIs"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Linux",
         "TensorFlow",
         "Azure"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "1fc7f532082c5f8c35cbbf4c",
+      "_version": 6
     },
     "created_at": "2026-06-22"
   },
@@ -11362,19 +11932,24 @@
     "ats_score": 97.0,
     "ats_report": {
       "score": 97.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Azure",
         "TypeScript",
         "Kubernetes",
         "HubSpot"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "HubSpot",
         "SEO",
         "Node.js",
         "Kotlin"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "2236b60d9a12b44a46d066a6",
+      "_version": 6
     },
     "created_at": "2026-05-22"
   },
@@ -11397,7 +11972,7 @@
     },
     "stage_key": "Offer",
     "position": "Junior",
-    "salary_range": "\u00a3128k",
+    "salary_range": "£128k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -11434,8 +12009,7 @@
     "ats_score": 87.0,
     "ats_report": {
       "score": 87.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "SEO",
         "Kotlin",
         "Jira",
@@ -11445,10 +12019,16 @@
         "Java",
         "Go"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "GraphQL",
         "TensorFlow"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "764c70fb23146a7c4a770264",
+      "_version": 6
     },
     "created_at": "2026-05-16"
   },
@@ -11525,8 +12105,7 @@
     "ats_score": 60.1,
     "ats_report": {
       "score": 60.1,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "React",
         "Linux",
         "Airflow",
@@ -11534,11 +12113,17 @@
         "PostgreSQL",
         "Figma"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "SEO",
         "PostgreSQL",
         "HubSpot"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "7bb12e1cacac5e65fe29604f",
+      "_version": 6
     },
     "created_at": "2026-04-27"
   },
@@ -11618,7 +12203,7 @@
     },
     "stage_key": "Ghosted",
     "position": "Manager",
-    "salary_range": "\u20ac123k - \u20ac158k",
+    "salary_range": "€123k - €158k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -11634,17 +12219,22 @@
     "source_url": "https://jobs.example.com/brightpath-health/218",
     "source_platform": "Glassdoor",
     "applied_date": "2026-07-05",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 78.7,
     "ats_report": {
       "score": 78.7,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "GCP",
         "SQL",
         "Airflow"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "271147ee925739f5be63f455",
+      "_version": 6
     },
     "created_at": "2026-07-01"
   },
@@ -11691,7 +12281,7 @@
     "source_url": "https://jobs.example.com/fenwick-realty-tech/219",
     "source_platform": "Indeed",
     "applied_date": null,
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-06-17"
@@ -11755,7 +12345,7 @@
     },
     "stage_key": "Saved",
     "position": "Junior",
-    "salary_range": "\u20ac119k - \u20ac162k",
+    "salary_range": "€119k - €162k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -11852,17 +12442,22 @@
     "ats_score": 44.6,
     "ats_report": {
       "score": 44.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Jira",
         "Terraform",
         "SQL",
         "Salesforce",
         "React"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "React"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c5d9a0dcabc64e75578c0bc5",
+      "_version": 6
     },
     "created_at": "2026-06-10"
   },
@@ -11885,7 +12480,7 @@
     },
     "stage_key": "Saved",
     "position": "Mid",
-    "salary_range": "\u00a3101k",
+    "salary_range": "£101k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -11938,7 +12533,7 @@
     },
     "stage_key": "Saved",
     "position": "Lead",
-    "salary_range": "\u00a3122k",
+    "salary_range": "£122k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -12066,8 +12661,7 @@
     "ats_score": 59.9,
     "ats_report": {
       "score": 59.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "JavaScript",
         "HubSpot",
         "gRPC",
@@ -12077,11 +12671,17 @@
         "AWS",
         "SQL"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "GCP",
         "AWS",
         "Apache Spark"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "2744a87bb46fca4527e8babf",
+      "_version": 6
     },
     "created_at": "2026-07-28"
   },
@@ -12149,23 +12749,28 @@
     "source_url": "https://jobs.example.com/brightpath-health/228",
     "source_platform": "ZipRecruiter",
     "applied_date": "2026-05-11",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 83.4,
     "ats_report": {
       "score": 83.4,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "SEO",
         "Node.js",
         "FastAPI",
         "Django",
         "Go"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "GCP",
         "SQL",
         "AWS"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "7ceda2d634fa0c1e59a7f0f0",
+      "_version": 6
     },
     "created_at": "2026-05-03"
   },
@@ -12201,12 +12806,11 @@
     "source_url": "https://jobs.example.com/driftwood-travel/229",
     "source_platform": "Jobscan",
     "applied_date": "2026-04-06",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 76.5,
     "ats_report": {
       "score": 76.5,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "PyTorch",
         "SQL",
         "Java",
@@ -12214,10 +12818,16 @@
         "Kafka",
         "HubSpot"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "CI/CD",
         "Linux"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "ea4512be953731a0555f2a0c",
+      "_version": 6
     },
     "created_at": "2026-04-03"
   },
@@ -12265,19 +12875,24 @@
     "ats_score": 97.6,
     "ats_report": {
       "score": 97.6,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "AWS",
         "CI/CD",
         "Jira",
         "SEO"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Django",
         "Apache Spark",
         "Agile / Scrum",
         "REST APIs"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "400311edc5722a4c9865bd94",
+      "_version": 6
     },
     "created_at": "2026-07-16"
   },
@@ -12381,7 +12996,7 @@
     "source_url": "https://jobs.example.com/rivergate-studios/232",
     "source_platform": "Monster",
     "applied_date": "2026-06-13",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-06-09"
@@ -12425,8 +13040,7 @@
     "ats_score": 35.4,
     "ats_report": {
       "score": 35.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Terraform",
         "Linux",
         "Machine Learning",
@@ -12436,10 +13050,16 @@
         "PostgreSQL",
         "CI/CD"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Airflow",
         "JavaScript"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "ea273407f8169cec7a2bc637",
+      "_version": 6
     },
     "created_at": "2026-03-31"
   },
@@ -12494,18 +13114,23 @@
     "ats_score": 71.4,
     "ats_report": {
       "score": 71.4,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "GraphQL",
         "Rust",
         "Node.js",
         "Kubernetes",
         "TypeScript"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "gRPC",
         "Linux"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "1c32662bd1e072132d3b7709",
+      "_version": 6
     },
     "created_at": "2026-03-18"
   },
@@ -12528,7 +13153,7 @@
     },
     "stage_key": "Applied",
     "position": "Junior",
-    "salary_range": "\u00a369k",
+    "salary_range": "£69k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -12549,15 +13174,20 @@
     "ats_score": 46.0,
     "ats_report": {
       "score": 46.0,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "JavaScript",
         "PostgreSQL",
         "Java",
         "SQL",
         "User Research"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "6dbf6028ca343462f1effbaf",
+      "_version": 6
     },
     "created_at": "2026-05-22"
   },
@@ -12644,8 +13274,7 @@
     "ats_score": 53.1,
     "ats_report": {
       "score": 53.1,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Azure",
         "SQL",
         "Vue.js",
@@ -12654,7 +13283,13 @@
         "FastAPI",
         "Agile / Scrum"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "ff62766beadc25f2a6b85b88",
+      "_version": 6
     },
     "created_at": "2026-06-15"
   },
@@ -12677,7 +13312,7 @@
     },
     "stage_key": "Applied",
     "position": "Mid",
-    "salary_range": "\u20ac80k - \u20ac190k",
+    "salary_range": "€80k - €190k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -12717,8 +13352,7 @@
     "ats_score": 64.7,
     "ats_report": {
       "score": 64.7,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Go",
         "Kotlin",
         "gRPC",
@@ -12728,12 +13362,18 @@
         "Machine Learning",
         "Django"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Agile / Scrum",
         "Linux",
         "SQL",
         "CI/CD"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "10f918fe1fd561a70ce46e8c",
+      "_version": 6
     },
     "created_at": "2026-04-16"
   },
@@ -12784,14 +13424,19 @@
     "ats_score": 57.9,
     "ats_report": {
       "score": 57.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Terraform",
         "Azure",
         "Apache Spark",
         "Figma"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "43471887715bf7fe2b2dee78",
+      "_version": 6
     },
     "created_at": "2026-07-02"
   },
@@ -12879,23 +13524,28 @@
     "source_url": "https://jobs.example.com/nightowl-media/241",
     "source_platform": "Glassdoor",
     "applied_date": "2026-03-21",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 72.6,
     "ats_report": {
       "score": 72.6,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "HubSpot",
         "Kotlin",
         "SQL",
         "Django",
         "GCP"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Rust",
         "Jira",
         "Kotlin"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "55a5ad4fa3e737bad5cb5bef",
+      "_version": 6
     },
     "created_at": "2026-03-14"
   },
@@ -12943,24 +13593,29 @@
     "source_url": "https://jobs.example.com/substratum-data/242",
     "source_platform": "ZipRecruiter",
     "applied_date": "2026-03-20",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 77.9,
     "ats_report": {
       "score": 77.9,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "GCP",
         "SEO",
         "TensorFlow",
         "GraphQL",
         "Java"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Python",
         "CI/CD",
         "User Research",
         "Machine Learning"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "281dafdcbe5e90555a22194f",
+      "_version": 6
     },
     "created_at": "2026-03-13"
   },
@@ -12995,8 +13650,7 @@
     "ats_score": 69.3,
     "ats_report": {
       "score": 69.3,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Django",
         "Airflow",
         "React",
@@ -13006,9 +13660,15 @@
         "REST APIs",
         "PyTorch"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "AWS"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "43ca981ce656f2eb46735252",
+      "_version": 6
     },
     "created_at": "2026-05-02"
   },
@@ -13083,7 +13743,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Lead",
-    "salary_range": "\u20ac65k - \u20ac178k",
+    "salary_range": "€65k - €178k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -13111,12 +13771,11 @@
     "source_url": "https://jobs.example.com/kindling-labs/245",
     "source_platform": "ZipRecruiter",
     "applied_date": "2026-06-16",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 93.4,
     "ats_report": {
       "score": 93.4,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "REST APIs",
         "JavaScript",
         "CI/CD",
@@ -13125,12 +13784,18 @@
         "Linux",
         "Vue.js"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Airflow",
         "Java",
         "Node.js",
         "A/B Testing"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "9afd463cba69ca6a6e917e4e",
+      "_version": 6
     },
     "created_at": "2026-06-08"
   },
@@ -13168,20 +13833,25 @@
     "ats_score": 96.6,
     "ats_report": {
       "score": 96.6,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "AWS",
         "FastAPI",
         "JavaScript",
         "Jira",
         "GCP"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Docker",
         "Go",
         "Linux",
         "Airflow"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c9923951837cb4a00583ccf4",
+      "_version": 6
     },
     "created_at": "2026-05-15"
   },
@@ -13204,7 +13874,7 @@
     },
     "stage_key": "Rejected",
     "position": "Mid",
-    "salary_range": "\u20ac85k - \u20ac176k",
+    "salary_range": "€85k - €176k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -13224,17 +13894,22 @@
     "ats_score": 52.7,
     "ats_report": {
       "score": 52.7,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Python",
         "Vue.js",
         "Jira",
         "Django",
         "Agile / Scrum"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "SQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "cb9ed7e7bf7e6d757c272868",
+      "_version": 6
     },
     "created_at": "2026-05-28"
   },
@@ -13257,7 +13932,7 @@
     },
     "stage_key": "Interview",
     "position": "Manager",
-    "salary_range": "\u20ac88k - \u20ac152k",
+    "salary_range": "€88k - €152k",
     "work_model": "On-site",
     "required_skills": [],
     "description": "We're looking for a Account Executive to join our Gaming team. You'll work closely with cross-functional partners to ship high-impact features, own critical systems end to end, and help define technical direction as we scale.",
@@ -13321,8 +13996,7 @@
     "ats_score": 68.4,
     "ats_report": {
       "score": 68.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Python",
         "AWS",
         "SQL",
@@ -13330,7 +14004,13 @@
         "Azure",
         "A/B Testing"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "778048770b9b039fe756ebee",
+      "_version": 6
     },
     "created_at": "2026-04-30"
   },
@@ -13365,8 +14045,7 @@
     "ats_score": 68.1,
     "ats_report": {
       "score": 68.1,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "SQL",
         "GraphQL",
         "Redis",
@@ -13376,12 +14055,18 @@
         "JavaScript",
         "TypeScript"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Java",
         "Go",
         "Jira",
         "MySQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "71688f964e57b802b3a4cc77",
+      "_version": 6
     },
     "created_at": "2026-07-21"
   },
@@ -13404,7 +14089,7 @@
     },
     "stage_key": "Interview",
     "position": "Junior",
-    "salary_range": "\u20ac111k - \u20ac149k",
+    "salary_range": "€111k - €149k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -13429,8 +14114,7 @@
     "ats_score": 97.7,
     "ats_report": {
       "score": 97.7,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Azure",
         "Docker",
         "FastAPI",
@@ -13438,11 +14122,17 @@
         "Kubernetes",
         "Go"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "gRPC",
         "Terraform",
         "Go"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "55ceb9704737ac280cd42fe6",
+      "_version": 6
     },
     "created_at": "2026-07-19"
   },
@@ -13465,7 +14155,7 @@
     },
     "stage_key": "Interview",
     "position": "Intern",
-    "salary_range": "\u00a3110k",
+    "salary_range": "£110k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -13501,8 +14191,7 @@
     "ats_score": 39.6,
     "ats_report": {
       "score": 39.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Docker",
         "SQL",
         "TypeScript",
@@ -13511,11 +14200,17 @@
         "Python",
         "JavaScript"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kubernetes",
         "Node.js",
         "Terraform"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "16a48c2d17814b790b8c373a",
+      "_version": 6
     },
     "created_at": "2026-04-16"
   },
@@ -13590,7 +14285,7 @@
     },
     "stage_key": "Interview",
     "position": "Junior",
-    "salary_range": "\u00a349k",
+    "salary_range": "£49k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -13630,7 +14325,7 @@
     },
     "stage_key": "Ghosted",
     "position": "Senior",
-    "salary_range": "\u00a3124k",
+    "salary_range": "£124k",
     "work_model": "Hybrid",
     "required_skills": [],
     "description": "We're looking for a UX Researcher to join our Supply Chain team. You'll work closely with cross-functional partners to ship high-impact features, own critical systems end to end, and help define technical direction as we scale.",
@@ -13638,12 +14333,11 @@
     "source_url": "https://jobs.example.com/northwind-logistics/255",
     "source_platform": "Glassdoor",
     "applied_date": "2026-04-14",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 38.5,
     "ats_report": {
       "score": 38.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "JavaScript",
         "Machine Learning",
         "Vue.js",
@@ -13653,12 +14347,18 @@
         "Salesforce",
         "Node.js"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Redis",
         "Rust",
         "JavaScript",
         "Node.js"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "e61f8bd04bbb05812a988597",
+      "_version": 6
     },
     "created_at": "2026-04-14"
   },
@@ -13705,15 +14405,20 @@
     "ats_score": 86.5,
     "ats_report": {
       "score": 86.5,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Figma",
         "Jira",
         "CI/CD"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Rust"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "143cb96f73d4f50fdd1179cc",
+      "_version": 6
     },
     "created_at": "2026-06-25"
   },
@@ -13769,8 +14474,7 @@
     "ats_score": 50.3,
     "ats_report": {
       "score": 50.3,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "JavaScript",
         "React",
         "Kotlin",
@@ -13779,7 +14483,13 @@
         "TypeScript",
         "Figma"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "b7d1da29dfa0136c4b49b00f",
+      "_version": 6
     },
     "created_at": "2026-05-05"
   },
@@ -13854,7 +14564,7 @@
     },
     "stage_key": "Saved",
     "position": "Junior",
-    "salary_range": "\u00a365k",
+    "salary_range": "£65k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -13979,22 +14689,27 @@
     "source_url": "https://jobs.example.com/verdant-foods/261",
     "source_platform": "LinkedIn",
     "applied_date": null,
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 91.1,
     "ats_report": {
       "score": 91.1,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "MySQL",
         "CI/CD",
         "Apache Spark",
         "Django"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "REST APIs",
         "React",
         "Apache Spark"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "83f552a94c6e0e0c48dbf46a",
+      "_version": 6
     },
     "created_at": "2026-03-11"
   },
@@ -14017,7 +14732,7 @@
     },
     "stage_key": "Saved",
     "position": "Lead",
-    "salary_range": "\u00a3105k",
+    "salary_range": "£105k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -14054,19 +14769,24 @@
     "ats_score": 53.6,
     "ats_report": {
       "score": 53.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Linux",
         "CI/CD",
         "FastAPI",
         "SEO"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Redis",
         "Java",
         "PyTorch",
         "A/B Testing"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "5b608bcf88ff9a2fe2f8c56e",
+      "_version": 6
     },
     "created_at": "2026-05-12"
   },
@@ -14089,7 +14809,7 @@
     },
     "stage_key": "Archived",
     "position": "Junior",
-    "salary_range": "\u20ac137k - \u20ac150k",
+    "salary_range": "€137k - €150k",
     "work_model": "On-site",
     "required_skills": [],
     "description": "Nimbus Cloud is hiring a Account Executive to help us grow our Cloud Infrastructure offering. Ideal candidates are comfortable with ambiguity, enjoy mentoring others, and can balance speed with quality.",
@@ -14100,12 +14820,11 @@
     "source_url": "https://jobs.example.com/nimbus-cloud/263",
     "source_platform": null,
     "applied_date": "2026-03-31",
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": 59.8,
     "ats_report": {
       "score": 59.8,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Kotlin",
         "SQL",
         "Figma",
@@ -14115,9 +14834,15 @@
         "Python",
         "PyTorch"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "React"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "a53fa2397d3be0486fd8a619",
+      "_version": 6
     },
     "created_at": "2026-03-31"
   },
@@ -14155,8 +14880,7 @@
     "ats_score": 74.9,
     "ats_report": {
       "score": 74.9,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Rust",
         "gRPC",
         "Terraform",
@@ -14166,12 +14890,18 @@
         "TensorFlow",
         "Kubernetes"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Salesforce",
         "SEO",
         "MySQL",
         "Java"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "d5a8fabf5b6192c0ddf5cc85",
+      "_version": 6
     },
     "created_at": "2026-05-05"
   },
@@ -14211,16 +14941,21 @@
     "ats_score": 70.2,
     "ats_report": {
       "score": 70.2,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "HubSpot",
         "MySQL",
         "React"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kafka",
         "Salesforce"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "b55aea25361d4a72f94fd15f",
+      "_version": 6
     },
     "created_at": "2026-05-06"
   },
@@ -14243,7 +14978,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Mid",
-    "salary_range": "\u00a354k",
+    "salary_range": "£54k",
     "work_model": "Remote",
     "required_skills": [],
     "description": "As a Backend Engineer at Momentum Analytics, you will design, build, and maintain systems that power our AI / Analytics platform. We value ownership, pragmatism, and clear communication over process for its own sake.",
@@ -14255,8 +14990,7 @@
     "ats_score": 68.5,
     "ats_report": {
       "score": 68.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "AWS",
         "SQL",
         "REST APIs",
@@ -14265,7 +14999,13 @@
         "Apache Spark",
         "Java"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "999762d5bbcd2f2135409545",
+      "_version": 6
     },
     "created_at": "2026-03-26"
   },
@@ -14288,7 +15028,7 @@
     },
     "stage_key": "Ghosted",
     "position": "Intern",
-    "salary_range": "\u20ac57k - \u20ac159k",
+    "salary_range": "€57k - €159k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -14328,14 +15068,19 @@
     "ats_score": 78.0,
     "ats_report": {
       "score": 78.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Airflow",
         "GraphQL",
         "PyTorch",
         "SQL"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "2a7a78db6bcbeadd4f544e54",
+      "_version": 6
     },
     "created_at": "2026-08-02"
   },
@@ -14375,16 +15120,21 @@
     "ats_score": 52.9,
     "ats_report": {
       "score": 52.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "CI/CD",
         "FastAPI",
         "Salesforce",
         "AWS"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Django"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "0db17cd8f654409d9b451a45",
+      "_version": 6
     },
     "created_at": "2026-05-26"
   },
@@ -14407,7 +15157,7 @@
     },
     "stage_key": "Saved",
     "position": "Mid",
-    "salary_range": "\u20ac112k - \u20ac179k",
+    "salary_range": "€112k - €179k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -14461,8 +15211,7 @@
     "ats_score": 79.4,
     "ats_report": {
       "score": 79.4,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "AWS",
         "SEO",
         "Node.js",
@@ -14470,7 +15219,13 @@
         "SQL",
         "Terraform"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "f3e0ee11713623971cc52d81",
+      "_version": 6
     },
     "created_at": "2026-03-21"
   },
@@ -14521,15 +15276,20 @@
     "ats_score": 84.2,
     "ats_report": {
       "score": 84.2,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "PostgreSQL",
         "TypeScript",
         "Java",
         "Salesforce",
         "SQL"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "9e385868ad37e4d78be357d5",
+      "_version": 6
     },
     "created_at": "2026-06-19"
   },
@@ -14627,17 +15387,22 @@
     "ats_score": 75.2,
     "ats_report": {
       "score": 75.2,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "PyTorch",
         "Django",
         "HubSpot",
         "Apache Spark",
         "SEO"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "PostgreSQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "303bafd497b4d916619119f1",
+      "_version": 6
     },
     "created_at": "2026-05-03"
   },
@@ -14660,7 +15425,7 @@
     },
     "stage_key": "Applied",
     "position": "Junior",
-    "salary_range": "\u20ac117k - \u20ac189k",
+    "salary_range": "€117k - €189k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -14757,7 +15522,7 @@
     },
     "stage_key": "Interview",
     "position": "Intern",
-    "salary_range": "\u20ac123k - \u20ac182k",
+    "salary_range": "€123k - €182k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -14778,16 +15543,21 @@
     "ats_score": 74.6,
     "ats_report": {
       "score": 74.6,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Jira",
         "FastAPI",
         "Salesforce"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Azure",
         "GCP"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "f88eadf54902a88beb530391",
+      "_version": 6
     },
     "created_at": "2026-07-19"
   },
@@ -14834,8 +15604,7 @@
     "ats_score": 87.4,
     "ats_report": {
       "score": 87.4,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "CI/CD",
         "A/B Testing",
         "Salesforce",
@@ -14844,7 +15613,13 @@
         "PyTorch",
         "Apache Spark"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "79a7dddab0361d043814850e",
+      "_version": 6
     },
     "created_at": "2026-06-29"
   },
@@ -14867,7 +15642,7 @@
     },
     "stage_key": "Rejected",
     "position": "Intern",
-    "salary_range": "\u00a370k",
+    "salary_range": "£70k",
     "work_model": "On-site",
     "required_skills": [],
     "description": null,
@@ -14879,13 +15654,18 @@
     "ats_score": 48.2,
     "ats_report": {
       "score": 48.2,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "TensorFlow",
         "Vue.js",
         "Rust"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "96b57cb132b47efdbe164fce",
+      "_version": 6
     },
     "created_at": "2026-07-02"
   },
@@ -15044,13 +15824,18 @@
     "ats_score": 49.3,
     "ats_report": {
       "score": 49.3,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Azure",
         "Vue.js",
         "Apache Spark"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "2bf1df3ebf80991f7bcccc9e",
+      "_version": 6
     },
     "created_at": "2026-05-02"
   },
@@ -15073,7 +15858,7 @@
     },
     "stage_key": "Rejected",
     "position": "Junior",
-    "salary_range": "\u00a346k",
+    "salary_range": "£46k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -15129,7 +15914,7 @@
     },
     "stage_key": "Applied",
     "position": "Lead",
-    "salary_range": "\u00a380k",
+    "salary_range": "£80k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -15146,8 +15931,7 @@
     "ats_score": 88.2,
     "ats_report": {
       "score": 88.2,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Vue.js",
         "Redis",
         "TensorFlow",
@@ -15155,11 +15939,17 @@
         "Kubernetes",
         "SEO"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "GraphQL",
         "Airflow",
         "Jira"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "35c2062759371f290551926e",
+      "_version": 6
     },
     "created_at": "2026-06-18"
   },
@@ -15182,7 +15972,7 @@
     },
     "stage_key": "Saved",
     "position": "Junior",
-    "salary_range": "\u00a393k",
+    "salary_range": "£93k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -15234,7 +16024,7 @@
     },
     "stage_key": "Applied",
     "position": "Intern",
-    "salary_range": "\u00a367k",
+    "salary_range": "£67k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -15263,17 +16053,22 @@
     "ats_score": 95.0,
     "ats_report": {
       "score": 95.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "TensorFlow",
         "Vue.js",
         "gRPC"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Azure",
         "gRPC",
         "SQL"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "db8f14a5d75d62b8bc6260a9",
+      "_version": 6
     },
     "created_at": "2026-05-12"
   },
@@ -15369,18 +16164,23 @@
     "ats_score": 91.2,
     "ats_report": {
       "score": 91.2,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "gRPC",
         "Kotlin",
         "TensorFlow",
         "GraphQL",
         "PyTorch"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Go",
         "Kafka"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "fdc92dc32a342ed7953596f8",
+      "_version": 6
     },
     "created_at": "2026-05-10"
   },
@@ -15403,7 +16203,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Manager",
-    "salary_range": "\u00a371k",
+    "salary_range": "£71k",
     "work_model": "Hybrid",
     "required_skills": [
       {
@@ -15427,17 +16227,22 @@
     "ats_score": 64.6,
     "ats_report": {
       "score": 64.6,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Azure",
         "gRPC",
         "SEO"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Azure",
         "SEO",
         "Kotlin"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "4967d27de6efb8d4be2861dc",
+      "_version": 6
     },
     "created_at": "2026-04-22"
   },
@@ -15480,20 +16285,25 @@
     "ats_score": 51.7,
     "ats_report": {
       "score": 51.7,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "SEO",
         "Machine Learning",
         "Redis",
         "CI/CD",
         "Java"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Kotlin",
         "Agile / Scrum",
         "Terraform",
         "Kubernetes"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "6bda0fdcee3d56fdab0a8718",
+      "_version": 6
     },
     "created_at": "2026-07-19"
   },
@@ -15576,7 +16386,7 @@
     },
     "stage_key": "Saved",
     "position": "Intern",
-    "salary_range": "\u00a3126k",
+    "salary_range": "£126k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -15613,7 +16423,7 @@
     },
     "stage_key": "Saved",
     "position": "Intern",
-    "salary_range": "\u20ac88k - \u20ac162k",
+    "salary_range": "€88k - €162k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -15646,17 +16456,22 @@
     "ats_score": 85.2,
     "ats_report": {
       "score": 85.2,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Apache Spark",
         "Figma",
         "HubSpot",
         "TensorFlow",
         "JavaScript"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "FastAPI"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "c6460a161cabf4887505169a",
+      "_version": 6
     },
     "created_at": "2026-06-19"
   },
@@ -15716,8 +16531,7 @@
     "ats_score": 71.0,
     "ats_report": {
       "score": 71.0,
-      "summary": "Strong keyword overlap with the job description.",
-      "matched_keywords": [
+      "matched_skills": [
         "Vue.js",
         "A/B Testing",
         "Agile / Scrum",
@@ -15726,9 +16540,15 @@
         "Figma",
         "Java"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "Jira"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "38af64cd0a69d1ca8ca1608c",
+      "_version": 6
     },
     "created_at": "2026-04-28"
   },
@@ -15791,17 +16611,22 @@
     "ats_score": 64.9,
     "ats_report": {
       "score": 64.9,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Kubernetes",
         "Node.js",
         "REST APIs",
         "Airflow"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "GCP",
         "TypeScript"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "d2594576df24b9f0d67e07ad",
+      "_version": 6
     },
     "created_at": "2026-07-10"
   },
@@ -15872,7 +16697,7 @@
     },
     "stage_key": "Rejected",
     "position": "Manager",
-    "salary_range": "\u00a384k",
+    "salary_range": "£84k",
     "work_model": "On-site",
     "required_skills": [
       {
@@ -15893,8 +16718,7 @@
     "ats_score": 61.5,
     "ats_report": {
       "score": 61.5,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "HubSpot",
         "Azure",
         "Apache Spark",
@@ -15904,7 +16728,13 @@
         "SQL",
         "React"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "e70f7f438db7b4ee0245df45",
+      "_version": 6
     },
     "created_at": "2026-06-02"
   },
@@ -15927,7 +16757,7 @@
     },
     "stage_key": "Saved",
     "position": "Junior",
-    "salary_range": "\u20ac65k - \u20ac171k",
+    "salary_range": "€65k - €171k",
     "work_model": "Remote",
     "required_skills": [
       {
@@ -15947,7 +16777,7 @@
     "source_url": "https://jobs.example.com/verdant-foods/297",
     "source_platform": "LinkedIn",
     "applied_date": null,
-    "notes": "Referred by a former colleague \u2014 following up next week.",
+    "notes": "Referred by a former colleague — following up next week.",
     "ats_score": null,
     "ats_report": null,
     "created_at": "2026-06-24"
@@ -15996,15 +16826,20 @@
     "ats_score": 62.0,
     "ats_report": {
       "score": 62.0,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "Node.js",
         "Java",
         "REST APIs",
         "FastAPI",
         "SEO"
       ],
-      "missing_keywords": []
+      "matched_experience": [],
+      "missing_skills": [],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "e699237d36a7675a6fef4892",
+      "_version": 6
     },
     "created_at": "2026-06-25"
   },
@@ -16042,19 +16877,24 @@
     "ats_score": 46.4,
     "ats_report": {
       "score": 46.4,
-      "summary": "Several key skills from the job description are missing from the resume.",
-      "matched_keywords": [
+      "matched_skills": [
         "TypeScript",
         "AWS",
         "Docker",
         "Kafka"
       ],
-      "missing_keywords": [
+      "matched_experience": [],
+      "missing_skills": [
         "SQL",
         "Kafka",
         "REST APIs",
         "Agile / Scrum"
-      ]
+      ],
+      "experience_gaps": [],
+      "suggestions": [],
+      "resume_id": null,
+      "_hash": "2a342bad9358d466def870c5",
+      "_version": 6
     },
     "created_at": "2026-05-27"
   },
@@ -16077,7 +16917,7 @@
     },
     "stage_key": "Phone Screen",
     "position": "Lead",
-    "salary_range": "\u00a3130k",
+    "salary_range": "£130k",
     "work_model": "On-site",
     "required_skills": [
       {

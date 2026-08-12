@@ -86,23 +86,12 @@ class JobBase(BaseSchema):
     model_config = {'from_attributes': True}
 
 
-def _coerce_location(v):
-    if isinstance(v, str) and v.strip():
-        return LocationBase.from_string(v)
-    return v
-
-
 class JobCreate(BaseModel):
     title: str
     company_id: int | None = None
     company_name: str | None = None
     company: CompanyCreate | None = None
     location: LocationBase | None = None
-
-    @field_validator('location', mode='before')
-    @classmethod
-    def coerce_location(cls, v):
-        return _coerce_location(v)
 
     status: str = 'Saved'
     position: JobPosition | None = None
@@ -118,7 +107,7 @@ class JobCreate(BaseModel):
 
     source_url: str | None = None
     source_platform: SourcePlatform | None = None
-    applied_date: date | None = None
+    applied_date: datetime | None = None
     notes: str | None = None
 
     ats_score: float | None = None
@@ -131,11 +120,6 @@ class JobUpdate(BaseModel):
     company_id: int | None = None
     company_name: str | None = None
     location: LocationBase | None = None
-
-    @field_validator('location', mode='before')
-    @classmethod
-    def coerce_location(cls, v):
-        return _coerce_location(v)
 
     status: str | None = None
     position: JobPosition | None = None
@@ -151,7 +135,7 @@ class JobUpdate(BaseModel):
 
     source_url: str | None = None
     source_platform: SourcePlatform | None = None
-    applied_date: date | None = None
+    applied_date: datetime | None = None
     notes: str | None = None
 
 
@@ -189,11 +173,18 @@ class JobFilterParams(BaseModel):
     created_to: datetime | None = Field(None, description='Filter jobs created before this date')
     applied_from: datetime | None = Field(None, description='Filter jobs applied after this date')
     applied_to: datetime | None = Field(None, description='Filter jobs applied before this date')
-    ats_score_min: float | None = Field(None, description='Minimum ATS score filter', min=0.0)
-    ats_score_max: float | None = Field(None, description='Maximum ATS score filter', max=100.0)
+    ats_score_min: float | None = Field(None, description='Minimum ATS score filter', ge=0.0)
+    ats_score_max: float | None = Field(None, description='Maximum ATS score filter', le=100.0)
 
     _LIST_FIELDS: ClassVar[set[str]] = {
-        'company', 'city', 'state', 'country', 'status', 'board_id', 'position', 'work_model'
+        'company',
+        'city',
+        'state',
+        'country',
+        'status',
+        'board_id',
+        'position',
+        'work_model',
     }
     _DATE_FIELDS: ClassVar[set[str]] = {'created_from', 'created_to', 'applied_from', 'applied_to'}
 

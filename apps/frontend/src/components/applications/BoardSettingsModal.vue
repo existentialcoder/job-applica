@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
-import type { BoardData, StageData } from '@/lib/types'
-import { MANDATORY_STAGE_KEYS } from '@/lib/constants'
+import { ref, watch, nextTick } from 'vue';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { MANDATORY_STAGE_KEYS } from '@/lib/constants';
+import type { BoardData, StageData } from '@/lib/types';
 
 const props = defineProps<{
   open: boolean
   board: BoardData
-}>()
+}>();
 
 const emit = defineEmits<{
   (e: 'update:open', val: boolean): void
@@ -30,7 +30,7 @@ const emit = defineEmits<{
       key_renames: Record<string, string>
     }
   ): void
-}>()
+}>();
 
 const STAGE_COLORS = [
   'bg-slate-500',
@@ -45,7 +45,7 @@ const STAGE_COLORS = [
   'bg-teal-500',
   'bg-indigo-500',
   'bg-zinc-400'
-]
+];
 
 const COLOR_OPTIONS = [
   { value: 'bg-blue-500', label: 'Blue' },
@@ -56,141 +56,141 @@ const COLOR_OPTIONS = [
   { value: 'bg-slate-500', label: 'Slate' },
   { value: 'bg-orange-500', label: 'Orange' },
   { value: 'bg-cyan-500', label: 'Cyan' }
-]
+];
 
-const name = ref('')
-const description = ref('')
-const color = ref('bg-blue-500')
-const stages = ref<StageData[]>([])
-const activeTab = ref<'general' | 'stages'>('general')
+const name = ref('');
+const description = ref('');
+const color = ref('bg-blue-500');
+const stages = ref<StageData[]>([]);
+const activeTab = ref<'general' | 'stages'>('general');
 
 function isMandatory(key: string): boolean {
-  return MANDATORY_STAGE_KEYS.includes(key)
+  return MANDATORY_STAGE_KEYS.includes(key);
 }
 
 // Inline stage rename state
-const editingIndex = ref<number | null>(null)
-const editingLabel = ref('')
-const keyRenames = ref<Record<string, string>>({})
+const editingIndex = ref<number | null>(null);
+const editingLabel = ref('');
+const keyRenames = ref<Record<string, string>>({});
 
 // Add stage inline
-const showAddStage = ref(false)
-const newStageName = ref('')
-const addInputRef = ref<HTMLInputElement | null>(null)
+const showAddStage = ref(false);
+const newStageName = ref('');
+const addInputRef = ref<HTMLInputElement | null>(null);
 
 watch(
   () => props.open,
   (open) => {
     if (open) {
-      name.value = props.board.name
-      description.value = props.board.description ?? ''
-      color.value = props.board.color ?? 'bg-blue-500'
+      name.value = props.board.name;
+      description.value = props.board.description ?? '';
+      color.value = props.board.color ?? 'bg-blue-500';
       // Auto-detect key/label mismatches from old bug and queue them as renames
-      const renames: Record<string, string> = {}
+      const renames: Record<string, string> = {};
       stages.value = props.board.stages.map((s) => {
         if (s.key !== s.label) {
-          renames[s.key] = s.label
-          return { ...s, key: s.label }
+          renames[s.key] = s.label;
+          return { ...s, key: s.label };
         }
-        return { ...s }
-      })
-      keyRenames.value = renames
-      editingIndex.value = null
-      showAddStage.value = false
-      newStageName.value = ''
-      activeTab.value = 'general'
+        return { ...s };
+      });
+      keyRenames.value = renames;
+      editingIndex.value = null;
+      showAddStage.value = false;
+      newStageName.value = '';
+      activeTab.value = 'general';
     }
   }
-)
+);
 
 function getNextColor(): string {
-  const used = stages.value.map((s) => s.color)
-  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0]
+  const used = stages.value.map((s) => s.color);
+  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0];
 }
 
 function startEditLabel(i: number) {
   if (isMandatory(stages.value[i].key)) {
-    return
+    return;
   }
-  editingIndex.value = i
-  editingLabel.value = stages.value[i].label
+  editingIndex.value = i;
+  editingLabel.value = stages.value[i].label;
 }
 
 function commitEditLabel() {
-  if (editingIndex.value === null) return
+  if (editingIndex.value === null) return;
   if (isMandatory(stages.value[editingIndex.value].key)) {
-    editingIndex.value = null
-    return
+    editingIndex.value = null;
+    return;
   }
-  const label = editingLabel.value.trim()
+  const label = editingLabel.value.trim();
   if (label && label !== stages.value[editingIndex.value].label) {
-    const oldKey = stages.value[editingIndex.value].key
-    const newKey = label
+    const oldKey = stages.value[editingIndex.value].key;
+    const newKey = label;
     // Track the rename chain: if the old key was itself a rename target, update the chain
     const originalKey =
-      Object.keys(keyRenames.value).find((k) => keyRenames.value[k] === oldKey) ?? oldKey
+      Object.keys(keyRenames.value).find((k) => keyRenames.value[k] === oldKey) ?? oldKey;
     if (originalKey !== newKey) {
-      keyRenames.value = { ...keyRenames.value, [originalKey]: newKey }
+      keyRenames.value = { ...keyRenames.value, [originalKey]: newKey };
     }
-    stages.value[editingIndex.value] = { ...stages.value[editingIndex.value], key: newKey, label }
+    stages.value[editingIndex.value] = { ...stages.value[editingIndex.value], key: newKey, label };
   }
-  editingIndex.value = null
+  editingIndex.value = null;
 }
 
 function cancelEditLabel() {
-  editingIndex.value = null
+  editingIndex.value = null;
 }
 
 async function openAddStage() {
-  showAddStage.value = true
-  await nextTick()
-  addInputRef.value?.focus()
+  showAddStage.value = true;
+  await nextTick();
+  addInputRef.value?.focus();
 }
 
 function cancelAddStage() {
-  showAddStage.value = false
-  newStageName.value = ''
+  showAddStage.value = false;
+  newStageName.value = '';
 }
 
 function submitAddStage() {
-  const key = newStageName.value.trim()
-  if (!key) return
-  if (stages.value.some((s) => s.key.toLowerCase() === key.toLowerCase())) return
-  stages.value.push({ key, label: key, color: getNextColor() })
-  newStageName.value = ''
-  showAddStage.value = false
+  const key = newStageName.value.trim();
+  if (!key) return;
+  if (stages.value.some((s) => s.key.toLowerCase() === key.toLowerCase())) return;
+  stages.value.push({ key, label: key, color: getNextColor() });
+  newStageName.value = '';
+  showAddStage.value = false;
 }
 
 function removeStage(index: number) {
-  if (isMandatory(stages.value[index].key)) return
-  stages.value.splice(index, 1)
+  if (isMandatory(stages.value[index].key)) return;
+  stages.value.splice(index, 1);
 }
 
 function moveUp(index: number) {
-  if (index === 0) return
-  if (isMandatory(stages.value[index].key)) return
-  const tmp = stages.value[index - 1]
-  stages.value[index - 1] = stages.value[index]
-  stages.value[index] = tmp
+  if (index === 0) return;
+  if (isMandatory(stages.value[index].key)) return;
+  const tmp = stages.value[index - 1];
+  stages.value[index - 1] = stages.value[index];
+  stages.value[index] = tmp;
 }
 
 function moveDown(index: number) {
-  if (index === stages.value.length - 1) return
-  if (isMandatory(stages.value[index].key)) return
-  const tmp = stages.value[index + 1]
-  stages.value[index + 1] = stages.value[index]
-  stages.value[index] = tmp
+  if (index === stages.value.length - 1) return;
+  if (isMandatory(stages.value[index].key)) return;
+  const tmp = stages.value[index + 1];
+  stages.value[index + 1] = stages.value[index];
+  stages.value[index] = tmp;
 }
 
 function handleSave() {
-  if (!name.value.trim() || stages.value.length === 0) return
+  if (!name.value.trim() || stages.value.length === 0) return;
   emit('save', {
     name: name.value.trim(),
     description: description.value.trim(),
     color: color.value,
     stages: stages.value,
     key_renames: keyRenames.value
-  })
+  });
 }
 </script>
 

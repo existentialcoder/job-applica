@@ -1,75 +1,75 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue'
-import { Check, ChevronDown, Plus, X } from 'lucide-vue-next'
+import { Check, ChevronDown, Plus, X } from 'lucide-vue-next';
+import { computed, ref, watch, nextTick } from 'vue';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
-import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants'
-import type { CompanyOption } from '@/stores/companies'
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+import type { CompanyOption } from '@/stores/companies';
 
 const props = defineProps<{
   modelValue: string
   companies: CompanyOption[]
   placeholder?: string
   class?: string
-}>()
+}>();
 
 const emit = defineEmits<{
   (e: 'update:modelValue', val: string): void
-}>()
+}>();
 
-const open = ref(false)
-const addingNewCompany = ref(false)
-const newName = ref('')
+const open = ref(false);
+const addingNewCompany = ref(false);
+const newName = ref('');
 
 watch(open, (val) => {
   if (!val) {
-    addingNewCompany.value = false
-    newName.value = ''
+    addingNewCompany.value = false;
+    newName.value = '';
   }
-})
+});
 
 function select(name: string) {
-  emit('update:modelValue', name)
-  open.value = false
+  emit('update:modelValue', name);
+  open.value = false;
 }
 
 async function startAddingCompany() {
-  addingNewCompany.value = true
-  newName.value = ''
-  await nextTick()
+  addingNewCompany.value = true;
+  newName.value = '';
+  await nextTick();
 }
 
 async function confirmAdd() {
-  const name = newName.value.trim()
+  const name = newName.value.trim();
   if (!name) {
-    return
+    return;
   }
-  emit('update:modelValue', name)
-  await nextTick()
-  addingNewCompany.value = false
-  newName.value = ''
-  open.value = false
+  emit('update:modelValue', name);
+  await nextTick();
+  addingNewCompany.value = false;
+  newName.value = '';
+  open.value = false;
 }
 
 async function cancelAdd() {
-  await nextTick()
-  addingNewCompany.value = false
-  newName.value = ''
+  await nextTick();
+  addingNewCompany.value = false;
+  newName.value = '';
 }
 
 const selectedLogo = computed(() => {
   return (
     props.companies.find((c) => c.name === props.modelValue)?.logo_url || DEFAULT_COMPANY_LOGO_URL
-  )
-})
+  );
+});
 </script>
 
 <template>

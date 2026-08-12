@@ -1,9 +1,9 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import router from '@/router'
-import { useAppStore } from '@/stores/app'
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import router from '@/router';
+import { useAppStore } from '@/stores/app';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 interface UserProfile {
   id?: number
@@ -27,81 +27,81 @@ interface SignupPayload {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const accessToken = ref<string | null>(localStorage.getItem('access_token'))
-  const user = ref<UserProfile | null>(JSON.parse(localStorage.getItem('user') || 'null'))
+  const accessToken = ref<string | null>(localStorage.getItem('access_token'));
+  const user = ref<UserProfile | null>(JSON.parse(localStorage.getItem('user') || 'null'));
 
-  const isAuthenticated = computed(() => !!accessToken.value)
+  const isAuthenticated = computed(() => !!accessToken.value);
 
   const displayName = computed(() => {
-    if (!user.value) return ''
-    return `${user.value.first_name} ${user.value.last_name}`.trim()
-  })
+    if (!user.value) return '';
+    return `${user.value.first_name} ${user.value.last_name}`.trim();
+  });
 
   function setTokens(token: string, refreshToken?: string) {
-    accessToken.value = token
-    localStorage.setItem('access_token', token)
-    if (refreshToken) localStorage.setItem('refresh_token', refreshToken)
-    window.dispatchEvent(new CustomEvent('ja:auth', { detail: { token } }))
+    accessToken.value = token;
+    localStorage.setItem('access_token', token);
+    if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
+    window.dispatchEvent(new CustomEvent('ja:auth', { detail: { token } }));
   }
 
   function setUser(userData: UserProfile | null) {
-    user.value = userData
-    localStorage.setItem('user', JSON.stringify(userData))
+    user.value = userData;
+    localStorage.setItem('user', JSON.stringify(userData));
   }
 
   function clearAuth() {
-    accessToken.value = null
-    user.value = null
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-    window.dispatchEvent(new CustomEvent('ja:auth', { detail: { token: null } }))
-    useAppStore().resetTheme()
+    accessToken.value = null;
+    user.value = null;
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    window.dispatchEvent(new CustomEvent('ja:auth', { detail: { token: null } }));
+    useAppStore().resetTheme();
   }
 
   async function fetchMe(): Promise<void> {
-    if (!accessToken.value) return
+    if (!accessToken.value) return;
 
     try {
       let response = await fetch(`${API_BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${accessToken.value}` }
-      })
+      });
 
       if (response.status === 401) {
         // Access token expired — attempt one silent refresh
-        const storedRefresh = localStorage.getItem('refresh_token')
+        const storedRefresh = localStorage.getItem('refresh_token');
         if (!storedRefresh) {
-          clearAuth()
-          router.replace('/login')
-          return
+          clearAuth();
+          router.replace('/login');
+          return;
         }
         try {
           const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh_token: storedRefresh })
-          })
+          });
           if (!refreshRes.ok) {
             // Refresh token rejected — genuine session expiry
-            clearAuth()
-            router.replace('/login')
-            return
+            clearAuth();
+            router.replace('/login');
+            return;
           }
-          const refreshData = await refreshRes.json()
+          const refreshData = await refreshRes.json();
           if (refreshData.access_token) {
-            setTokens(refreshData.access_token)
+            setTokens(refreshData.access_token);
             response = await fetch(`${API_BASE}/auth/me`, {
               headers: { Authorization: `Bearer ${refreshData.access_token}` }
-            })
+            });
           }
         } catch {
           // Network error during refresh — stay logged in, retry later
-          return
+          return;
         }
       }
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json();
         setUser({
           id: data.id,
           first_name: data.first_name,
@@ -110,12 +110,12 @@ export const useAuthStore = defineStore('auth', () => {
           has_password: data.has_password,
           email: data.email ?? null,
           avatar_url: data.avatar_url ?? null
-        })
-        await useAppStore().syncSettingsFromServer()
+        });
+        await useAppStore().syncSettingsFromServer();
       } else if (response.status === 401) {
         // Still 401 after refresh — session is truly expired
-        clearAuth()
-        router.replace('/login')
+        clearAuth();
+        router.replace('/login');
       }
       // 5xx or other server errors: don't clear auth — stay logged in
     } catch {
@@ -127,26 +127,26 @@ export const useAuthStore = defineStore('auth', () => {
     username: string,
     password: string
   ): Promise<{ ok: boolean; error?: string }> {
-    const body = new URLSearchParams()
-    body.append('username', username)
-    body.append('password', password)
+    const body = new URLSearchParams();
+    body.append('username', username);
+    body.append('password', password);
 
     const response = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
       credentials: 'include'
-    })
+    });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      return { ok: false, error: err.detail || 'Login failed' }
+      const err = await response.json().catch(() => ({}));
+      return { ok: false, error: err.detail || 'Login failed' };
     }
 
-    const data = await response.json()
-    setTokens(data.access_token, data.refresh_token)
-    await fetchMe()
-    return { ok: true }
+    const data = await response.json();
+    setTokens(data.access_token, data.refresh_token);
+    await fetchMe();
+    return { ok: true };
   }
 
   async function signup(payload: SignupPayload): Promise<{ ok: boolean; error?: string }> {
@@ -154,14 +154,14 @@ export const useAuthStore = defineStore('auth', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    })
+    });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      return { ok: false, error: err.detail || 'Signup failed' }
+      const err = await response.json().catch(() => ({}));
+      return { ok: false, error: err.detail || 'Signup failed' };
     }
 
-    return { ok: true }
+    return { ok: true };
   }
 
   async function checkUsernameAvailability(userName: string): Promise<boolean | null> {
@@ -170,22 +170,22 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_name: userName })
-      })
-      if (!response.ok) return null
-      const data = await response.json()
-      return data.is_available as boolean
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.is_available as boolean;
     } catch {
-      return null
+      return null;
     }
   }
 
   async function getSecurityQuestions(): Promise<string[]> {
     try {
-      const response = await fetch(`${API_BASE}/users/security-questions`)
-      if (!response.ok) return []
-      return await response.json()
+      const response = await fetch(`${API_BASE}/users/security-questions`);
+      if (!response.ok) return [];
+      return await response.json();
     } catch {
-      return []
+      return [];
     }
   }
   type ResetMechanismResult =
@@ -194,38 +194,38 @@ export const useAuthStore = defineStore('auth', () => {
     | { ok: false; error: string }
 
   async function getResetMechanism(identifier: string): Promise<ResetMechanismResult> {
-    const query = new URLSearchParams({ user_identifier: identifier })
-    const response = await fetch(`${API_BASE}/auth/get-reset-mechanism?${query.toString()}`)
+    const query = new URLSearchParams({ user_identifier: identifier });
+    const response = await fetch(`${API_BASE}/auth/get-reset-mechanism?${query.toString()}`);
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
+      const err = await response.json().catch(() => ({}));
       return {
         ok: false,
         error: err.detail || 'We could not find an account matching that username or email'
-      }
+      };
     }
 
-    const data = await response.json()
+    const data = await response.json();
     if (data.mechanism === 'security_question') {
       return {
         ok: true,
         mechanism: 'security_question',
         securityQuestion: data.context?.security_question
-      }
+      };
     }
-    return { ok: true, mechanism: 'otp' }
+    return { ok: true, mechanism: 'otp' };
   }
 
   async function requestResetOtp(identifier: string): Promise<{ ok: boolean; error?: string }> {
-    const query = new URLSearchParams({ user_identifier: identifier })
-    const response = await fetch(`${API_BASE}/auth/request-reset-otp?${query.toString()}`)
+    const query = new URLSearchParams({ user_identifier: identifier });
+    const response = await fetch(`${API_BASE}/auth/request-reset-otp?${query.toString()}`);
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      return { ok: false, error: err.detail || 'Failed to send code' }
+      const err = await response.json().catch(() => ({}));
+      return { ok: false, error: err.detail || 'Failed to send code' };
     }
 
-    return { ok: true }
+    return { ok: true };
   }
 
   async function verifyResetMechanism(
@@ -238,17 +238,17 @@ export const useAuthStore = defineStore('auth', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_identifier: identifier, mechanism, question, answer })
-    })
+    });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      return { ok: false, error: err.detail || 'Verification failed' }
+      const err = await response.json().catch(() => ({}));
+      return { ok: false, error: err.detail || 'Verification failed' };
     }
 
-    const data = await response.json()
+    const data = await response.json();
     return data.is_valid
       ? { ok: true, token: data.token }
-      : { ok: false, error: mechanism === 'otp' ? 'Incorrect or expired code' : 'Incorrect answer' }
+      : { ok: false, error: mechanism === 'otp' ? 'Incorrect or expired code' : 'Incorrect answer' };
   }
 
   async function resetPassword(
@@ -259,24 +259,24 @@ export const useAuthStore = defineStore('auth', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, new_password: newPassword })
-    })
+    });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      return { ok: false, error: err.detail || 'Password reset failed' }
+      const err = await response.json().catch(() => ({}));
+      return { ok: false, error: err.detail || 'Password reset failed' };
     }
 
-    return { ok: true }
+    return { ok: true };
   }
 
   async function logout() {
-    clearAuth()
-    router.replace('/login')
+    clearAuth();
+    router.replace('/login');
   }
 
   function getAuthHeaders(): Record<string, string> {
-    if (!accessToken.value) return {}
-    return { Authorization: `Bearer ${accessToken.value}` }
+    if (!accessToken.value) return {};
+    return { Authorization: `Bearer ${accessToken.value}` };
   }
 
   return {
@@ -298,5 +298,5 @@ export const useAuthStore = defineStore('auth', () => {
     setUser,
     getAuthHeaders,
     clearAuth
-  }
-})
+  };
+});
