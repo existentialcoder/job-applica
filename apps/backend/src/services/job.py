@@ -60,9 +60,6 @@ async def transform_required_skills(db: AsyncSession, required_skills: list[str]
             resolved = matched_skills[0]
         else:
             resolved = await skill_service.create_skill(db, SkillCreate(label=skill), source='internal')
-        # Two different incoming labels can resolve to the same skill (e.g. after
-        # normalization collisions) — dedupe so we never insert the same (job_id,
-        # skill_id) pair twice.
         if resolved.id not in seen_ids:
             seen_ids.add(resolved.id)
             result.append(resolved)

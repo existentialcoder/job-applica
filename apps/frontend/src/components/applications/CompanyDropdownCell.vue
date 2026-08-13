@@ -19,7 +19,7 @@ const emit = defineEmits<{
         <img
           :src="companyLogo || DEFAULT_COMPANY_LOGO_URL"
           class="w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted"
-          @error="($event.target as HTMLImageElement).style.display = 'none'"
+          @error="($event.target as HTMLImageElement).src = DEFAULT_COMPANY_LOGO_URL"
         />
         <span class="truncate text-sm">{{ company }}</span>
       </div>
@@ -36,7 +36,7 @@ const emit = defineEmits<{
         <img
           :src="c.logo_url || DEFAULT_COMPANY_LOGO_URL"
           class="w-4 h-4 rounded-full object-contain flex-shrink-0 bg-muted"
-          @error="($event.target as HTMLImageElement).style.display = 'none'"
+          @error="($event.target as HTMLImageElement).src = DEFAULT_COMPANY_LOGO_URL"
         />
         {{ c.name }}
       </DropdownMenuItem>

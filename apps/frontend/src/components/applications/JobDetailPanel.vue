@@ -293,7 +293,7 @@ const statusVariantMap: Record<string, string> = {
             <img
               :src="job.company.logo_url || DEFAULT_COMPANY_LOGO_URL"
               class="w-full h-full object-contain"
-              @error="($event.target as HTMLImageElement).style.display = 'none'"
+              @error="($event.target as HTMLImageElement).src = DEFAULT_COMPANY_LOGO_URL"
             />
           </div>
 

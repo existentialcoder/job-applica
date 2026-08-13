@@ -91,22 +91,13 @@ const selectedLogo = computed(() => {
             v-if="modelValue"
             :src="selectedLogo"
             class="h-5 w-5 rounded-full object-contain shrink-0 bg-muted"
-            @error="($event.target as HTMLImageElement).style.display = 'none'"
+            @error="($event.target as HTMLImageElement).src = DEFAULT_COMPANY_LOGO_URL"
           />
-          <svg
+          <img
             v-else
+            :src="DEFAULT_COMPANY_LOGO_URL"
             class="h-4 w-4 shrink-0 opacity-50"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
-            />
-          </svg>
+          />
           <span class="truncate">{{ modelValue || (placeholder ?? 'Select company') }}</span>
         </span>
         <ChevronDown class="h-4 w-4 shrink-0 opacity-50" />
@@ -123,20 +114,22 @@ const selectedLogo = computed(() => {
       </p>
 
       <!-- Company list -->
-      <DropdownMenuItem
-        v-for="c in companies"
-        :key="c.id"
-        :class="cn('gap-2 cursor-pointer', modelValue === c.name && 'font-medium')"
-        @click="select(c.name)"
-      >
-        <img
-          :src="c.logo_url || DEFAULT_COMPANY_LOGO_URL"
-          class="h-5 w-5 rounded-full object-contain shrink-0 bg-muted"
-          @error="($event.target as HTMLImageElement).style.display = 'none'"
-        />
-        <span class="flex-1 truncate">{{ c.name }}</span>
-        <Check v-if="modelValue === c.name" class="h-4 w-4 shrink-0 text-primary" />
-      </DropdownMenuItem>
+      <div class="max-h-60 overflow-y-auto">
+        <DropdownMenuItem
+          v-for="c in companies"
+          :key="c.id"
+          :class="cn('gap-2 cursor-pointer', modelValue === c.name && 'font-medium')"
+          @click="select(c.name)"
+        >
+          <img
+            :src="c.logo_url || DEFAULT_COMPANY_LOGO_URL"
+            class="h-5 w-5 rounded-full object-contain shrink-0 bg-muted"
+            @error="($event.target as HTMLImageElement).src = DEFAULT_COMPANY_LOGO_URL"
+          />
+          <span class="flex-1 truncate">{{ c.name }}</span>
+          <Check v-if="modelValue === c.name" class="h-4 w-4 shrink-0 text-primary" />
+        </DropdownMenuItem>
+      </div>
 
       <DropdownMenuSeparator v-if="companies.length" />
 
