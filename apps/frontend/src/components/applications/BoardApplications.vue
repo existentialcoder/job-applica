@@ -1,23 +1,28 @@
 <script setup lang="ts">
-import { computed, ref, nextTick } from 'vue'
-import type { JobData, StageData } from '@/lib/types'
-import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants'
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
+import { MapPin } from 'lucide-vue-next';
 import {
   ScrollAreaRoot,
   ScrollAreaViewport,
   ScrollAreaScrollbar,
   ScrollAreaThumb,
   ScrollAreaCorner
-} from 'radix-vue'
+} from 'radix-vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { DEFAULT_COMPANY_LOGO_URL, MANDATORY_STAGE_KEYS } from '@/lib/constants';
+import dataservice, { type JobFilters } from '@/lib/dataservice';
+import type { JobData, StageData } from '@/lib/types';
+
+const PAGE_SIZE = 10;
+const SCROLL_THRESHOLD_PX = 80;
 
 const DEFAULT_COLUMNS: StageData[] = [
   { key: 'Saved', label: 'Saved', color: 'bg-slate-500' },
@@ -28,12 +33,12 @@ const DEFAULT_COLUMNS: StageData[] = [
   { key: 'Offer', label: 'Offer', color: 'bg-emerald-500' },
   { key: 'Rejected', label: 'Rejected', color: 'bg-red-500' },
   { key: 'Withdrawn', label: 'Withdrawn', color: 'bg-zinc-400' }
-]
+];
 
 const props = defineProps<{
-  jobs: JobData[]
+  baseFilters: JobFilters
   stages?: StageData[]
-}>()
+}>();
 
 const emit = defineEmits<{
   (e: 'edit', job: JobData): void
@@ -43,7 +48,7 @@ const emit = defineEmits<{
   (e: 'add-stage', stage: StageData): void
   (e: 'update-stage', payload: { oldKey: string; stage: StageData }): void
   (e: 'add-job', payload: { title: string; company_name?: string; status: string }): void
-}>()
+}>();
 
 const STAGE_COLORS = [
   'bg-slate-500',
@@ -56,140 +61,229 @@ const STAGE_COLORS = [
   'bg-cyan-500',
   'bg-pink-500',
   'bg-teal-500'
-]
+];
 
 // ── Add stage state ───────────────────────────────────────────────────────────
-const showAddStage = ref(false)
-const newStageName = ref('')
-const addStageInputRef = ref<HTMLInputElement | null>(null)
+const showAddStage = ref(false);
+const newStageName = ref('');
+const addStageInputRef = ref<HTMLInputElement | null>(null);
 
 // ── Stage rename state ────────────────────────────────────────────────────────
-const editingStageKey = ref<string | null>(null)
-const editingStageLabel = ref('')
+const editingStageKey = ref<string | null>(null);
+const editingStageLabel = ref('');
 
 // ── Quick-add card state ──────────────────────────────────────────────────────
-const addingJobForStatus = ref<string | null>(null)
-const quickAddTitle = ref('')
-const quickAddCompany = ref('')
-const quickTitleInputRef = ref<HTMLInputElement | null>(null)
+const addingJobForStatus = ref<string | null>(null);
+const quickAddTitle = ref('');
+const quickAddCompany = ref('');
+const quickTitleInputRef = ref<HTMLInputElement | null>(null);
+
+function isMandatory(key: string): boolean {
+  return MANDATORY_STAGE_KEYS.includes(key);
+}
 
 function getNextColor(): string {
-  const used = (props.stages ?? DEFAULT_COLUMNS).map((s) => s.color)
-  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0]
+  const used = (props.stages ?? DEFAULT_COLUMNS).map((s) => s.color);
+  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0];
 }
 
 async function openAddStage() {
-  showAddStage.value = true
-  await nextTick()
-  addStageInputRef.value?.focus()
+  showAddStage.value = true;
+  await nextTick();
+  addStageInputRef.value?.focus();
+}
+
+function cancelAddStage() {
+  showAddStage.value = false;
+  newStageName.value = '';
 }
 
 function submitAddStage() {
-  const key = newStageName.value.trim()
-  if (!key) return
-  emit('add-stage', { key, label: key, color: getNextColor() })
-  newStageName.value = ''
-  showAddStage.value = false
+  const key = newStageName.value.trim();
+  if (!key) return;
+  emit('add-stage', { key, label: key, color: getNextColor() });
+  newStageName.value = '';
+  showAddStage.value = false;
 }
 
 function startEditStage(stage: StageData) {
-  editingStageKey.value = stage.key
-  editingStageLabel.value = stage.label
+  if (isMandatory(stage.key)) return;
+  editingStageKey.value = stage.key;
+  editingStageLabel.value = stage.label;
 }
 
 function commitEditStage() {
-  if (!editingStageKey.value) return
-  const label = editingStageLabel.value.trim()
+  if (!editingStageKey.value) return;
+  if (isMandatory(editingStageKey.value)) {
+    cancelEditStage();
+    return;
+  }
+  const label = editingStageLabel.value.trim();
   if (!label) {
-    cancelEditStage()
-    return
+    cancelEditStage();
+    return;
   }
-  const stage = (props.stages ?? DEFAULT_COLUMNS).find((s) => s.key === editingStageKey.value)
+  const stage = (props.stages ?? DEFAULT_COLUMNS).find((s) => s.key === editingStageKey.value);
   if (stage && label !== stage.label) {
-    const oldKey = stage.key
-    emit('update-stage', { oldKey, stage: { ...stage, key: label, label } })
+    const oldKey = stage.key;
+    emit('update-stage', { oldKey, stage: { ...stage, key: label, label } });
   }
-  editingStageKey.value = null
+  editingStageKey.value = null;
 }
 
 function cancelEditStage() {
-  editingStageKey.value = null
-  editingStageLabel.value = ''
+  editingStageKey.value = null;
+  editingStageLabel.value = '';
 }
 
 async function startQuickAdd(statusKey: string) {
-  addingJobForStatus.value = statusKey
-  quickAddTitle.value = ''
-  quickAddCompany.value = ''
-  await nextTick()
-  quickTitleInputRef.value?.focus()
+  addingJobForStatus.value = statusKey;
+  quickAddTitle.value = '';
+  quickAddCompany.value = '';
+  await nextTick();
+  quickTitleInputRef.value?.focus();
 }
 
 function commitQuickAdd() {
-  if (!quickAddTitle.value.trim() || !addingJobForStatus.value) return
+  if (!quickAddTitle.value.trim() || !quickAddCompany.value.trim() || !addingJobForStatus.value)
+    return;
   emit('add-job', {
     title: quickAddTitle.value.trim(),
     company_name: quickAddCompany.value.trim() || undefined,
     status: addingJobForStatus.value
-  })
-  addingJobForStatus.value = null
+  });
+  addingJobForStatus.value = null;
 }
 
 function cancelQuickAdd() {
-  addingJobForStatus.value = null
+  addingJobForStatus.value = null;
 }
 
-const COLUMNS = computed(() => (props.stages?.length ? props.stages : DEFAULT_COLUMNS))
+const COLUMNS = computed(() => (props.stages?.length ? props.stages : DEFAULT_COLUMNS));
 
-const jobsByStatus = computed(() => {
-  const map: Record<string, JobData[]> = {}
+interface ColumnState {
+  jobs: JobData[]
+  page: number
+  total: number
+  loading: boolean
+}
+
+const columnState = reactive<Record<string, ColumnState>>({});
+
+function hasMore(key: string): boolean {
+  const state = columnState[key];
+  return !!state && state.jobs.length < state.total;
+}
+
+async function fetchColumnPage(key: string, page: number) {
+  const state = columnState[key];
+  if (!state || state.loading) {
+    return;
+  }
+  state.loading = true;
+  try {
+    const res = await dataservice.getJobs({ ...props.baseFilters, status: key, page, per_page: PAGE_SIZE });
+    state.jobs = page === 1 ? res.items : [...state.jobs, ...res.items];
+    state.page = page;
+    state.total = res.total;
+  } finally {
+    state.loading = false;
+  }
+}
+
+function resetAndLoadAllColumns() {
   COLUMNS.value.forEach((col) => {
-    map[col.key] = []
-  })
-  const firstKey = COLUMNS.value[0]?.key ?? 'Saved'
-  props.jobs.forEach((job) => {
-    if (map[job.status] !== undefined) {
-      map[job.status].push(job)
-    } else {
-      if (!map[firstKey]) map[firstKey] = []
-      map[firstKey].push(job)
-    }
-  })
-  return map
-})
+    columnState[col.key] = { jobs: [], page: 0, total: 0, loading: false };
+    fetchColumnPage(col.key, 1);
+  });
+}
+
+function refreshColumn(key: string) {
+  columnState[key] = { jobs: [], page: 0, total: 0, loading: false };
+  fetchColumnPage(key, 1);
+}
+
+function onColumnScroll(event: Event, key: string) {
+  const el = event.target as HTMLElement;
+  const state = columnState[key];
+  if (!state || state.loading || !hasMore(key)) return;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - SCROLL_THRESHOLD_PX) {
+    fetchColumnPage(key, state.page + 1);
+  }
+}
+
+onMounted(resetAndLoadAllColumns);
+
+watch(
+  () => [COLUMNS.value.map((c) => c.key).join(','), props.baseFilters],
+  resetAndLoadAllColumns,
+  { deep: true }
+);
+
+defineExpose({ refreshColumn });
 
 // ── Drag-and-drop ─────────────────────────────────────────────────────────────
-let draggedJob: JobData | null = null
+let draggedJob: JobData | null = null;
 
 function onDragStart(job: JobData) {
-  draggedJob = job
+  draggedJob = job;
 }
 
 function onDragOver(event: DragEvent) {
   event.preventDefault()
-  ;(event.currentTarget as HTMLElement).classList.add('ring-2', 'ring-primary/50')
+  ;(event.currentTarget as HTMLElement).classList.add('ring-2', 'ring-primary/50');
 }
 
 function onDragLeave(event: DragEvent) {
-  ;(event.currentTarget as HTMLElement).classList.remove('ring-2', 'ring-primary/50')
+  (event.currentTarget as HTMLElement).classList.remove('ring-2', 'ring-primary/50');
 }
 
 function onDrop(event: DragEvent, targetStatus: string) {
   event.preventDefault()
-  ;(event.currentTarget as HTMLElement).classList.remove('ring-2', 'ring-primary/50')
+  ;(event.currentTarget as HTMLElement).classList.remove('ring-2', 'ring-primary/50');
   if (draggedJob && draggedJob.status !== targetStatus) {
-    emit('status-change', draggedJob.id, targetStatus)
+    const job = draggedJob;
+    const sourceState = columnState[job.status];
+    const targetState = columnState[targetStatus];
+    if (sourceState) {
+      const idx = sourceState.jobs.findIndex((j) => j.id === job.id);
+      if (idx !== -1) {
+        sourceState.jobs.splice(idx, 1);
+        sourceState.total = Math.max(0, sourceState.total - 1);
+      }
+    }
+    if (targetState) {
+      targetState.jobs.unshift({ ...job, status: targetStatus });
+      targetState.total += 1;
+    }
+    emit('status-change', job.id, targetStatus);
   }
-  draggedJob = null
+  draggedJob = null;
+}
+
+function handleDelete(job: JobData) {
+  const state = columnState[job.status];
+  if (state) {
+    const idx = state.jobs.findIndex((j) => j.id === job.id);
+    if (idx !== -1) {
+      state.jobs.splice(idx, 1);
+      state.total = Math.max(0, state.total - 1);
+    }
+  }
+  emit('delete', job.id);
 }
 
 function openUrl(url: string) {
-  window.open(url, '_blank')
+  window.open(url, '_blank');
 }
 
 function formatDate(dateStr?: string) {
-  if (!dateStr) return null
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function locationText(job: JobData): string {
+  return [job.location?.city, job.location?.country].filter(Boolean).join(', ');
 }
 </script>
 
@@ -219,20 +313,33 @@ function formatDate(dateStr?: string) {
                 v-else
                 :class="[
                   'text-sm font-medium truncate select-none',
-                  stages ? 'cursor-pointer hover:text-primary transition-colors' : ''
+                  stages && !isMandatory(col.key)
+                    ? 'cursor-pointer hover:text-primary transition-colors'
+                    : ''
                 ]"
-                :title="stages ? 'Click to rename' : undefined"
+                :title="
+                  isMandatory(col.key)
+                    ? 'Standard stage — cannot be renamed'
+                    : stages
+                      ? 'Click to rename'
+                      : undefined
+                "
                 @click="stages && startEditStage(col)"
                 >{{ col.label }}</span
               >
+              <Icon
+                v-if="isMandatory(col.key)"
+                name="Lock"
+                class="w-3 h-3 text-muted-foreground/60 flex-shrink-0"
+              />
             </div>
 
             <div class="flex items-center gap-1 flex-shrink-0">
               <span class="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-                {{ jobsByStatus[col.key]?.length ?? 0 }}
+                {{ columnState[col.key]?.total ?? 0 }}
               </span>
               <button
-                v-if="stages && stages.length > 1"
+                v-if="stages && stages.length > 1 && !isMandatory(col.key)"
                 class="opacity-0 group-hover/col:opacity-100 transition-opacity p-0.5 text-muted-foreground hover:text-destructive"
                 title="Remove stage"
                 @click="$emit('remove-stage', col.key)"
@@ -252,14 +359,15 @@ function formatDate(dateStr?: string) {
 
           <!-- Drop zone -->
           <div
-            class="flex flex-col gap-2 min-h-[100px] rounded-lg bg-muted/40 p-2 transition-all"
+            class="flex flex-col gap-2 min-h-[100px] max-h-[calc(100vh-260px)] overflow-y-auto rounded-lg bg-muted/40 p-2 transition-all"
             @dragover="onDragOver"
             @dragleave="onDragLeave"
             @drop="onDrop($event, col.key)"
+            @scroll="onColumnScroll($event, col.key)"
           >
             <!-- Job cards -->
             <div
-              v-for="job in jobsByStatus[col.key]"
+              v-for="job in columnState[col.key]?.jobs ?? []"
               :key="job.id"
               draggable="true"
               @dragstart="onDragStart(job)"
@@ -293,7 +401,7 @@ function formatDate(dateStr?: string) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     class="text-destructive focus:text-destructive"
-                    @click.stop="$emit('delete', job.id)"
+                    @click.stop="handleDelete(job)"
                     >Delete</DropdownMenuItem
                   >
                 </DropdownMenuContent>
@@ -302,13 +410,18 @@ function formatDate(dateStr?: string) {
               <p class="text-sm font-medium leading-tight line-clamp-2 mb-1.5 pr-5">
                 {{ job.title }}
               </p>
-              <div v-if="job.company" class="flex items-center gap-1.5 mb-2 min-w-0">
+              <div v-if="job.company" class="flex items-center gap-1.5 mb-1.5 min-w-0">
                 <img
                   :src="job.company.logo_url || DEFAULT_COMPANY_LOGO_URL"
                   class="w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted"
                   @error="($event.target as HTMLImageElement).style.display = 'none'"
                 />
                 <p class="text-xs text-muted-foreground truncate">{{ job.company.name }}</p>
+              </div>
+
+              <div v-if="locationText(job)" class="flex items-center gap-1 mb-2 min-w-0">
+                <MapPin class="w-3 h-3 text-muted-foreground/70 flex-shrink-0" />
+                <p class="text-xs text-muted-foreground truncate">{{ locationText(job) }}</p>
               </div>
 
               <div class="flex flex-wrap gap-1 mb-2">
@@ -332,9 +445,16 @@ function formatDate(dateStr?: string) {
 
             <!-- Empty column placeholder -->
             <div
-              v-if="jobsByStatus[col.key]?.length === 0"
+              v-if="(columnState[col.key]?.jobs.length ?? 0) === 0 && !columnState[col.key]?.loading"
               class="flex items-center justify-center h-12 text-xs text-muted-foreground/50 border-2 border-dashed border-muted-foreground/20 rounded-md"
             ></div>
+
+            <div
+              v-if="columnState[col.key]?.loading"
+              class="flex items-center justify-center h-8 text-xs text-muted-foreground/60"
+            >
+              Loading…
+            </div>
           </div>
 
           <!-- Quick-add card area -->
@@ -376,14 +496,14 @@ function formatDate(dateStr?: string) {
               <input
                 v-model="quickAddCompany"
                 class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                placeholder="Company (optional)"
+                placeholder="Company *"
                 @keyup.enter="commitQuickAdd"
                 @keyup.escape="cancelQuickAdd"
               />
               <div class="flex gap-1.5">
                 <button
                   class="flex-1 text-xs py-1.5 rounded bg-primary text-primary-foreground font-medium disabled:opacity-50 transition-colors"
-                  :disabled="!quickAddTitle.trim()"
+                  :disabled="!quickAddTitle.trim() || !quickAddCompany.trim()"
                   @click="commitQuickAdd"
                 >
                   Add card
@@ -437,10 +557,7 @@ function formatDate(dateStr?: string) {
               class="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
               placeholder="List name..."
               @keyup.enter="submitAddStage"
-              @keyup.escape="
-                showAddStage = false
-                newStageName = ''
-              "
+              @keyup.escape="cancelAddStage"
             />
             <div class="flex gap-1.5">
               <button
@@ -452,10 +569,7 @@ function formatDate(dateStr?: string) {
               </button>
               <button
                 class="flex-1 text-xs py-1.5 rounded-md border border-border text-muted-foreground hover:text-foreground"
-                @click="
-                  showAddStage = false
-                  newStageName = ''
-                "
+                @click="cancelAddStage"
               >
                 Cancel
               </button>
@@ -465,7 +579,6 @@ function formatDate(dateStr?: string) {
       </div>
     </ScrollAreaViewport>
 
-    <!-- Horizontal scrollbar (shadcn style) -->
     <ScrollAreaScrollbar
       orientation="horizontal"
       class="flex h-2.5 touch-none select-none flex-col border-t border-t-transparent p-px transition-colors"

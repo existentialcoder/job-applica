@@ -1,8 +1,27 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { toast } from '@/lib/toast'
-import type { JobData, JobCreatePayload, StageData, ATSReport } from '@/lib/types'
+import { Filter } from 'lucide-vue-next';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import {
+  TableApplications,
+  BoardApplications,
+  AddJobModal,
+  JobDetailPanel,
+  JobFiltersPanel
+} from '@/components/applications';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Pagination,
+  PaginationEllipsis,
+  PaginationFirst,
+  PaginationLast,
+  PaginationList,
+  PaginationListItem,
+  PaginationNext,
+  PaginationPrev
+} from '@/components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -10,259 +29,317 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import dataservice, { type JobFilters } from '@/lib/dataservice'
-import {
-  TableApplications,
-  BoardApplications,
-  AddJobModal,
-  JobDetailPanel
-} from '@/components/applications'
-import { useCompaniesStore } from '@/stores/companies'
+} from '@/components/ui/select';
+import { useExtensionLink } from '@/composables/useExtensionLink';
+import { ATS_SCORE_TIERS, DEFAULT_BOARD_STAGES } from '@/lib/constants';
+import dataservice, { type JobFilters } from '@/lib/dataservice';
+import { emptyJobFilters, type JobFiltersFormValues } from '@/lib/jobFilters';
+import { toast } from '@/lib/toast';
+import type { JobData, JobCreatePayload, StageData, ATSReport, BoardData } from '@/lib/types';
+import { useCompaniesStore } from '@/stores/companies';
 
-const companiesStore = useCompaniesStore()
+const companiesStore = useCompaniesStore();
+const { storeUrl: extensionInstallLink } = useExtensionLink();
 
 const props = defineProps<{
-  boardId?: number
-  stages?: StageData[]
-  defaultStatus?: string
-}>()
+  boardId?: number;
+  stages?: StageData[];
+  defaultStatus?: string;
+}>();
 
 const emit = defineEmits<{
-  (e: 'stages-updated', stages: StageData[]): void
-}>()
+  (e: 'stages-updated', stages: StageData[]): void;
+}>();
 
-const selectedLayout = ref<'list' | 'board'>('list')
+const selectedLayout = ref<'list' | 'board'>('list');
 
-const allJobs = ref<JobData[]>([])
-const totalJobs = ref(0)
-const isLoading = ref(false)
+const allJobs = ref<JobData[]>([]);
+const totalJobs = ref(0);
+const isLoading = ref(false);
+const filtersApplied = ref(false);
 
-const selectedJobs = ref<JobData[]>([])
-const isModalOpen = ref(false) // add new job modal
-const isPanelOpen = ref(false) // job detail slide-over
-const editingJob = ref<JobData | null>(null)
-const panelInitialTab = ref<'details' | 'ats'>('details')
+const selectedJobs = ref<JobData[]>([]);
+const isModalOpen = ref(false);
+const isPanelOpen = ref(false);
+const editingJob = ref<JobData | null>(null);
+const panelInitialTab = ref<'details' | 'ats'>('details');
+const boardRef = ref<InstanceType<typeof BoardApplications> | null>(null);
 
-const searchQuery = ref('')
-const filterStatus = ref('__all__')
-const filterPlatform = ref('__all__')
-const currentPage = ref(1)
-const pageSize = 20
+const searchQuery = ref('');
+const filterPlatform = ref('__all__');
+const currentPage = ref(1);
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const pageSize = ref(20);
 
-const PLATFORM_OPTIONS = [
-  'LinkedIn',
-  'Indeed',
-  'Glassdoor',
-  'Monster',
-  'ZipRecruiter',
-  'Jobscan',
-  'Other'
-]
+const isFiltersPanelOpen = ref(false);
+const jobFilters = reactive<JobFiltersFormValues>(emptyJobFilters());
+const boardOptions = ref<{ label: string; value: string }[]>([]);
 
-const DEFAULT_STAGES = [
-  'Saved',
-  'Applied',
-  'Phone Screen',
-  'Interview',
-  'Technical',
-  'Offer',
-  'Rejected',
-  'Withdrawn'
-]
-
-const statusOptions = ref<string[]>(props.stages?.map((s) => s.label) ?? DEFAULT_STAGES)
+const statusOptions = ref<string[]>(
+  props.stages?.map((s) => s.label) ?? DEFAULT_BOARD_STAGES.map((s) => s.label)
+);
 
 watch(
   () => props.stages,
   (stages) => {
-    if (stages?.length) statusOptions.value = stages.map((s) => s.label)
+    if (stages?.length) statusOptions.value = stages.map((s) => s.label);
   },
   { immediate: true }
-)
+);
 
-async function loadJobs() {
-  isLoading.value = true
-  const filters: JobFilters = {
-    page: currentPage.value,
-    per_page: pageSize
-  }
-  if (props.boardId) filters.board_id = props.boardId
-  if (searchQuery.value.trim()) filters.query = searchQuery.value.trim()
-  if (filterStatus.value && filterStatus.value !== '__all__') filters.status = filterStatus.value
+const LIST_FILTER_KEY_MAP = [
+  ['status', 'status'],
+  ['country', 'country'],
+  ['company', 'company'],
+  ['workModel', 'work_model'],
+  ['position', 'position']
+] as const;
+
+const noApplicationsMessage = computed(() =>
+  filtersApplied.value
+    ? 'Try adjusting your filters or search query.'
+    : `Click <b>Add Job</b> or use the <a href="${extensionInstallLink}" class="text-primary hover:underline">browser extension</a> to start tracking your applications.`
+);
+
+function buildBaseFilters(): JobFilters {
+  const filters: JobFilters = {};
+  if (searchQuery.value.trim()) filters.query = searchQuery.value.trim();
   if (filterPlatform.value && filterPlatform.value !== '__all__')
-    filters.source_platform = filterPlatform.value
+    filters.source_platform = filterPlatform.value;
 
-  const res = await dataservice.getJobs(filters)
-  allJobs.value = res.items
-  totalJobs.value = res.total
-  isLoading.value = false
+  if (props.boardId) {
+    filters.board_id = props.boardId;
+  } else if (jobFilters.boardIds.length) {
+    filters.board_ids = jobFilters.boardIds.join(',');
+  }
+
+  for (const [formKey, apiKey] of LIST_FILTER_KEY_MAP) {
+    const values = jobFilters[formKey];
+    if (values.length) filters[apiKey] = values.join(',');
+  }
+
+  if (jobFilters.city.trim()) {
+    filters.city = jobFilters.city.trim();
+  }
+  if (jobFilters.appliedRange.from) {
+    filters.applied_from = jobFilters.appliedRange.from;
+  }
+  if (jobFilters.appliedRange.to) {
+    filters.applied_to = jobFilters.appliedRange.to;
+  }
+  if (jobFilters.createdRange.from) {
+    filters.created_from = jobFilters.createdRange.from;
+  }
+  if (jobFilters.createdRange.to) {
+    filters.created_to = jobFilters.createdRange.to;
+  }
+
+  const atsTier = ATS_SCORE_TIERS.find((t) => t.key === jobFilters.atsScoreTier);
+  if (atsTier) {
+    filters.ats_score_min = atsTier.min;
+    filters.ats_score_max = atsTier.max;
+  }
+
+  return filters;
 }
 
-watch([searchQuery, filterStatus, filterPlatform], () => {
-  currentPage.value = 1
-  loadJobs()
-})
+// Board view groups jobs by status into columns, so the general status filter
+// (a table-view concept) is dropped — each column already scopes itself to one status.
+const boardBaseFilters = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { status: _status, ...rest } = buildBaseFilters();
+  return rest;
+});
+
+async function loadJobs() {
+  isLoading.value = true;
+  const res = await dataservice.getJobs({
+    ...buildBaseFilters(),
+    page: currentPage.value,
+    per_page: pageSize.value
+  });
+  allJobs.value = res.items;
+  totalJobs.value = res.total;
+  isLoading.value = false;
+}
+
+function onFiltersApplied(next: JobFiltersFormValues) {
+  filtersApplied.value = true;
+  Object.assign(jobFilters, next);
+  currentPage.value = 1;
+  loadJobs();
+}
+
+watch([searchQuery, filterPlatform], () => {
+  currentPage.value = 1;
+  loadJobs();
+});
+
+function onPageSizeChange(value: string) {
+  pageSize.value = Number(value);
+  currentPage.value = 1;
+  loadJobs();
+}
 
 function onTableSelectionChange(val: JobData[]) {
-  selectedJobs.value = val
+  selectedJobs.value = val;
 }
 
 async function deleteSelectedJobs() {
-  if (selectedJobs.value.length === 0) return
-  const count = selectedJobs.value.length
+  if (selectedJobs.value.length === 0) return;
+  const count = selectedJobs.value.length;
   try {
-    await Promise.all(selectedJobs.value.map((job) => dataservice.deleteJob(job.id)))
-    selectedJobs.value = []
-    await loadJobs()
-    toast.success(`${count} job${count > 1 ? 's' : ''} deleted`)
+    await Promise.all(selectedJobs.value.map((job) => dataservice.deleteJob(job.id)));
+    selectedJobs.value = [];
+    await loadJobs();
+    toast.success(`${count} job${count > 1 ? 's' : ''} deleted`);
   } catch {
-    toast.error('Failed to delete selected jobs')
+    toast.error('Failed to delete selected jobs');
   }
 }
 
 function openAddModal() {
-  editingJob.value = null
-  isModalOpen.value = true
+  editingJob.value = null;
+  isModalOpen.value = true;
 }
 
 function openEditModal(job: JobData, tab: 'details' | 'ats' = 'details') {
-  editingJob.value = job
-  panelInitialTab.value = tab
-  isPanelOpen.value = true
-  router.replace({ query: { ...route.query, job: String(job.id), tab } })
+  editingJob.value = job;
+  panelInitialTab.value = tab;
+  isPanelOpen.value = true;
+  router.replace({ query: { ...route.query, job: String(job.id), tab } });
 }
 
 function handlePanelTabChange(tab: 'details' | 'ats') {
-  router.replace({ query: { ...route.query, tab } })
+  router.replace({ query: { ...route.query, tab } });
 }
 
 watch(isPanelOpen, (open) => {
   if (!open) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { job: _j, tab: _t, ...rest } = route.query
-    router.replace({ query: rest })
+    const { job: _j, tab: _t, ...rest } = route.query;
+    router.replace({ query: rest });
   }
-})
+});
 
 async function handleSaveJob(payload: JobCreatePayload) {
-  if (props.boardId) payload = { ...payload, board_id: props.boardId }
+  if (props.boardId) payload = { ...payload, board_id: props.boardId };
   try {
-    await dataservice.createJob(payload)
-    await loadJobs()
-    toast.success('Job added successfully')
+    await dataservice.createJob(payload);
+    await companiesStore.refresh();
+    await loadJobs();
+    toast.success('Job added successfully');
   } catch {
-    toast.error('Failed to add job')
+    toast.error('Failed to add job');
   }
 }
 
 async function handleSaveEdit(jobId: number, payload: JobCreatePayload) {
-  if (props.boardId) payload = { ...payload, board_id: props.boardId }
-  const updatedJob = await dataservice.updateJob(jobId, payload)
+  if (props.boardId && payload.board_id === undefined)
+    payload = { ...payload, board_id: props.boardId };
+  const updatedJob = await dataservice.updateJob(jobId, payload);
   if (updatedJob) {
-    toast.success('Job updated successfully')
-    await loadJobs()
+    await companiesStore.refresh();
+    toast.success('Job updated successfully');
+    await loadJobs();
   } else {
-    toast.error('Failed to update job')
+    toast.error('Failed to update job');
   }
 }
 
 function handleScoreUpdated(jobId: number, update: { ats_score: number; ats_report: ATSReport }) {
   if (editingJob.value?.id === jobId) {
-    editingJob.value = { ...editingJob.value, ...update }
+    editingJob.value = { ...editingJob.value, ...update };
   }
 }
 
 async function handleStatusChange(jobId: number, newStatus: string) {
-  const idx = allJobs.value.findIndex((j) => j.id === jobId)
-  const prevStatus = allJobs.value[idx]?.status
-  const today = new Date().toISOString().slice(0, 10)
-  const autoDate = newStatus === 'Applied' && !allJobs.value[idx]?.applied_date ? today : undefined
+  const idx = allJobs.value.findIndex((j) => j.id === jobId);
+  const prevStatus = allJobs.value[idx]?.status;
+  const today = new Date().toISOString().slice(0, 10);
+  const autoDate = newStatus === 'Applied' && !allJobs.value[idx]?.applied_date ? today : undefined;
   if (idx !== -1)
     allJobs.value[idx] = {
       ...allJobs.value[idx],
       status: newStatus,
       ...(autoDate ? { applied_date: autoDate } : {})
-    }
+    };
   try {
     const updated = await dataservice.updateJob(jobId, {
       status: newStatus,
       ...(autoDate ? { applied_date: autoDate } : {})
-    })
+    });
     if (!updated && idx !== -1 && prevStatus !== undefined) {
-      allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus }
-      toast.error('Failed to update status')
+      allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus };
+      toast.error('Failed to update status');
     }
   } catch {
     if (idx !== -1 && prevStatus !== undefined) {
-      allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus }
+      allJobs.value[idx] = { ...allJobs.value[idx], status: prevStatus };
     }
-    toast.error('Failed to update status')
+    toast.error('Failed to update status');
   }
 }
 
 async function handleDeleteJob(jobId: number) {
   try {
-    await dataservice.deleteJob(jobId)
-    await loadJobs()
-    toast.success('Job deleted')
+    await dataservice.deleteJob(jobId);
+    await loadJobs();
+    toast.success('Job deleted');
   } catch {
-    toast.error('Failed to delete job')
+    toast.error('Failed to delete job');
   }
 }
 
 async function handleAddStage(stage: StageData) {
-  if (!props.boardId || !props.stages) return
-  const newStages = [...props.stages, stage]
+  if (!props.boardId || !props.stages) return;
+  const newStages = [...props.stages, stage];
   try {
-    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages })
-    if (updated) emit('stages-updated', updated.stages)
-    else toast.error('Failed to add stage')
+    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
+    if (updated) emit('stages-updated', updated.stages);
+    else toast.error('Failed to add stage');
   } catch {
-    toast.error('Failed to add stage')
+    toast.error('Failed to add stage');
   }
 }
 
 async function handleRemoveStage(key: string) {
-  if (!props.boardId || !props.stages) return
-  const newStages = props.stages.filter((s) => s.key !== key)
-  if (newStages.length === 0) return
+  if (!props.boardId || !props.stages) return;
+  const newStages = props.stages.filter((s) => s.key !== key);
+  if (newStages.length === 0) return;
   try {
-    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages })
+    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
     if (updated) {
-      emit('stages-updated', updated.stages)
-      await loadJobs()
+      emit('stages-updated', updated.stages);
+      await loadJobs();
     } else {
-      toast.error('Failed to remove stage')
+      toast.error('Failed to remove stage');
     }
   } catch {
-    toast.error('Failed to remove stage')
+    toast.error('Failed to remove stage');
   }
 }
 
 async function handleUpdateStage(payload: { oldKey: string; stage: StageData }) {
-  if (!props.boardId || !props.stages) return
-  const { oldKey, stage } = payload
-  const newStages = props.stages.map((s) => (s.key === oldKey ? stage : s))
-  const keyRenames = oldKey !== stage.key ? { [oldKey]: stage.key } : undefined
+  if (!props.boardId || !props.stages) return;
+  const { oldKey, stage } = payload;
+  const newStages = props.stages.map((s) => (s.key === oldKey ? stage : s));
+  const keyRenames = oldKey !== stage.key ? { [oldKey]: stage.key } : undefined;
   const updated = await dataservice.updateBoard(props.boardId, {
     stages: newStages,
     key_renames: keyRenames
-  })
+  });
   if (updated) {
-    emit('stages-updated', updated.stages)
-    if (keyRenames) await loadJobs()
+    emit('stages-updated', updated.stages);
+    if (keyRenames) await loadJobs();
   }
 }
 
 async function handleQuickAddJob(payload: {
-  title: string
-  company_name?: string
-  status: string
-  work_model?: string
+  title: string;
+  company_name?: string;
+  status: string;
+  work_model?: string;
 }) {
   const fullPayload: JobCreatePayload = {
     title: payload.title,
@@ -270,52 +347,82 @@ async function handleQuickAddJob(payload: {
     status: payload.status,
     work_model: payload.work_model,
     board_id: props.boardId
-  }
+  };
   try {
-    await dataservice.createJob(fullPayload)
-    await loadJobs()
-    toast.success('Job added')
+    await dataservice.createJob(fullPayload);
+    await companiesStore.refresh();
+    await loadJobs();
+    boardRef.value?.refreshColumn(payload.status);
+    toast.success('Job added');
   } catch {
-    toast.error('Failed to add job')
+    toast.error('Failed to add job');
   }
 }
 
 function clearFilters() {
-  searchQuery.value = ''
-  filterStatus.value = '__all__'
-  filterPlatform.value = '__all__'
+  filtersApplied.value = false;
+  searchQuery.value = '';
+  filterPlatform.value = '__all__';
+  Object.assign(jobFilters, emptyJobFilters());
+  currentPage.value = 1;
+  loadJobs();
 }
 
 const hasActiveFilters = () =>
   !!(
     searchQuery.value ||
-    (filterStatus.value && filterStatus.value !== '__all__') ||
-    (filterPlatform.value && filterPlatform.value !== '__all__')
-  )
+    (filterPlatform.value && filterPlatform.value !== '__all__') ||
+    jobFilters.boardIds.length ||
+    jobFilters.status.length ||
+    jobFilters.city.trim() ||
+    jobFilters.country.length ||
+    jobFilters.company.length ||
+    jobFilters.workModel.length ||
+    jobFilters.position.length ||
+    jobFilters.appliedRange.from ||
+    jobFilters.appliedRange.to ||
+    jobFilters.createdRange.from ||
+    jobFilters.createdRange.to ||
+    jobFilters.atsScoreTier.length
+  );
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
 onMounted(async () => {
-  const settings = await dataservice.getSettings()
+  const settings = await dataservice.getSettings();
   if (settings.view_mode === 'board' || settings.view_mode === 'list') {
-    selectedLayout.value = settings.view_mode as 'list' | 'board'
+    selectedLayout.value = settings.view_mode as 'list' | 'board';
   }
-  companiesStore.fetch()
+  if (PAGE_SIZE_OPTIONS.includes(settings.per_page as number)) {
+    pageSize.value = settings.per_page as number;
+  }
+  if (settings.saved_job_filters && typeof settings.saved_job_filters === 'object') {
+    Object.assign(jobFilters, emptyJobFilters(), settings.saved_job_filters);
+  }
+  if (!props.boardId) {
+    const boards: BoardData[] = await dataservice.getBoards();
+    boardOptions.value = boards.map((b) => ({ label: b.name, value: String(b.id) }));
+  }
+  companiesStore.fetch();
   if (route.query.query) {
-    searchQuery.value = route.query.query as string
+    searchQuery.value = route.query.query as string;
   }
-  await loadJobs()
+  await loadJobs();
   if (route.query.job) {
-    const job = await dataservice.getJob(Number(route.query.job))
-    const tab = route.query.tab === 'ats' ? 'ats' : 'details'
-    if (job) openEditModal(job, tab)
+    const job = await dataservice.getJob(Number(route.query.job));
+    const tab = route.query.tab === 'ats' ? 'ats' : 'details';
+    if (job) openEditModal(job, tab);
   }
-})
+});
 
 watch(selectedLayout, (val) => {
-  dataservice.updateSettings({ view_mode: val })
-})
+  dataservice.updateSettings({ view_mode: val });
+});
+
+watch(pageSize, (val) => {
+  dataservice.updateSettings({ per_page: val });
+});
 </script>
 
 <template>
@@ -325,28 +432,6 @@ watch(selectedLayout, (val) => {
       <!-- Left: Search + Filters -->
       <div class="flex flex-wrap items-center gap-2 flex-1">
         <Input v-model="searchQuery" placeholder="Search jobs..." class="w-48" />
-        <Select v-if="selectedLayout !== 'board'" v-model="filterStatus">
-          <SelectTrigger class="w-36">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="__all__">All Statuses</SelectItem>
-              <SelectItem v-for="s in statusOptions" :key="s" :value="s">{{ s }}</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <Select v-model="filterPlatform">
-          <SelectTrigger class="w-36">
-            <SelectValue placeholder="All Platforms" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="__all__">All Platforms</SelectItem>
-              <SelectItem v-for="p in PLATFORM_OPTIONS" :key="p" :value="p">{{ p }}</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
         <Button v-if="hasActiveFilters()" variant="ghost" size="sm" @click="clearFilters">
           Clear filters
         </Button>
@@ -369,6 +454,19 @@ watch(selectedLayout, (val) => {
             Delete
           </Button>
         </div>
+        <Button
+          size="sm"
+          variant="outline"
+          class="relative"
+          title="Filter jobs"
+          @click="isFiltersPanelOpen = true"
+        >
+          <Filter class="w-4 h-4" />
+          <span
+            v-if="hasActiveFilters()"
+            class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary"
+          />
+        </Button>
         <Button size="sm" @click="openAddModal">Add Job</Button>
         <div class="flex items-center gap-1">
           <Label class="text-sm text-muted-foreground">View:</Label>
@@ -388,7 +486,7 @@ watch(selectedLayout, (val) => {
     </div>
 
     <!-- Stats row -->
-    <div v-if="totalJobs > 0" class="text-sm text-muted-foreground">
+    <div v-if="totalJobs > 0  && selectedLayout === 'list'" class="text-sm text-muted-foreground">
       Showing {{ allJobs.length }} of {{ totalJobs }} applications
     </div>
 
@@ -466,17 +564,12 @@ watch(selectedLayout, (val) => {
           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
         />
       </svg>
-      <p class="text-muted-foreground font-medium">No applications yet</p>
-      <p class="text-sm text-muted-foreground">
-        Add a job manually or use the browser extension to capture from job boards.
+      <p class="text-muted-foreground font-medium">
+        No applications {{ filtersApplied ? 'matching your filters.' : 'tracked yet.' }}
       </p>
-      <Button @click="openAddModal" size="sm">
-        <Icon name="Plus" class="w-4 h-4 mr-1" />
-        Add First Application
-      </Button>
+      <p class="text-sm text-muted-foreground" v-html="noApplicationsMessage"></p>
     </div>
 
-    <!-- Table view -->
     <TableApplications
       v-else-if="selectedLayout === 'list'"
       :jobs="allJobs"
@@ -487,10 +580,10 @@ watch(selectedLayout, (val) => {
       @add-quick="handleQuickAddJob"
     />
 
-    <!-- Board view -->
     <BoardApplications
       v-else-if="selectedLayout === 'board'"
-      :jobs="allJobs"
+      ref="boardRef"
+      :base-filters="boardBaseFilters"
       :stages="stages"
       @edit="openEditModal"
       @status-change="handleStatusChange"
@@ -501,7 +594,50 @@ watch(selectedLayout, (val) => {
       @add-job="handleQuickAddJob"
     />
 
-    <!-- Add job modal (new job only) -->
+    <div v-if="selectedLayout === 'list' && totalJobs > 0" class="flex items-center justify-between py-4">
+      <div class="flex items-center gap-2">
+        <Label class="text-sm text-muted-foreground">Rows per page</Label>
+        <Select :model-value="String(pageSize)" @update:model-value="onPageSizeChange">
+          <SelectTrigger class="w-20">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem v-for="size in PAGE_SIZE_OPTIONS" :key="size" :value="String(size)">
+                {{ size }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Pagination
+        v-if="totalJobs > pageSize"
+        v-slot="{ page }"
+        :total="totalJobs"
+        :items-per-page="pageSize"
+        :sibling-count="1"
+        :page="currentPage"
+        show-edges
+        @update:page="(p) => { currentPage = p; loadJobs(); }"
+      >
+        <PaginationList v-slot="{ items }" class="flex items-center gap-1">
+          <PaginationFirst />
+          <PaginationPrev />
+          <template v-for="(item, index) in items" :key="index">
+            <PaginationListItem v-if="item.type === 'page'" :value="item.value" as-child>
+              <Button class="w-10 h-10 p-0" :variant="item.value === page ? 'default' : 'outline'">
+                {{ item.value }}
+              </Button>
+            </PaginationListItem>
+            <PaginationEllipsis v-else :index="index" />
+          </template>
+          <PaginationNext />
+          <PaginationLast />
+        </PaginationList>
+      </Pagination>
+    </div>
+
     <AddJobModal
       v-model:open="isModalOpen"
       :status-options="statusOptions"
@@ -509,7 +645,6 @@ watch(selectedLayout, (val) => {
       @save="handleSaveJob"
     />
 
-    <!-- Job detail slide-over (view/edit existing) -->
     <JobDetailPanel
       v-model:open="isPanelOpen"
       :job="editingJob"
@@ -518,6 +653,14 @@ watch(selectedLayout, (val) => {
       @save="handleSaveEdit"
       @tab-change="handlePanelTabChange"
       @score-updated="handleScoreUpdated"
+    />
+
+    <JobFiltersPanel
+      v-model:open="isFiltersPanelOpen"
+      :model-value="jobFilters"
+      :status-options="statusOptions"
+      :board-options="boardOptions"
+      @update:model-value="onFiltersApplied"
     />
   </div>
 </template>

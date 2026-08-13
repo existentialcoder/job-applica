@@ -2,7 +2,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/components/ui/*": ["../../packages/ui/src/components/ui/*"],
+      "@job-applica/ui/*": ["../../packages/ui/src/*"],
+      "@/*": ["./src/*"]
     }
   },
   "files": [],

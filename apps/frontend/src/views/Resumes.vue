@@ -1,135 +1,135 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { toast } from '@/lib/toast'
-import { useAppStore } from '@/stores/app'
-import dataservice from '@/lib/dataservice'
-import type { ResumeData, SkillData } from '@/lib/types'
+import { ref, computed, onMounted } from 'vue';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import dataservice from '@/lib/dataservice';
+import { toast } from '@/lib/toast';
+import type { ResumeData, SkillData } from '@/lib/types';
+import { useAppStore } from '@/stores/app';
 
-const appStore = useAppStore()
+const appStore = useAppStore();
 onMounted(() => {
-  appStore.setBreadcrumbs([{ label: 'Resumes' }])
-  loadData()
-})
+  appStore.setBreadcrumbs([{ label: 'Resumes' }]);
+  loadData();
+});
 
 // ── Resumes ───────────────────────────────────────────────────────────────────
-const resumes = ref<ResumeData[]>([])
-const loaded = ref(false)
-const uploading = ref(false)
-const preview = ref<ResumeData | null>(null)
-const previewOpen = ref(false)
+const resumes = ref<ResumeData[]>([]);
+const loaded = ref(false);
+const uploading = ref(false);
+const preview = ref<ResumeData | null>(null);
+const previewOpen = ref(false);
 
 // ── Skills ────────────────────────────────────────────────────────────────────
-const userSkills = ref<SkillData[]>([])
-const allSkills = ref<SkillData[]>([])
-const skillSearch = ref('')
-const skillsLoaded = ref(false)
-const dropdownOpen = ref(false)
-const addingId = ref<number | null>(null)
-const removingId = ref<number | null>(null)
+const userSkills = ref<SkillData[]>([]);
+const allSkills = ref<SkillData[]>([]);
+const skillSearch = ref('');
+const skillsLoaded = ref(false);
+const dropdownOpen = ref(false);
+const addingId = ref<number | null>(null);
+const removingId = ref<number | null>(null);
 
 const filteredSkills = computed(() => {
-  const q = skillSearch.value.toLowerCase().trim()
-  const addedIds = new Set(userSkills.value.map((s) => s.id))
+  const q = skillSearch.value.toLowerCase().trim();
+  const addedIds = new Set(userSkills.value.map((s) => s.id));
   return allSkills.value.filter(
     (s) =>
       !addedIds.has(s.id) &&
       (!q || s.label.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
-  )
-})
+  );
+});
 
 async function loadData() {
-  ;[resumes.value, userSkills.value, allSkills.value] = await Promise.all([
+  [resumes.value, userSkills.value, allSkills.value] = await Promise.all([
     dataservice.getResumes(),
     dataservice.getUserSkills(),
     dataservice.getSkills()
-  ])
-  loaded.value = true
-  skillsLoaded.value = true
+  ]);
+  loaded.value = true;
+  skillsLoaded.value = true;
 }
 
 // ── Resume actions ────────────────────────────────────────────────────────────
 async function handleFileChange(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  uploading.value = true
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  uploading.value = true;
   try {
-    const resume = await dataservice.uploadResume(file)
-    resumes.value.unshift(resume)
-    toast.success('CV uploaded successfully')
+    const resume = await dataservice.uploadResume(file);
+    resumes.value.unshift(resume);
+    toast.success('CV uploaded successfully');
   } catch (err: any) {
-    toast.error(err.message ?? 'Upload failed')
+    toast.error(err.message ?? 'Upload failed');
   } finally {
     uploading.value = false
-    ;(e.target as HTMLInputElement).value = ''
+    ;(e.target as HTMLInputElement).value = '';
   }
 }
 
 async function deleteResume(id: number) {
   try {
-    await dataservice.deleteResume(id)
-    resumes.value = resumes.value.filter((r) => r.id !== id)
-    toast.success('CV deleted')
+    await dataservice.deleteResume(id);
+    resumes.value = resumes.value.filter((r) => r.id !== id);
+    toast.success('CV deleted');
   } catch {
-    toast.error('Failed to delete CV')
+    toast.error('Failed to delete CV');
   }
 }
 
 async function setDefault(resumeId: number) {
   try {
-    await dataservice.setDefaultResume(resumeId)
-    resumes.value = resumes.value.map((r) => ({ ...r, is_default: r.id === resumeId }))
+    await dataservice.setDefaultResume(resumeId);
+    resumes.value = resumes.value.map((r) => ({ ...r, is_default: r.id === resumeId }));
   } catch {
-    toast.error('Failed to set default')
+    toast.error('Failed to set default');
   }
 }
 
 function viewResume(resume: ResumeData) {
-  preview.value = resume
-  previewOpen.value = true
+  preview.value = resume;
+  previewOpen.value = true;
 }
 
 // ── Skill actions ─────────────────────────────────────────────────────────────
 async function addSkill(skill: SkillData) {
-  addingId.value = skill.id
+  addingId.value = skill.id;
   try {
-    userSkills.value = await dataservice.addUserSkill(skill.id)
-    skillSearch.value = ''
+    userSkills.value = await dataservice.addUserSkill(skill.id);
+    skillSearch.value = '';
   } catch {
-    toast.error('Failed to add skill')
+    toast.error('Failed to add skill');
   } finally {
-    addingId.value = null
+    addingId.value = null;
   }
 }
 
 async function removeSkill(skillId: number) {
-  removingId.value = skillId
+  removingId.value = skillId;
   try {
-    userSkills.value = await dataservice.removeUserSkill(skillId)
+    userSkills.value = await dataservice.removeUserSkill(skillId);
   } catch {
-    toast.error('Failed to remove skill')
+    toast.error('Failed to remove skill');
   } finally {
-    removingId.value = null
+    removingId.value = null;
   }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatSize(bytes: number | null) {
-  if (!bytes) return '—'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+  if (!bytes) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function formatDate(iso: string | null) {
-  if (!iso) return ''
+  if (!iso) return '';
   return new Date(iso).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
-  })
+  });
 }
 </script>
 

@@ -11,11 +11,16 @@ DEFAULT_STAGES = [
     {"key": "Applied", "label": "Applied", "color": "bg-blue-500"},
     {"key": "Phone Screen", "label": "Phone Screen", "color": "bg-amber-500"},
     {"key": "Interview", "label": "Interview", "color": "bg-amber-500"},
-    {"key": "Technical", "label": "Technical", "color": "bg-orange-500"},
     {"key": "Offer", "label": "Offer", "color": "bg-emerald-500"},
+    {"key": "Accepted", "label": "Accepted", "color": "bg-emerald-600"},
     {"key": "Rejected", "label": "Rejected", "color": "bg-red-500"},
     {"key": "Withdrawn", "label": "Withdrawn", "color": "bg-zinc-400"},
+    {"key": "Ghosted", "label": "Ghosted", "color": "bg-purple-400"},
+    {"key": "Archived", "label": "Archived", "color": "bg-zinc-300"},
 ]
+
+MANDATORY_STAGE_KEYS = [s['key'] for s in DEFAULT_STAGES]
+MANDATORY_STAGE_LABELS = {s['key']: s['label'] for s in DEFAULT_STAGES}
 
 
 class Board(Base):

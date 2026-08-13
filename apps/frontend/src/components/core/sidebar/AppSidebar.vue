@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import SidebarInner from './SidebarInner.vue'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { useAppStore } from '@/stores/app'
+import { computed } from 'vue';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { useAppStore } from '@/stores/app';
+import SidebarInner from './SidebarInner.vue';
 
-const store = useAppStore()
-const isVisible = computed(() => window.innerWidth < 1025)
+const store = useAppStore();
+const isVisible = computed(() => window.innerWidth < 1025);
 </script>
 
 <template>

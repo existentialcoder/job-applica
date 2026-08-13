@@ -1,12 +1,12 @@
 import enum
 
-from sqlalchemy import JSON, Column, Date, Enum, Float, ForeignKey, Integer, Table, Text
+from sqlalchemy import JSON, Column, Date, Enum, Float, ForeignKey, Integer, Table, Text, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.base_class import Base
 from .board import Board
 from .company import Company
-from .location import Location
 from .skill import Skill
 from .user import User
 
@@ -85,9 +85,7 @@ class Job(Base):
         Enum(JobWorkModel, name='jobworkmodel'), default=JobWorkModel.ON_SITE, nullable=False
     )
 
-    location: Mapped['Location'] = relationship('Location')
-    location_id: Mapped[int] = mapped_column(ForeignKey('locations.id'), nullable=True)
-
+    location: Mapped[dict | None] = mapped_column(JSONB, nullable=True, server_default=text("'{}'::jsonb"))
     board: Mapped['Board'] = relationship('Board')
     board_id: Mapped[int | None] = mapped_column(ForeignKey('boards.id', ondelete='SET NULL'), nullable=True)
 

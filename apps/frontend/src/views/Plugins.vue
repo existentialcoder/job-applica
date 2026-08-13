@@ -1,81 +1,81 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { toast } from '@/lib/toast'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription
-} from '@/components/ui/sheet'
-import dataservice from '@/lib/dataservice'
-import type { ConnectedAccount } from '@/lib/types'
+} from '@/components/ui/sheet';
+import dataservice from '@/lib/dataservice';
+import { toast } from '@/lib/toast';
+import type { ConnectedAccount } from '@/lib/types';
 
-const route = useRoute()
+const route = useRoute();
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-const accounts = ref<ConnectedAccount[]>([])
-const loading = ref(true)
-const activeSheet = ref<'gmail' | 'calendar' | null>(null)
-const connectingFeature = ref<string | null>(null)
-const disconnecting = ref<string | null>(null)
+const accounts = ref<ConnectedAccount[]>([]);
+const loading = ref(true);
+const activeSheet = ref<'gmail' | 'calendar' | null>(null);
+const connectingFeature = ref<string | null>(null);
+const disconnecting = ref<string | null>(null);
 
 // ── Derived connection state ───────────────────────────────────────────────────
 
-const google = computed(() => accounts.value.find((a) => a.provider === 'google') ?? null)
-const linkedin = computed(() => accounts.value.find((a) => a.provider === 'linkedin') ?? null)
+const google = computed(() => accounts.value.find((a) => a.provider === 'google') ?? null);
+const linkedin = computed(() => accounts.value.find((a) => a.provider === 'linkedin') ?? null);
 
-const gmailConnected = computed(() => google.value?.has_gmail ?? false)
-const calendarConnected = computed(() => google.value?.has_calendar ?? false)
-const googleConnected = computed(() => !!google.value)
-const linkedinConnected = computed(() => !!linkedin.value)
+const gmailConnected = computed(() => google.value?.has_gmail ?? false);
+const calendarConnected = computed(() => google.value?.has_calendar ?? false);
+const googleConnected = computed(() => !!google.value);
+const linkedinConnected = computed(() => !!linkedin.value);
 
 // ── Data loading ──────────────────────────────────────────────────────────────
 
 async function load() {
-  loading.value = true
-  accounts.value = await dataservice.getConnectedAccounts()
-  loading.value = false
+  loading.value = true;
+  accounts.value = await dataservice.getConnectedAccounts();
+  loading.value = false;
 }
 
 onMounted(async () => {
-  await load()
+  await load();
   if (route.query.connected === 'google') {
-    toast.success('Google account connected successfully')
-    window.history.replaceState({}, '', '/plugins')
+    toast.success('Google account connected successfully');
+    window.history.replaceState({}, '', '/plugins');
   }
-})
+});
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 async function connectGoogle(features: string[]) {
-  const key = features.join(',') || 'google'
-  connectingFeature.value = key
+  const key = features.join(',') || 'google';
+  connectingFeature.value = key;
   try {
-    const url = await dataservice.getGoogleConnectUrl(features)
-    window.location.href = url
+    const url = await dataservice.getGoogleConnectUrl(features);
+    window.location.href = url;
   } catch {
-    toast.error('Could not start Google sign-in. Please try again.')
-    connectingFeature.value = null
+    toast.error('Could not start Google sign-in. Please try again.');
+    connectingFeature.value = null;
   }
 }
 
 async function disconnect(provider: 'google' | 'linkedin') {
-  disconnecting.value = provider
+  disconnecting.value = provider;
   try {
-    await dataservice.disconnectProvider(provider)
-    await load()
-    toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} disconnected`)
+    await dataservice.disconnectProvider(provider);
+    await load();
+    toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} disconnected`);
   } catch {
-    toast.error('Disconnect failed. Please try again.')
+    toast.error('Disconnect failed. Please try again.');
   } finally {
-    disconnecting.value = null
-    activeSheet.value = null
+    disconnecting.value = null;
+    activeSheet.value = null;
   }
 }
 </script>

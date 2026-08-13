@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { toast } from '@/lib/toast'
-import type { JobData, JobCreatePayload, ATSReport, ResumeData } from '@/lib/types'
-import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -17,40 +14,43 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import dataservice from '@/lib/dataservice'
-import CompanyCombobox from './CompanyCombobox.vue'
-import DatePickerInput from './DatePickerInput.vue'
+} from '@/components/ui/select';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  ATS_SCORE_TIERS,
+  COUNTRY_OPTIONS,
+  DEFAULT_COMPANY_LOGO_URL,
+  DEFAULT_BOARD_STAGES
+} from '@/lib/constants';
+import dataservice from '@/lib/dataservice';
+import { toast } from '@/lib/toast';
+import type { JobData, JobCreatePayload, ATSReport, ResumeData, BoardData } from '@/lib/types';
+import { useCompaniesStore } from '@/stores/companies';
+import CompanyCombobox from './CompanyCombobox.vue';
 
-const router = useRouter()
+const COUNTRY_COMBOBOX_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }));
+
+const router = useRouter();
+const companiesStore = useCompaniesStore();
 
 const props = defineProps<{
-  open: boolean
-  job?: JobData | null
-  statusOptions?: string[]
-  initialTab?: 'details' | 'ats'
-}>()
+  open: boolean;
+  job?: JobData | null;
+  statusOptions?: string[];
+  initialTab?: 'details' | 'ats';
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:open', val: boolean): void
-  (e: 'save', id: number, payload: JobCreatePayload): void
-  (e: 'tab-change', tab: 'details' | 'ats'): void
-  (e: 'score-updated', jobId: number, update: { ats_score: number; ats_report: ATSReport }): void
-}>()
+  (e: 'update:open', val: boolean): void;
+  (e: 'save', id: number, payload: JobCreatePayload): void;
+  (e: 'tab-change', tab: 'details' | 'ats'): void;
+  (e: 'score-updated', jobId: number, update: { ats_score: number; ats_report: ATSReport }): void;
+}>();
 
-const STATUS_OPTIONS = [
-  'Saved',
-  'Applied',
-  'Phone Screen',
-  'Interview',
-  'Technical',
-  'Offer',
-  'Rejected',
-  'Withdrawn'
-]
-const POSITION_OPTIONS = ['Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager']
-const WORK_MODEL_OPTIONS = ['On-site', 'Remote', 'Hybrid']
+const POSITION_OPTIONS = ['Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager'];
+const WORK_MODEL_OPTIONS = ['On-site', 'Remote', 'Hybrid'];
 const PLATFORM_OPTIONS = [
   'LinkedIn',
   'Indeed',
@@ -59,167 +59,202 @@ const PLATFORM_OPTIONS = [
   'ZipRecruiter',
   'Jobscan',
   'Other'
-]
+];
 
-const activeTab = ref<'details' | 'ats'>('details')
+const activeTab = ref<'details' | 'ats'>('details');
 
 // ── Details fields ────────────────────────────────────────────────────────────
-const title = ref('')
-const companyName = ref('')
-const location = ref('')
-const status = ref('')
-const position = ref('')
-const workModel = ref('')
-const salaryRange = ref('')
-const sourcePlatform = ref('')
-const sourceUrl = ref('')
-const appliedDate = ref('')
-const description = ref('')
-const notes = ref('')
+const title = ref('');
+const companyName = ref('');
+const locationCity = ref('');
+const locationCountry = ref('');
+const boardId = ref<number | undefined>(undefined);
+const status = ref('');
+const position = ref('');
+const workModel = ref('');
+const salaryRange = ref('');
+const sourcePlatform = ref('');
+const sourceUrl = ref('');
+const appliedDate = ref('');
+const description = ref('');
+const notes = ref('');
+
+function getAtsTier(score: number): AtsTier {
+  for (let i = ATS_SCORE_TIERS.length - 1; i >= 0; i--) {
+    if (score >= ATS_SCORE_TIERS[i].min) return ATS_SCORE_TIERS[i];
+  }
+  return ATS_SCORE_TIERS[0];
+}
 
 watch(status, (newVal) => {
   if (newVal === 'Applied' && !appliedDate.value) {
-    appliedDate.value = new Date().toISOString().slice(0, 10)
+    appliedDate.value = new Date().toISOString().slice(0, 10);
   }
-})
+});
+
+const allBoards = ref<BoardData[]>([]);
+
+onMounted(async () => {
+  allBoards.value = await dataservice.getBoards();
+});
+companiesStore.fetch();
+
+const boardOptions = computed(() =>
+  allBoards.value.map((b) => ({ label: b.name, value: String(b.id) }))
+);
+
+const currentBoardStageLabels = computed(() => {
+  const currentBoard = allBoards.value.find((b) => b.id === boardId.value);
+  if (currentBoard?.stages.length) return currentBoard.stages.map((s) => s.label);
+  return props.statusOptions?.length
+    ? props.statusOptions
+    : DEFAULT_BOARD_STAGES.map((s) => s.label);
+});
+
+function onBoardChange(val: string) {
+  boardId.value = Number(val);
+  if (!currentBoardStageLabels.value.includes(status.value)) {
+    status.value = currentBoardStageLabels.value[0] ?? 'Saved';
+  }
+}
 
 // ── Inline URL edit ──────────────────────────────────────────────────────────
-const isEditingUrl = ref(false)
-const pendingUrl = ref('')
-const urlInputRef = ref<HTMLInputElement | null>(null)
+const isEditingUrl = ref(false);
+const pendingUrl = ref('');
+const urlInputRef = ref<HTMLInputElement | null>(null);
 
 function startEditUrl() {
-  pendingUrl.value = sourceUrl.value
-  isEditingUrl.value = true
-  nextTick(() => urlInputRef.value?.focus())
+  pendingUrl.value = sourceUrl.value;
+  isEditingUrl.value = true;
+  nextTick(() => urlInputRef.value?.focus());
 }
 
 function confirmUrl() {
-  sourceUrl.value = pendingUrl.value.trim()
-  isEditingUrl.value = false
+  sourceUrl.value = pendingUrl.value.trim();
+  isEditingUrl.value = false;
 }
 
 function cancelUrl() {
-  isEditingUrl.value = false
+  isEditingUrl.value = false;
 }
 
-// ── ATS state ─────────────────────────────────────────────────────────────────
-const resumes = ref<ResumeData[]>([])
-const resumesLoaded = ref(false)
-const selectedResumeId = ref<string>('')
-const atsReport = ref<ATSReport | null>(null)
-const isScoring = ref(false)
+const resumes = ref<ResumeData[]>([]);
+const resumesLoaded = ref(false);
+const selectedResumeId = ref<string>('');
+const atsReport = ref<ATSReport | null>(null);
+const isScoring = ref(false);
 
 const selectedResumeName = computed(() => {
-  if (!selectedResumeId.value) return ''
-  const r = resumes.value.find((r) => String(r.id) === selectedResumeId.value)
-  return r?.original_name ?? ''
-})
+  if (!selectedResumeId.value) return '';
+  const r = resumes.value.find((r) => String(r.id) === selectedResumeId.value);
+  return r?.original_name ?? '';
+});
 
-const hasDescription = computed(() => !!description.value.trim())
-const hasLinkedCv = computed(() => !!selectedResumeId.value)
-const canScore = computed(() => hasDescription.value && hasLinkedCv.value && !isScoring.value)
+const hasDescription = computed(() => !!description.value.trim());
+const hasLinkedCv = computed(() => !!selectedResumeId.value);
+const canScore = computed(() => hasDescription.value && hasLinkedCv.value && !isScoring.value);
 
 function atsScoreColor(score: number) {
-  if (score >= 85) return '#22c55e'
-  if (score >= 70) return 'hsl(var(--primary))'
-  if (score >= 50) return '#f59e0b'
-  return '#ef4444'
+  return getAtsTier(score).color;
 }
 
 function atsTierLabel(score: number) {
-  if (score >= 85) return { label: 'Excellent', cls: 'bg-emerald-500/10 text-emerald-400' }
-  if (score >= 70) return { label: 'Good', cls: 'bg-primary/10 text-primary' }
-  if (score >= 50) return { label: 'Fair', cls: 'bg-amber-500/10 text-amber-400' }
-  return { label: 'Low', cls: 'bg-red-500/10 text-red-400' }
+  const tier = getAtsTier(score);
+  return { label: tier.label, cls: tier.badgeClass };
 }
 
 // SVG gauge helpers — full circle circumference for r=42: 2π*42 ≈ 263.9
-const CIRC = 263.9
+const CIRC = 263.9;
 function gaugeOffset(score: number) {
-  return CIRC - (score / 100) * CIRC
+  return CIRC - (score / 100) * CIRC;
 }
 
 async function loadResumes() {
-  if (resumesLoaded.value) return
-  resumes.value = await dataservice.getResumes()
-  resumesLoaded.value = true
+  if (resumesLoaded.value) return;
+  resumes.value = await dataservice.getResumes();
+  resumesLoaded.value = true;
   // Pre-select the linked resume if set, else default
   if (props.job?.ats_resume_id) {
-    selectedResumeId.value = String(props.job.ats_resume_id)
+    selectedResumeId.value = String(props.job.ats_resume_id);
   } else {
-    const def = resumes.value.find((r) => (r as any).is_default)
-    if (def) selectedResumeId.value = String(def.id)
-    else if (resumes.value.length) selectedResumeId.value = String(resumes.value[0].id)
+    const def = resumes.value.find((r) => (r as any).is_default);
+    if (def) selectedResumeId.value = String(def.id);
+    else if (resumes.value.length) {
+      selectedResumeId.value = String(resumes.value[0].id);
+    }
   }
 }
 
 async function calculateScore() {
-  if (!props.job || !canScore.value) return
-  isScoring.value = true
+  if (!props.job || !canScore.value) return;
+  isScoring.value = true;
   try {
     const report = await dataservice.calculateAtsScore(
       props.job.id,
       selectedResumeId.value ? Number(selectedResumeId.value) : null
-    )
-    atsReport.value = report
-    emit('score-updated', props.job.id, { ats_score: report.score, ats_report: report })
-    toast.success(`ATS score: ${Math.round(report.score)}/100`)
+    );
+    atsReport.value = report;
+    emit('score-updated', props.job.id, { ats_score: report.score, ats_report: report });
+    toast.success(`Match score: ${Math.round(report.score)}/100`);
   } catch (err: any) {
-    toast.error(err.message ?? 'Scoring failed')
+    toast.error(err.message ?? 'Scoring failed');
   } finally {
-    isScoring.value = false
+    isScoring.value = false;
   }
 }
 
 watch(activeTab, (tab) => {
-  emit('tab-change', tab)
-  if (tab === 'ats') loadResumes()
-})
+  emit('tab-change', tab);
+  if (tab === 'ats') loadResumes();
+});
 
 watch(
   () => props.open,
   (open) => {
     if (!open) {
-      isEditingUrl.value = false
-      atsReport.value = null
-      resumesLoaded.value = false
-      selectedResumeId.value = ''
-      return
+      isEditingUrl.value = false;
+      atsReport.value = null;
+      resumesLoaded.value = false;
+      selectedResumeId.value = '';
+      return;
     }
-    activeTab.value = props.initialTab ?? 'details'
-    const job = props.job
-    if (!job) return
-    title.value = job.title || ''
-    companyName.value = job.company?.name || ''
-    location.value = job.location
-      ? [job.location.city, job.location.state, job.location.country].filter(Boolean).join(', ')
-      : ''
-    status.value = job.status || 'Saved'
-    position.value = job.position || ''
-    workModel.value = job.work_model || ''
-    salaryRange.value = job.salary_range || ''
-    sourcePlatform.value = job.source_platform || ''
-    sourceUrl.value = job.source_url || ''
-    appliedDate.value = job.applied_date || ''
-    description.value = job.description || ''
-    notes.value = job.notes || ''
+    activeTab.value = props.initialTab ?? 'details';
+    const job = props.job;
+    if (!job) return;
+    title.value = job.title || '';
+    companyName.value = job.company?.name || '';
+    locationCity.value = job.location?.city || '';
+    locationCountry.value = job.location?.country || '';
+    boardId.value = job.board_id;
+    status.value = job.status || 'Saved';
+    position.value = job.position || '';
+    workModel.value = job.work_model || '';
+    salaryRange.value = job.salary_range || '';
+    sourcePlatform.value = job.source_platform || '';
+    sourceUrl.value = job.source_url || '';
+    appliedDate.value = job.applied_date || '';
+    description.value = job.description || '';
+    notes.value = job.notes || '';
 
     // Restore persisted ATS report
     if (job.ats_report) {
-      atsReport.value = job.ats_report as ATSReport
+      atsReport.value = job.ats_report as ATSReport;
     }
 
-    if (activeTab.value === 'ats') loadResumes()
+    if (activeTab.value === 'ats') loadResumes();
   }
-)
+);
 
 function handleSave() {
-  if (!props.job || !title.value.trim()) return
+  if (!props.job || !title.value.trim() || !companyName.value.trim()) return;
+  const city = locationCity.value.trim();
+  const country = locationCountry.value.trim();
   emit('save', props.job.id, {
     title: title.value.trim(),
     company_name: companyName.value.trim() || undefined,
-    location: location.value.trim() || undefined,
+    location:
+      city || country ? { city: city || undefined, country: country || undefined } : undefined,
+    board_id: boardId.value,
     status: status.value,
     position: position.value || undefined,
     work_model: workModel.value || undefined,
@@ -229,7 +264,7 @@ function handleSave() {
     applied_date: appliedDate.value || undefined,
     description: description.value.trim() || undefined,
     notes: notes.value.trim() || undefined
-  })
+  });
 }
 
 const statusVariantMap: Record<string, string> = {
@@ -241,7 +276,7 @@ const statusVariantMap: Record<string, string> = {
   Offer: 'success',
   Rejected: 'danger',
   Withdrawn: 'outline'
-}
+};
 </script>
 
 <template>
@@ -416,7 +451,7 @@ const statusVariantMap: Record<string, string> = {
             <TabsList>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="ats">
-                ATS Score
+                Match Score
                 <span
                   v-if="job?.ats_score != null"
                   class="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
@@ -437,15 +472,45 @@ const statusVariantMap: Record<string, string> = {
               <Input v-model="title" placeholder="e.g. Senior Software Engineer" />
             </div>
 
+            <div class="space-y-1.5">
+              <Label>Company <span class="text-destructive">*</span></Label>
+              <CompanyCombobox
+                :companies="companiesStore.companies"
+                v-model="companyName"
+                placeholder="e.g. Acme Corp"
+              />
+            </div>
+
             <div class="grid grid-cols-2 gap-3">
               <div class="space-y-1.5">
-                <Label>Company</Label>
-                <CompanyCombobox v-model="companyName" placeholder="e.g. Acme Corp" />
+                <Label>City</Label>
+                <Input v-model="locationCity" placeholder="e.g. New York" />
               </div>
               <div class="space-y-1.5">
-                <Label>Location</Label>
-                <Input v-model="location" placeholder="e.g. New York, NY, USA" />
+                <Label>Country</Label>
+                <Combobox
+                  v-model="locationCountry"
+                  :options="COUNTRY_COMBOBOX_OPTIONS"
+                  placeholder="Select country"
+                />
               </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <Label>Board</Label>
+              <Select
+                :model-value="boardId != null ? String(boardId) : undefined"
+                @update:model-value="onBoardChange"
+              >
+                <SelectTrigger><SelectValue placeholder="Select board" /></SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem v-for="b in boardOptions" :key="b.value" :value="b.value">{{
+                      b.label
+                    }}</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -455,12 +520,9 @@ const statusVariantMap: Record<string, string> = {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem
-                        v-for="s in statusOptions ?? STATUS_OPTIONS"
-                        :key="s"
-                        :value="s"
-                        >{{ s }}</SelectItem
-                      >
+                      <SelectItem v-for="s in currentBoardStageLabels" :key="s" :value="s">{{
+                        s
+                      }}</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -516,7 +578,7 @@ const statusVariantMap: Record<string, string> = {
               </div>
               <div class="space-y-1.5">
                 <Label>Applied Date</Label>
-                <DatePickerInput v-model="appliedDate" placeholder="Pick a date" />
+                <DatePicker v-model="appliedDate" placeholder="Pick a date" />
               </div>
             </div>
 
@@ -690,12 +752,13 @@ const statusVariantMap: Record<string, string> = {
                 isScoring
                   ? 'Analysing…'
                   : atsReport
-                    ? 'Recalculate ATS Score'
-                    : 'Link & Calculate ATS Score'
+                    ? 'Recalculate Match Score'
+                    : 'Link & Calculate Match Score'
               }}
             </Button>
 
             <!-- ── Score result ─────────────────────────────────────────────── -->
+
             <template v-if="atsReport">
               <div class="border-t pt-5 space-y-5">
                 <!-- Gauge + score -->
@@ -758,7 +821,7 @@ const statusVariantMap: Record<string, string> = {
                 </div>
 
                 <!-- Matched skills -->
-                <div v-if="atsReport.matched_skills.length" class="space-y-2">
+                <div v-if="atsReport?.matched_skills.length" class="space-y-2">
                   <p class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
                     <svg
                       class="w-3.5 h-3.5"
@@ -769,7 +832,7 @@ const statusVariantMap: Record<string, string> = {
                     >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    Matched skills ({{ atsReport.matched_skills.length }})
+                    Matched skills ({{ atsReport?.matched_skills.length }})
                   </p>
                   <div class="flex flex-wrap gap-1.5">
                     <span
@@ -793,7 +856,7 @@ const statusVariantMap: Record<string, string> = {
                     >
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    Matched experience ({{ atsReport.matched_experience.length }})
+                    Matched experience ({{ atsReport?.matched_experience.length }})
                   </p>
                   <ul class="space-y-1">
                     <li
@@ -925,7 +988,7 @@ const statusVariantMap: Record<string, string> = {
                 </div>
                 <p class="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
                   Select a CV above and click
-                  <span class="font-medium text-foreground">Calculate ATS Score</span> to see how
+                  <span class="font-medium text-foreground">Calculate Match Score</span> to see how
                   well you match this role.
                 </p>
               </div>
@@ -940,7 +1003,9 @@ const statusVariantMap: Record<string, string> = {
           style="flex-shrink: 0"
         >
           <Button variant="outline" @click="$emit('update:open', false)">Cancel</Button>
-          <Button :disabled="!title.trim()" @click="handleSave">Save Changes</Button>
+          <Button :disabled="!title.trim() || !companyName.trim()" @click="handleSave"
+            >Save Changes</Button
+          >
         </div>
       </div>
     </SheetContent>

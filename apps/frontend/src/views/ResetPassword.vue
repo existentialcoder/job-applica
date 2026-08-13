@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
+import { ref, computed, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useAuthStore } from '@/stores/auth';
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
 type Step =
   | 'identify'
@@ -18,150 +18,150 @@ type Step =
   | 'new_password'
   | 'success'
 
-const step = ref<Step>('identify')
-const isLoading = ref(false)
-const formError = ref('')
+const step = ref<Step>('identify');
+const isLoading = ref(false);
+const formError = ref('');
 
-const identifier = ref('')
-const securityQuestion = ref('')
-const answer = ref('')
-const otp = ref('')
-const newPassword = ref('')
-const confirmPassword = ref('')
-const resetToken = ref('')
+const identifier = ref('');
+const securityQuestion = ref('');
+const answer = ref('');
+const otp = ref('');
+const newPassword = ref('');
+const confirmPassword = ref('');
+const resetToken = ref('');
 
-const OTP_DURATION_SECONDS = 120
-const otpSecondsLeft = ref(0)
-let otpTimer: ReturnType<typeof setInterval> | null = null
+const OTP_DURATION_SECONDS = 120;
+const otpSecondsLeft = ref(0);
+let otpTimer: ReturnType<typeof setInterval> | null = null;
 
 const otpTimeDisplay = computed(() => {
-  const minutes = Math.floor(otpSecondsLeft.value / 60)
-  const seconds = otpSecondsLeft.value % 60
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`
-})
+  const minutes = Math.floor(otpSecondsLeft.value / 60);
+  const seconds = otpSecondsLeft.value % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+});
 
 function startOtpTimer() {
-  if (otpTimer) clearInterval(otpTimer)
-  otpSecondsLeft.value = OTP_DURATION_SECONDS
+  if (otpTimer) clearInterval(otpTimer);
+  otpSecondsLeft.value = OTP_DURATION_SECONDS;
   otpTimer = setInterval(() => {
-    otpSecondsLeft.value -= 1
+    otpSecondsLeft.value -= 1;
     if (otpSecondsLeft.value <= 0 && otpTimer) {
-      clearInterval(otpTimer)
-      otpTimer = null
+      clearInterval(otpTimer);
+      otpTimer = null;
     }
-  }, 1000)
+  }, 1000);
 }
 
 onUnmounted(() => {
-  if (otpTimer) clearInterval(otpTimer)
-})
+  if (otpTimer) clearInterval(otpTimer);
+});
 
 async function submitIdentifier() {
-  formError.value = ''
+  formError.value = '';
   if (!identifier.value.trim()) {
-    formError.value = 'Enter your username or email'
-    return
+    formError.value = 'Enter your username or email';
+    return;
   }
 
-  isLoading.value = true
-  const result = await authStore.getResetMechanism(identifier.value.trim())
-  isLoading.value = false
+  isLoading.value = true;
+  const result = await authStore.getResetMechanism(identifier.value.trim());
+  isLoading.value = false;
 
   if (!result.ok) {
-    formError.value = result.error
-    return
+    formError.value = result.error;
+    return;
   }
 
   if (result.mechanism === 'security_question') {
-    securityQuestion.value = result.securityQuestion
-    step.value = 'answer_question'
+    securityQuestion.value = result.securityQuestion;
+    step.value = 'answer_question';
   } else {
-    step.value = 'otp_consent'
+    step.value = 'otp_consent';
   }
 }
 
 async function submitAnswer() {
-  formError.value = ''
+  formError.value = '';
   if (!answer.value.trim()) {
-    formError.value = 'Enter your answer'
-    return
+    formError.value = 'Enter your answer';
+    return;
   }
 
-  isLoading.value = true
+  isLoading.value = true;
   const result = await authStore.verifyResetMechanism(
     identifier.value.trim(),
     'security_question',
     securityQuestion.value,
     answer.value.trim()
-  )
-  isLoading.value = false
+  );
+  isLoading.value = false;
 
   if (!result.ok) {
-    formError.value = result.error || 'Incorrect answer'
-    return
+    formError.value = result.error || 'Incorrect answer';
+    return;
   }
-  resetToken.value = result.token || ''
-  step.value = 'new_password'
+  resetToken.value = result.token || '';
+  step.value = 'new_password';
 }
 
 async function sendOtp() {
-  formError.value = ''
-  isLoading.value = true
-  const result = await authStore.requestResetOtp(identifier.value.trim())
-  isLoading.value = false
+  formError.value = '';
+  isLoading.value = true;
+  const result = await authStore.requestResetOtp(identifier.value.trim());
+  isLoading.value = false;
 
   if (!result.ok) {
-    formError.value = result.error || 'Failed to send code'
-    return
+    formError.value = result.error || 'Failed to send code';
+    return;
   }
-  step.value = 'otp_input'
-  startOtpTimer()
+  step.value = 'otp_input';
+  startOtpTimer();
 }
 
 async function submitOtp() {
-  formError.value = ''
+  formError.value = '';
   if (!otp.value.trim()) {
-    formError.value = 'Enter the code we sent you'
-    return
+    formError.value = 'Enter the code we sent you';
+    return;
   }
 
-  isLoading.value = true
+  isLoading.value = true;
   const result = await authStore.verifyResetMechanism(
     identifier.value.trim(),
     'otp',
     '',
     otp.value.trim()
-  )
-  isLoading.value = false
+  );
+  isLoading.value = false;
 
   if (!result.ok) {
-    formError.value = result.error || 'Incorrect or expired code'
-    return
+    formError.value = result.error || 'Incorrect or expired code';
+    return;
   }
-  resetToken.value = result.token || ''
-  step.value = 'new_password'
+  resetToken.value = result.token || '';
+  step.value = 'new_password';
 }
 
 async function submitNewPassword() {
-  formError.value = ''
+  formError.value = '';
   if (newPassword.value.length < 6) {
-    formError.value = 'Password must be at least 6 characters'
-    return
+    formError.value = 'Password must be at least 6 characters';
+    return;
   }
   if (newPassword.value !== confirmPassword.value) {
-    formError.value = 'Passwords do not match'
-    return
+    formError.value = 'Passwords do not match';
+    return;
   }
 
-  isLoading.value = true
-  const result = await authStore.resetPassword(resetToken.value, newPassword.value)
-  isLoading.value = false
+  isLoading.value = true;
+  const result = await authStore.resetPassword(resetToken.value, newPassword.value);
+  isLoading.value = false;
 
   if (!result.ok) {
-    formError.value = result.error || 'Password reset failed'
-    return
+    formError.value = result.error || 'Password reset failed';
+    return;
   }
-  step.value = 'success'
+  step.value = 'success';
 }
 </script>
 

@@ -1,4 +1,4 @@
-import { toast as _toast } from 'vue-sonner'
+import { toast as _toast } from 'vue-sonner';
 
 export const toast = {
   success: (message: string, opts?: object) =>
@@ -20,4 +20,4 @@ export const toast = {
     _toast.info(message, {
       ...opts
     })
-}
+};

@@ -18,6 +18,20 @@ if (!(window as any).__jaWebappInjected) {
   let suppressNextSync = false;
   let contextValid = true;
 
+  function handleSendError(e: unknown): void {
+    // "Extension context invalidated" — the extension was reloaded/updated
+    // while this tab was open; stop trying until the page itself reloads.
+    if (e instanceof Error && e.message.includes('Extension context invalidated')) {
+      contextValid = false;
+      window.removeEventListener('ja:auth', onAuth);
+      return;
+    }
+    // Otherwise benign — e.g. "Could not establish connection. Receiving end
+    // does not exist." from an MV3 service-worker cold start racing the very
+    // first message on page load. Nothing to act on; the message just didn't
+    // land, and a future sync (next SYNC_AUTH or page load) will catch it up.
+  }
+
   function trySend(msg: Record<string, unknown>): void {
     if (!contextValid) return;
     const rt =
@@ -25,12 +39,12 @@ if (!(window as any).__jaWebappInjected) {
       (typeof browser !== 'undefined' && browser?.runtime ? browser.runtime : null);
     if (!rt) return;
     try {
-      void rt.sendMessage(msg);
+      // sendMessage returns a Promise in MV3 — a rejection (e.g. no listener
+      // yet) must be caught here, or it surfaces as an unhandled rejection
+      // in the page console even though it's expected/benign.
+      void rt.sendMessage(msg)?.catch(handleSendError);
     } catch (e: unknown) {
-      if (e instanceof Error && e.message.includes('Extension context invalidated')) {
-        contextValid = false;
-        window.removeEventListener('ja:auth', onAuth);
-      }
+      handleSendError(e);
     }
   }
 

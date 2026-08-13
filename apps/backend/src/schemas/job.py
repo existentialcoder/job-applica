@@ -1,7 +1,9 @@
 import enum
-from datetime import date
+from datetime import datetime
+from typing import ClassVar
 
-from pydantic import BaseModel, Field, field_validator
+from fastapi import Query
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from .base import BaseSchema
 from .company import CompanyBase, CompanyCreate
@@ -55,15 +57,6 @@ class LocationBase(BaseModel):
     def empty_str_to_none(cls, v):
         return None if v == '' else v
 
-    @classmethod
-    def from_string(cls, s: str) -> 'LocationBase':
-        parts = [p.strip() or None for p in s.split(',')]
-        return cls(
-            city=parts[0] if len(parts) > 0 else None,
-            state=parts[1] if len(parts) > 1 else None,
-            country=parts[2] if len(parts) > 2 else None,
-        )
-
 
 class JobBase(BaseSchema):
     title: str
@@ -83,7 +76,7 @@ class JobBase(BaseSchema):
 
     source_url: str | None = None
     source_platform: SourcePlatform | None = None
-    applied_date: date | None = None
+    applied_date: datetime | None = None
     notes: str | None = None
 
     ats_score: float | None = None
@@ -93,23 +86,12 @@ class JobBase(BaseSchema):
     model_config = {'from_attributes': True}
 
 
-def _coerce_location(v):
-    if isinstance(v, str) and v.strip():
-        return LocationBase.from_string(v)
-    return v
-
-
 class JobCreate(BaseModel):
     title: str
     company_id: int | None = None
     company_name: str | None = None
     company: CompanyCreate | None = None
     location: LocationBase | None = None
-
-    @field_validator('location', mode='before')
-    @classmethod
-    def coerce_location(cls, v):
-        return _coerce_location(v)
 
     status: str = 'Saved'
     position: JobPosition | None = None
@@ -125,7 +107,7 @@ class JobCreate(BaseModel):
 
     source_url: str | None = None
     source_platform: SourcePlatform | None = None
-    applied_date: date | None = None
+    applied_date: datetime | None = None
     notes: str | None = None
 
     ats_score: float | None = None
@@ -138,11 +120,6 @@ class JobUpdate(BaseModel):
     company_id: int | None = None
     company_name: str | None = None
     location: LocationBase | None = None
-
-    @field_validator('location', mode='before')
-    @classmethod
-    def coerce_location(cls, v):
-        return _coerce_location(v)
 
     status: str | None = None
     position: JobPosition | None = None
@@ -158,7 +135,7 @@ class JobUpdate(BaseModel):
 
     source_url: str | None = None
     source_platform: SourcePlatform | None = None
-    applied_date: date | None = None
+    applied_date: datetime | None = None
     notes: str | None = None
 
 
@@ -183,9 +160,54 @@ class JobExtractResult(BaseModel):
 class JobFilterParams(BaseModel):
     query: str | None = Field(None, description='Search query string')
     title: str | None = Field(None, description='Job title filter')
-    company: str | None = Field(None, description='Company name filter')
-    location: str | None = Field(None, description='Location filter')
-    status: str | None = Field(None, description='Application status filter')
+    company: list[str] | None = Field(Query(None), description='Company name filter')
+    city: list[str] | None = Field(Query(None), description='City filter')
+    state: list[str] | None = Field(Query(None), description='State filter')
+    country: list[str] | None = Field(Query(None), description='Country filter')
+    status: list[str] | None = Field(Query(None), description='Application status filter')
     source_platform: SourcePlatform | None = Field(None, description='Source platform filter')
-    source_url: str | None = Field(None, description='Exact source URL match')
-    board_id: int | None = Field(None, description='Board ID filter')
+    board_id: list[str] | None = Field(Query(None), description='Board ID filter')
+    position: list[str] | None = Field(Query(None), description='List of positions to filter')
+    work_model: list[str] | None = Field(Query(None), description='List of work models to filter')
+    created_from: datetime | None = Field(None, description='Filter jobs created after this date')
+    created_to: datetime | None = Field(None, description='Filter jobs created before this date')
+    applied_from: datetime | None = Field(None, description='Filter jobs applied after this date')
+    applied_to: datetime | None = Field(None, description='Filter jobs applied before this date')
+    ats_score_min: float | None = Field(None, description='Minimum ATS score filter', ge=0.0)
+    ats_score_max: float | None = Field(None, description='Maximum ATS score filter', le=100.0)
+
+    _LIST_FIELDS: ClassVar[set[str]] = {
+        'company',
+        'city',
+        'state',
+        'country',
+        'status',
+        'board_id',
+        'position',
+        'work_model',
+    }
+    _DATE_FIELDS: ClassVar[set[str]] = {'created_from', 'created_to', 'applied_from', 'applied_to'}
+
+    @field_validator('*', mode='after')
+    @classmethod
+    def parse_field_as_required(cls, v, info: ValidationInfo):
+        if v is None or v == '':
+            return None
+
+        if info.field_name in cls._DATE_FIELDS:
+            if isinstance(v, str):
+                try:
+                    return datetime.fromisoformat(v)
+                except ValueError:
+                    raise ValueError(f"Invalid date format for {info.field_name}. Expected YYYY-MM-DD or ISO format.")
+            elif isinstance(v, datetime):
+                return v
+            else:
+                raise ValueError(f"Invalid type for {info.field_name}. Expected string or datetime.")
+
+        if info.field_name not in cls._LIST_FIELDS:
+            return v
+
+        items = [v] if isinstance(v, str) else v
+        parts = [part for item in items for part in (item.split(',') if isinstance(item, str) else [item])]
+        return [int(part) for part in parts] if info.field_name == 'board_id' else parts

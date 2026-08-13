@@ -20,7 +20,7 @@ activate-env:
 
 build: activate-env
 	@echo "🔹 Installing dependencies..."
-	$(PIP) install -r requirements.txt
+	$(PIP) install -r requirements.txt -r requirements-dev.txt
 	@echo "✅ Dependencies installed."
 
 run-db:

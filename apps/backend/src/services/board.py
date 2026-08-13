@@ -1,10 +1,30 @@
+from fastapi import HTTPException
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.board import DEFAULT_STAGES, Board
+from ..models.board import DEFAULT_STAGES, MANDATORY_STAGE_KEYS, MANDATORY_STAGE_LABELS, Board
 from ..models.job import Job
 from ..schemas.board import BoardBase, BoardCreate, BoardUpdate
 from ..schemas.user import UserBase
+
+
+def _validate_mandatory_stages(stages: list[dict], key_renames: dict[str, str] | None = None) -> None:
+    if key_renames and (mandatory_renamed := set(key_renames) & set(MANDATORY_STAGE_KEYS)):
+        raise HTTPException(status_code=400, detail=f'Cannot rename mandatory stage(s): {", ".join(mandatory_renamed)}')
+
+    keys_in_order = [s['key'] for s in stages]
+
+    missing = [k for k in MANDATORY_STAGE_KEYS if k not in keys_in_order]
+    if missing:
+        raise HTTPException(status_code=400, detail=f'Cannot remove mandatory stage(s): {", ".join(missing)}')
+
+    present_mandatory = [k for k in keys_in_order if k in MANDATORY_STAGE_KEYS]
+    if present_mandatory != MANDATORY_STAGE_KEYS:
+        raise HTTPException(status_code=400, detail='Mandatory stages must stay in their original relative order')
+
+    for s in stages:
+        if s['key'] in MANDATORY_STAGE_LABELS and s['label'] != MANDATORY_STAGE_LABELS[s['key']]:
+            raise HTTPException(status_code=400, detail=f'Cannot rename mandatory stage "{s["key"]}"')
 
 
 async def get_boards(db: AsyncSession, user: UserBase) -> list[BoardBase]:
@@ -35,6 +55,8 @@ async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) 
     is_first = existing_count_result.scalar() == 0
 
     stages = [s.model_dump() for s in board_in.stages] if board_in.stages else DEFAULT_STAGES
+    if board_in.stages:
+        _validate_mandatory_stages(stages)
     board = Board(
         name=board_in.name,
         color=board_in.color,
@@ -64,6 +86,7 @@ async def update_board(db: AsyncSession, user: UserBase, board_id: int, board_in
 
     if board_in.stages is not None:
         new_stages = [s.model_dump() for s in board_in.stages]
+        _validate_mandatory_stages(new_stages, board_in.key_renames)
         renamed_old_keys: set[str] = set()
 
         if board_in.key_renames:

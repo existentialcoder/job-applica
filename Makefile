@@ -24,6 +24,5 @@ fix-backend:
 	$(BACKEND_VENV)/ruff format --config apps/backend/pyproject.toml apps/backend/src
 
 fix-frontend:
-	@echo "-- Frontend: eslint --fix + prettier --write --"
+	@echo "-- Frontend: eslint --fix --"
 	-cd apps/frontend && npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore
-	cd apps/frontend && npx prettier --write src/

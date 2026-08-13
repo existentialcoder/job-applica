@@ -1,81 +1,75 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import { Check, ChevronDown, Plus, X } from 'lucide-vue-next'
+import { Check, ChevronDown, Plus, X } from 'lucide-vue-next';
+import { computed, ref, watch, nextTick } from 'vue';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
-import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants'
-import dataservice from '@/lib/dataservice'
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+import type { CompanyOption } from '@/stores/companies';
 
 const props = defineProps<{
   modelValue: string
+  companies: CompanyOption[]
   placeholder?: string
   class?: string
-}>()
+}>();
 
 const emit = defineEmits<{
   (e: 'update:modelValue', val: string): void
-}>()
+}>();
 
-const open = ref(false)
-const companies = ref<{ id: number; name: string; logo_url?: string }[]>([])
-const addingNew = ref(false)
-const newName = ref('')
-const newNameRef = ref<HTMLInputElement | null>(null)
+const open = ref(false);
+const addingNewCompany = ref(false);
+const newName = ref('');
 
-onMounted(async () => {
-  companies.value = await dataservice.getCompanies()
-})
-
-watch(open, async (val) => {
-  if (val) {
-    companies.value = await dataservice.getCompanies()
-  } else {
-    addingNew.value = false
-    newName.value = ''
+watch(open, (val) => {
+  if (!val) {
+    addingNewCompany.value = false;
+    newName.value = '';
   }
-})
+});
 
 function select(name: string) {
-  emit('update:modelValue', name)
-  open.value = false
+  emit('update:modelValue', name);
+  open.value = false;
 }
 
-async function startAdding() {
-  addingNew.value = true
-  newName.value = ''
-  await nextTick()
-  newNameRef.value?.focus()
+async function startAddingCompany() {
+  addingNewCompany.value = true;
+  newName.value = '';
+  await nextTick();
 }
 
 async function confirmAdd() {
-  const name = newName.value.trim()
-  if (!name) return
-  emit('update:modelValue', name)
-  await nextTick()
-  addingNew.value = false
-  newName.value = ''
-  open.value = false
+  const name = newName.value.trim();
+  if (!name) {
+    return;
+  }
+  emit('update:modelValue', name);
+  await nextTick();
+  addingNewCompany.value = false;
+  newName.value = '';
+  open.value = false;
 }
 
 async function cancelAdd() {
-  await nextTick()
-  addingNew.value = false
-  newName.value = ''
+  await nextTick();
+  addingNewCompany.value = false;
+  newName.value = '';
 }
 
 const selectedLogo = computed(() => {
   return (
-    companies.value.find((c) => c.name === props.modelValue)?.logo_url || DEFAULT_COMPANY_LOGO_URL
-  )
-})
+    props.companies.find((c) => c.name === props.modelValue)?.logo_url || DEFAULT_COMPANY_LOGO_URL
+  );
+});
 </script>
 
 <template>
@@ -99,7 +93,6 @@ const selectedLogo = computed(() => {
             class="h-5 w-5 rounded-full object-contain shrink-0 bg-muted"
             @error="($event.target as HTMLImageElement).style.display = 'none'"
           />
-          <!-- Default building icon when empty -->
           <svg
             v-else
             class="h-4 w-4 shrink-0 opacity-50"
@@ -123,7 +116,7 @@ const selectedLogo = computed(() => {
     <DropdownMenuContent class="w-[240px]" align="start">
       <!-- Empty state -->
       <p
-        v-if="!companies.length && !addingNew"
+        v-if="!companies.length && !addingNewCompany"
         class="py-3 text-center text-xs text-muted-foreground"
       >
         No companies yet
@@ -148,23 +141,16 @@ const selectedLogo = computed(() => {
       <DropdownMenuSeparator v-if="companies.length" />
 
       <!-- Add company trigger -->
-      <DropdownMenuItem
-        v-if="!addingNew"
-        class="gap-2 cursor-pointer text-muted-foreground focus:text-foreground"
-        @click.stop="startAdding"
+      <div
+        v-if="!addingNewCompany"
+        class="relative flex select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors gap-2 cursor-pointer text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-primary/10 focus:text-foreground"
+        @click="startAddingCompany"
       >
         <Plus class="h-3.5 w-3.5 shrink-0" />
         Add company
-      </DropdownMenuItem>
-
+      </div>
       <!-- Inline add form -->
-      <div
-        v-else
-        class="flex items-center gap-1.5 px-1 py-1"
-        @click.stop
-        @keydown.up.stop
-        @keydown.down.stop
-      >
+      <div v-else class="flex items-center gap-1.5 px-1 py-1" @click.stop @keydown.stop>
         <Input
           ref="newNameRef"
           v-model="newName"

@@ -1,41 +1,40 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
-import { computed, onMounted } from 'vue'
-import { useAppStore } from '@/stores/app'
+import { computed, onMounted } from 'vue';
+import { RouterView } from 'vue-router';
+import { Toaster } from 'vue-sonner';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useAppStore } from '@/stores/app';
+import { useAuthStore } from '@/stores/auth';
+import { useFeatureStore } from '@/stores/features';
 
-const appStore = useAppStore()
-const toasterTheme = computed(() => (appStore.isDark ? 'dark' : 'light'))
-import { useAuthStore } from '@/stores/auth'
-import { useFeatureStore } from '@/stores/features'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { Toaster } from 'vue-sonner'
+const appStore = useAppStore();
+const toasterTheme = computed(() => (appStore.isDark ? 'dark' : 'light'));
+
+async function handleTokenMessageFromExtension(e: Event) {
+  const { access_token, refresh_token } = (
+    e as CustomEvent<{ access_token: string | null; refresh_token: string | null }>
+  ).detail;
+
+  const authStore = useAuthStore();
+  if (access_token) {
+    authStore.setTokens(access_token, refresh_token ?? undefined);
+    await authStore.fetchMe();
+  } else {
+    authStore.clearAuth();
+  }
+}
 
 onMounted(async () => {
-  // Load feature flags before anything else — all defaults are true so no flash
-  await useFeatureStore().load()
-  await useAppStore().initTheme()
+  await useFeatureStore().load();
+  await useAppStore().initTheme();
 
-  // Validate session on startup — redirects to /login if token expired and unrefreshable
-  const authStore = useAuthStore()
+  const authStore = useAuthStore();
   if (authStore.isAuthenticated) {
-    await authStore.fetchMe()
+    await authStore.fetchMe();
   }
 
-  // Extension → Web app SSO: apply token received from extension login/logout.
-  // content-webapp.js re-dispatches APPLY_TOKEN messages as this custom event.
-  window.addEventListener('ja:token-from-extension', async (e: Event) => {
-    const { access_token, refresh_token } = (
-      e as CustomEvent<{ access_token: string | null; refresh_token: string | null }>
-    ).detail
-    const authStore = useAuthStore()
-    if (access_token) {
-      authStore.setTokens(access_token, refresh_token ?? undefined)
-      await authStore.fetchMe()
-    } else {
-      authStore.clearAuth()
-    }
-  })
-})
+  window.addEventListener('ja:token-from-extension', handleTokenMessageFromExtension);
+});
 </script>
 
 <template>

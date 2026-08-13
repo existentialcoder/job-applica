@@ -1,119 +1,119 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { toast } from '@/lib/toast'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { useAuthStore } from '@/stores/auth'
-import { useAppStore, BG_THEMES } from '@/stores/app'
-import dataservice from '@/lib/dataservice'
-import { cn } from '@/lib/utils'
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import dataservice from '@/lib/dataservice';
+import { toast } from '@/lib/toast';
+import { cn } from '@/lib/utils';
+import { useAppStore, BG_THEMES } from '@/stores/app';
+import { useAuthStore } from '@/stores/auth';
 
-const authStore = useAuthStore()
-const appStore = useAppStore()
-const route = useRoute()
-const router = useRouter()
+const authStore = useAuthStore();
+const appStore = useAppStore();
+const route = useRoute();
+const router = useRouter();
 
-const VALID_TABS = ['profile', 'preferences']
+const VALID_TABS = ['profile', 'preferences'];
 const activeTab = ref(
   VALID_TABS.includes(route.query.tab as string) ? (route.query.tab as string) : 'profile'
-)
+);
 
 watch(
   () => route.query.tab,
   (tab) => {
-    if (tab && VALID_TABS.includes(tab as string)) activeTab.value = tab as string
+    if (tab && VALID_TABS.includes(tab as string)) activeTab.value = tab as string;
   }
-)
+);
 
 watch(activeTab, (tab) => {
-  router.replace({ query: { ...route.query, tab } })
-})
+  router.replace({ query: { ...route.query, tab } });
+});
 
 // ── Profile ───────────────────────────────────────────────────────────────────
-const firstName = ref(authStore.user?.first_name ?? '')
-const lastName = ref(authStore.user?.last_name ?? '')
-const avatarUrl = ref(authStore.user?.avatar_url ?? '')
-const avatarUploading = ref(false)
-const savingProfile = ref(false)
+const firstName = ref(authStore.user?.first_name ?? '');
+const lastName = ref(authStore.user?.last_name ?? '');
+const avatarUrl = ref(authStore.user?.avatar_url ?? '');
+const avatarUploading = ref(false);
+const savingProfile = ref(false);
 
 const initials = computed(
   () => `${firstName.value[0] ?? ''}${lastName.value[0] ?? ''}`.toUpperCase() || '?'
-)
+);
 
 async function handleAvatarChange(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  avatarUploading.value = true
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  avatarUploading.value = true;
   try {
-    const { avatar_url } = await dataservice.uploadAvatar(file)
-    avatarUrl.value = avatar_url
-    authStore.setUser({ ...authStore.user!, avatar_url })
-    toast.success('Avatar updated')
+    const { avatar_url } = await dataservice.uploadAvatar(file);
+    avatarUrl.value = avatar_url;
+    authStore.setUser({ ...authStore.user!, avatar_url });
+    toast.success('Avatar updated');
   } catch {
-    toast.error('Failed to upload avatar')
+    toast.error('Failed to upload avatar');
   } finally {
     avatarUploading.value = false
-    ;(e.target as HTMLInputElement).value = ''
+    ;(e.target as HTMLInputElement).value = '';
   }
 }
 
 async function saveProfile() {
-  savingProfile.value = true
+  savingProfile.value = true;
   try {
     const updated = await dataservice.updateProfile({
       first_name: firstName.value,
       last_name: lastName.value
-    })
-    authStore.setUser({ ...authStore.user!, ...updated })
-    toast.success('Profile saved')
+    });
+    authStore.setUser({ ...authStore.user!, ...updated });
+    toast.success('Profile saved');
   } catch {
-    toast.error('Failed to save profile')
+    toast.error('Failed to save profile');
   } finally {
-    savingProfile.value = false
+    savingProfile.value = false;
   }
 }
 
 // ── Security ──────────────────────────────────────────────────────────────────
-const passwordChangeEnabled = computed(() => authStore.user?.has_password ?? false)
-const currentPw = ref('')
-const newPw = ref('')
-const confirmPw = ref('')
-const savingPw = ref(false)
-const pwError = ref('')
+const passwordChangeEnabled = computed(() => authStore.user?.has_password ?? false);
+const currentPw = ref('');
+const newPw = ref('');
+const confirmPw = ref('');
+const savingPw = ref(false);
+const pwError = ref('');
 
 async function changePassword() {
-  pwError.value = ''
+  pwError.value = '';
   if (newPw.value !== confirmPw.value) {
-    pwError.value = 'New passwords do not match'
-    return
+    pwError.value = 'New passwords do not match';
+    return;
   }
   if (newPw.value.length < 8) {
-    pwError.value = 'Password must be at least 8 characters'
-    return
+    pwError.value = 'Password must be at least 8 characters';
+    return;
   }
-  savingPw.value = true
+  savingPw.value = true;
   try {
     await dataservice.changePassword({
       current_password: currentPw.value,
       new_password: newPw.value
-    })
-    toast.success('Password updated')
-    currentPw.value = ''
-    newPw.value = ''
-    confirmPw.value = ''
+    });
+    toast.success('Password updated');
+    currentPw.value = '';
+    newPw.value = '';
+    confirmPw.value = '';
   } catch (err: any) {
-    toast.error(err.message ?? 'Failed to change password')
+    toast.error(err.message ?? 'Failed to change password');
   } finally {
-    savingPw.value = false
+    savingPw.value = false;
   }
 }
 
 onMounted(() => {
-  appStore.setBreadcrumbs([{ label: 'Settings' }])
-})
+  appStore.setBreadcrumbs([{ label: 'Settings' }]);
+});
 </script>
 
 <template>

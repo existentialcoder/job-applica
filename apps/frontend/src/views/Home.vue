@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
-import { LayoutDashboard } from 'lucide-vue-next'
-import dataservice from '@/lib/dataservice'
-import type { DashboardStats, BoardData } from '@/lib/types'
-import DashboardWidget from '@/components/core/DashboardWidget.vue'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Button } from '@/components/ui/button'
+import { LayoutDashboard } from 'lucide-vue-next';
+import { ref, computed, watch, onMounted } from 'vue';
+import DashboardWidget from '@/components/core/DashboardWidget.vue';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -13,20 +11,22 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
+} from '@/components/ui/select';
+import dataservice from '@/lib/dataservice';
+import type { DashboardStats, BoardData } from '@/lib/types';
 
-const stats = ref<DashboardStats | null>(null)
-const boards = ref<BoardData[]>([])
-const boardId = ref<number | null>(null)
-const loading = ref(true)
+const stats = ref<DashboardStats | null>(null);
+const boards = ref<BoardData[]>([]);
+const boardId = ref<number | null>(null);
+const loading = ref(true);
 
 // shadcn Select works with strings; bridge to number | null
 const boardIdStr = computed({
   get: () => (boardId.value == null ? '__all__' : String(boardId.value)),
   set: (v: string) => {
-    boardId.value = v === '__all__' ? null : Number(v)
+    boardId.value = v === '__all__' ? null : Number(v);
   }
-})
+});
 
 // ── Widget visibility ─────────────────────────────────────────────────────────
 const WIDGET_DEFS = [
@@ -49,40 +49,40 @@ const WIDGET_DEFS = [
   },
   { id: 'platform', label: 'By Platform', description: 'Where you found the roles' },
   { id: 'companies', label: 'Top Companies', description: 'Most applications sent to' }
-] as const
+] as const;
 
 type WidgetId = (typeof WIDGET_DEFS)[number]['id']
 
-const hiddenWidgets = ref<WidgetId[]>([])
+const hiddenWidgets = ref<WidgetId[]>([]);
 
 function isVisible(id: WidgetId) {
-  return !hiddenWidgets.value.includes(id)
+  return !hiddenWidgets.value.includes(id);
 }
 
 async function setHidden(ids: WidgetId[]) {
-  hiddenWidgets.value = ids
-  await dataservice.updateSettings({ hidden_widgets: ids })
+  hiddenWidgets.value = ids;
+  await dataservice.updateSettings({ hidden_widgets: ids });
 }
 
 function removeWidget(id: WidgetId) {
-  setHidden([...hiddenWidgets.value, id])
+  setHidden([...hiddenWidgets.value, id]);
 }
 
 function toggleWidget(id: WidgetId) {
   if (hiddenWidgets.value.includes(id)) {
-    setHidden(hiddenWidgets.value.filter((w) => w !== id))
+    setHidden(hiddenWidgets.value.filter((w) => w !== id));
   } else {
-    setHidden([...hiddenWidgets.value, id])
+    setHidden([...hiddenWidgets.value, id]);
   }
 }
 
-const hiddenCount = computed(() => hiddenWidgets.value.length)
+const hiddenCount = computed(() => hiddenWidgets.value.length);
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 async function fetchStats() {
-  loading.value = true
-  stats.value = await dataservice.getDashboardStats(boardId.value ?? undefined)
-  loading.value = false
+  loading.value = true;
+  stats.value = await dataservice.getDashboardStats(boardId.value ?? undefined);
+  loading.value = false;
 }
 
 onMounted(async () => {
@@ -90,17 +90,17 @@ onMounted(async () => {
     fetchStats(),
     dataservice.getBoards(),
     dataservice.getSettings()
-  ])
-  boards.value = boardList
-  hiddenWidgets.value = (settings.hidden_widgets as WidgetId[] | undefined) ?? []
-})
+  ]);
+  boards.value = boardList;
+  hiddenWidgets.value = (settings.hidden_widgets as WidgetId[] | undefined) ?? [];
+});
 
-watch(boardId, fetchStats)
+watch(boardId, fetchStats);
 
 // ── Funnel ────────────────────────────────────────────────────────────────────
-const TERMINAL_KEYS = new Set(['Saved', 'Rejected', 'Withdrawn'])
+const TERMINAL_KEYS = new Set(['Saved', 'Rejected', 'Withdrawn']);
 const funnelData = computed(() => {
-  if (!stats.value) return []
+  if (!stats.value) return [];
   return stats.value.stages
     .filter((s) => !TERMINAL_KEYS.has(s.key))
     .map((s) => ({
@@ -108,54 +108,54 @@ const funnelData = computed(() => {
       label: s.label,
       color: s.color,
       count: stats.value!.by_stage.find((b) => b.stage === s.key)?.count ?? 0
-    }))
-})
-const funnelMax = computed(() => Math.max(1, ...funnelData.value.map((d) => d.count)))
+    }));
+});
+const funnelMax = computed(() => Math.max(1, ...funnelData.value.map((d) => d.count)));
 
 // ── Weekly ────────────────────────────────────────────────────────────────────
-const weeklyMax = computed(() => Math.max(1, ...(stats.value?.by_week.map((w) => w.count) ?? [1])))
+const weeklyMax = computed(() => Math.max(1, ...(stats.value?.by_week.map((w) => w.count) ?? [1])));
 
 function fmtWeek(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // ── Outcome donut ─────────────────────────────────────────────────────────────
 const outcomeSegments = computed(() => {
-  const o = stats.value?.overview
-  if (!o) return []
+  const o = stats.value?.overview;
+  if (!o) return [];
   const total =
-    o.total_active + o.total_rejected + o.total_ghosted + o.total_withdrawn + o.total_offers || 1
+    o.total_active + o.total_rejected + o.total_ghosted + o.total_withdrawn + o.total_offers || 1;
   const items = [
     { label: 'Active', value: o.total_active, color: '#6366f1' },
     { label: 'Rejected', value: o.total_rejected, color: '#ef4444' },
     { label: 'Ghosted', value: o.total_ghosted, color: '#f59e0b' },
     { label: 'Withdrawn', value: o.total_withdrawn, color: '#6b7280' },
     { label: 'Offers', value: o.total_offers, color: '#10b981' }
-  ].filter((i) => i.value > 0)
+  ].filter((i) => i.value > 0);
 
-  let offset = 0
-  const r = 54
-  const circ = 2 * Math.PI * r
+  let offset = 0;
+  const r = 54;
+  const circ = 2 * Math.PI * r;
   return items.map((item) => {
-    const pct = item.value / total
-    const dash = pct * circ
-    const seg = { ...item, pct: Math.round(pct * 100), dash, offset }
-    offset += dash
-    return seg
-  })
-})
+    const pct = item.value / total;
+    const dash = pct * circ;
+    const seg = { ...item, pct: Math.round(pct * 100), dash, offset };
+    offset += dash;
+    return seg;
+  });
+});
 
 // ── Platform ──────────────────────────────────────────────────────────────────
 const platformMax = computed(() =>
   Math.max(1, ...(stats.value?.by_platform.map((p) => p.count) ?? [1]))
-)
+);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function stagePillClass(tailwindColor: string): string {
-  const match = tailwindColor.match(/^bg-(\w+-\d+)$/) ?? tailwindColor.match(/^(\w+-\d+)$/)
-  const base = match?.[1] ?? 'indigo-500'
-  return `bg-${base}/15 text-${base.replace(/\d+$/, '400')}`
+  const match = tailwindColor.match(/^bg-(\w+-\d+)$/) ?? tailwindColor.match(/^(\w+-\d+)$/);
+  const base = match?.[1] ?? 'indigo-500';
+  return `bg-${base}/15 text-${base.replace(/\d+$/, '400')}`;
 }
 </script>
 

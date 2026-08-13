@@ -4,12 +4,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants'
+} from '@/components/ui/dropdown-menu';
+import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
 
 const emit = defineEmits<{
   (e: 'change', jobId: number, companyName: string): void
-}>()
+}>();
 </script>
 
 <template>

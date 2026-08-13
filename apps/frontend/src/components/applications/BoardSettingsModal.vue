@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
-import type { BoardData, StageData } from '@/lib/types'
+import { ref, watch, nextTick } from 'vue';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { MANDATORY_STAGE_KEYS } from '@/lib/constants';
+import type { BoardData, StageData } from '@/lib/types';
 
 const props = defineProps<{
   open: boolean
   board: BoardData
-}>()
+}>();
 
 const emit = defineEmits<{
   (e: 'update:open', val: boolean): void
@@ -29,7 +30,7 @@ const emit = defineEmits<{
       key_renames: Record<string, string>
     }
   ): void
-}>()
+}>();
 
 const STAGE_COLORS = [
   'bg-slate-500',
@@ -44,7 +45,7 @@ const STAGE_COLORS = [
   'bg-teal-500',
   'bg-indigo-500',
   'bg-zinc-400'
-]
+];
 
 const COLOR_OPTIONS = [
   { value: 'bg-blue-500', label: 'Blue' },
@@ -55,122 +56,141 @@ const COLOR_OPTIONS = [
   { value: 'bg-slate-500', label: 'Slate' },
   { value: 'bg-orange-500', label: 'Orange' },
   { value: 'bg-cyan-500', label: 'Cyan' }
-]
+];
 
-const name = ref('')
-const description = ref('')
-const color = ref('bg-blue-500')
-const stages = ref<StageData[]>([])
-const activeTab = ref<'general' | 'stages'>('general')
+const name = ref('');
+const description = ref('');
+const color = ref('bg-blue-500');
+const stages = ref<StageData[]>([]);
+const activeTab = ref<'general' | 'stages'>('general');
+
+function isMandatory(key: string): boolean {
+  return MANDATORY_STAGE_KEYS.includes(key);
+}
 
 // Inline stage rename state
-const editingIndex = ref<number | null>(null)
-const editingLabel = ref('')
-const keyRenames = ref<Record<string, string>>({})
+const editingIndex = ref<number | null>(null);
+const editingLabel = ref('');
+const keyRenames = ref<Record<string, string>>({});
 
 // Add stage inline
-const showAddStage = ref(false)
-const newStageName = ref('')
-const addInputRef = ref<HTMLInputElement | null>(null)
+const showAddStage = ref(false);
+const newStageName = ref('');
+const addInputRef = ref<HTMLInputElement | null>(null);
 
 watch(
   () => props.open,
   (open) => {
     if (open) {
-      name.value = props.board.name
-      description.value = props.board.description ?? ''
-      color.value = props.board.color ?? 'bg-blue-500'
+      name.value = props.board.name;
+      description.value = props.board.description ?? '';
+      color.value = props.board.color ?? 'bg-blue-500';
       // Auto-detect key/label mismatches from old bug and queue them as renames
-      const renames: Record<string, string> = {}
+      const renames: Record<string, string> = {};
       stages.value = props.board.stages.map((s) => {
         if (s.key !== s.label) {
-          renames[s.key] = s.label
-          return { ...s, key: s.label }
+          renames[s.key] = s.label;
+          return { ...s, key: s.label };
         }
-        return { ...s }
-      })
-      keyRenames.value = renames
-      editingIndex.value = null
-      showAddStage.value = false
-      newStageName.value = ''
-      activeTab.value = 'general'
+        return { ...s };
+      });
+      keyRenames.value = renames;
+      editingIndex.value = null;
+      showAddStage.value = false;
+      newStageName.value = '';
+      activeTab.value = 'general';
     }
   }
-)
+);
 
 function getNextColor(): string {
-  const used = stages.value.map((s) => s.color)
-  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0]
+  const used = stages.value.map((s) => s.color);
+  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0];
 }
 
 function startEditLabel(i: number) {
-  editingIndex.value = i
-  editingLabel.value = stages.value[i].label
+  if (isMandatory(stages.value[i].key)) {
+    return;
+  }
+  editingIndex.value = i;
+  editingLabel.value = stages.value[i].label;
 }
 
 function commitEditLabel() {
-  if (editingIndex.value === null) return
-  const label = editingLabel.value.trim()
+  if (editingIndex.value === null) return;
+  if (isMandatory(stages.value[editingIndex.value].key)) {
+    editingIndex.value = null;
+    return;
+  }
+  const label = editingLabel.value.trim();
   if (label && label !== stages.value[editingIndex.value].label) {
-    const oldKey = stages.value[editingIndex.value].key
-    const newKey = label
+    const oldKey = stages.value[editingIndex.value].key;
+    const newKey = label;
     // Track the rename chain: if the old key was itself a rename target, update the chain
     const originalKey =
-      Object.keys(keyRenames.value).find((k) => keyRenames.value[k] === oldKey) ?? oldKey
+      Object.keys(keyRenames.value).find((k) => keyRenames.value[k] === oldKey) ?? oldKey;
     if (originalKey !== newKey) {
-      keyRenames.value = { ...keyRenames.value, [originalKey]: newKey }
+      keyRenames.value = { ...keyRenames.value, [originalKey]: newKey };
     }
-    stages.value[editingIndex.value] = { ...stages.value[editingIndex.value], key: newKey, label }
+    stages.value[editingIndex.value] = { ...stages.value[editingIndex.value], key: newKey, label };
   }
-  editingIndex.value = null
+  editingIndex.value = null;
 }
 
 function cancelEditLabel() {
-  editingIndex.value = null
+  editingIndex.value = null;
 }
 
 async function openAddStage() {
-  showAddStage.value = true
-  await nextTick()
-  addInputRef.value?.focus()
+  showAddStage.value = true;
+  await nextTick();
+  addInputRef.value?.focus();
+}
+
+function cancelAddStage() {
+  showAddStage.value = false;
+  newStageName.value = '';
 }
 
 function submitAddStage() {
-  const key = newStageName.value.trim()
-  if (!key) return
-  if (stages.value.some((s) => s.key.toLowerCase() === key.toLowerCase())) return
-  stages.value.push({ key, label: key, color: getNextColor() })
-  newStageName.value = ''
-  showAddStage.value = false
+  const key = newStageName.value.trim();
+  if (!key) return;
+  if (stages.value.some((s) => s.key.toLowerCase() === key.toLowerCase())) return;
+  stages.value.push({ key, label: key, color: getNextColor() });
+  newStageName.value = '';
+  showAddStage.value = false;
 }
 
 function removeStage(index: number) {
-  stages.value.splice(index, 1)
+  if (isMandatory(stages.value[index].key)) return;
+  stages.value.splice(index, 1);
 }
 
 function moveUp(index: number) {
-  if (index === 0) return
-  const tmp = stages.value[index - 1]
-  stages.value[index - 1] = stages.value[index]
-  stages.value[index] = tmp
+  if (index === 0) return;
+  if (isMandatory(stages.value[index].key)) return;
+  const tmp = stages.value[index - 1];
+  stages.value[index - 1] = stages.value[index];
+  stages.value[index] = tmp;
 }
 
 function moveDown(index: number) {
-  if (index === stages.value.length - 1) return
-  const tmp = stages.value[index + 1]
-  stages.value[index + 1] = stages.value[index]
-  stages.value[index] = tmp
+  if (index === stages.value.length - 1) return;
+  if (isMandatory(stages.value[index].key)) return;
+  const tmp = stages.value[index + 1];
+  stages.value[index + 1] = stages.value[index];
+  stages.value[index] = tmp;
 }
 
 function handleSave() {
-  if (!name.value.trim() || stages.value.length === 0) return
+  if (!name.value.trim() || stages.value.length === 0) return;
   emit('save', {
     name: name.value.trim(),
     description: description.value.trim(),
     color: color.value,
     stages: stages.value,
     key_renames: keyRenames.value
-  })
+  });
 }
 </script>
 
@@ -262,68 +282,78 @@ function handleSave() {
               @blur="commitEditLabel"
               autofocus
             />
-            <!-- Display label (click to edit) -->
+            <!-- Display label (click to edit, unless mandatory) -->
             <span
               v-else
-              class="flex-1 text-sm cursor-pointer hover:text-primary transition-colors"
-              title="Click to rename"
+              :class="[
+                'flex-1 text-sm transition-colors',
+                isMandatory(stage.key)
+                  ? 'text-muted-foreground'
+                  : 'cursor-pointer hover:text-primary'
+              ]"
+              :title="
+                isMandatory(stage.key) ? 'Standard stage — cannot be renamed' : 'Click to rename'
+              "
               @click="startEditLabel(i)"
               >{{ stage.label }}</span
             >
 
-            <span v-if="i === 0" class="text-xs text-muted-foreground/60 italic flex-shrink-0"
-              >first</span
-            >
+            <Icon
+              v-if="isMandatory(stage.key)"
+              name="Lock"
+              class="w-3 h-3 text-muted-foreground/60 flex-shrink-0"
+            />
 
-            <!-- Reorder -->
-            <button
-              class="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
-              :disabled="i === 0"
-              @click="moveUp(i)"
-            >
-              <svg
-                class="w-3.5 h-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2.5"
+            <!-- Reorder + remove — hidden entirely for locked stages, not just disabled -->
+            <template v-if="!isMandatory(stage.key)">
+              <button
+                class="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                :disabled="i === 0"
+                @click="moveUp(i)"
               >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
-              </svg>
-            </button>
-            <button
-              class="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
-              :disabled="i === stages.length - 1"
-              @click="moveDown(i)"
-            >
-              <svg
-                class="w-3.5 h-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2.5"
+                <svg
+                  class="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+                </svg>
+              </button>
+              <button
+                class="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                :disabled="i === stages.length - 1"
+                @click="moveDown(i)"
               >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+                <svg
+                  class="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-            <!-- Remove -->
-            <button
-              class="p-0.5 text-muted-foreground hover:text-destructive disabled:opacity-30 transition-colors"
-              :disabled="stages.length <= 1"
-              @click="removeStage(i)"
-              title="Remove stage"
-            >
-              <svg
-                class="w-3.5 h-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
+              <button
+                class="p-0.5 text-muted-foreground hover:text-destructive disabled:opacity-30 transition-colors"
+                :disabled="stages.length <= 1"
+                @click="removeStage(i)"
+                title="Remove stage"
               >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+                <svg
+                  class="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </template>
           </div>
 
           <p v-if="stages.length === 0" class="text-sm text-muted-foreground text-center py-3">
@@ -359,10 +389,7 @@ function handleSave() {
             class="w-full rounded border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
             placeholder="Stage name..."
             @keyup.enter="submitAddStage"
-            @keyup.escape="
-              showAddStage = false
-              newStageName = ''
-            "
+            @keyup.escape="cancelAddStage"
           />
           <div class="flex gap-1.5">
             <button
@@ -374,10 +401,7 @@ function handleSave() {
             </button>
             <button
               class="flex-1 text-xs py-1.5 rounded border border-border text-muted-foreground hover:text-foreground"
-              @click="
-                showAddStage = false
-                newStageName = ''
-              "
+              @click="cancelAddStage"
             >
               Cancel
             </button>

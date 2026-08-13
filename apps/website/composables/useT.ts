@@ -1,4 +1,5 @@
-import en from '~/locales/en.json'
+import en from '~/locales/en.json';
+import { }
 
 /**
  * Returns the English translation object.

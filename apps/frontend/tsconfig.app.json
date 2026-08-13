@@ -8,17 +8,17 @@
     "./src/**/*.d.ts",
     "./src/**/**/*.ts",
     "./src/**/**/*.d.ts",
-    "./src/components/ui/toggle/*.ts",
-    "./src/components/ui/separator/index.ts",
-    "./src/components/ui/avatar/index.ts",
-    "./src/components/ui/tooltip/index.ts"
+    "../../packages/ui/src/**/*"
   ],
   "exclude": ["src/**/__tests__/*"],
   "compilerOptions": {
     "composite": true,
+    "noEmit": false,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "baseUrl": ".",
     "paths": {
+      "@/components/ui/*": ["../../packages/ui/src/components/ui/*"],
+      "@job-applica/ui/*": ["../../packages/ui/src/*"],
       "@/*": ["./src/*"]
     }
   }
