@@ -147,7 +147,7 @@ const columns: ColumnDef<RowData>[] = [
             src: row.original.company_logo || DEFAULT_COMPANY_LOGO_URL,
             class: 'w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted',
             onError: (e: Event) => {
-              (e.target as HTMLImageElement).style.display = 'none';
+              (e.target as HTMLImageElement).src = DEFAULT_COMPANY_LOGO_URL;
             }
           }),
           h('span', { class: 'truncate text-sm' }, row.original.company)

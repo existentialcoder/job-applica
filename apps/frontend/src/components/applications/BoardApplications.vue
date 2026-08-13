@@ -414,7 +414,7 @@ function locationText(job: JobData): string {
                 <img
                   :src="job.company.logo_url || DEFAULT_COMPANY_LOGO_URL"
                   class="w-5 h-5 rounded-full object-contain flex-shrink-0 bg-muted"
-                  @error="($event.target as HTMLImageElement).style.display = 'none'"
+                  @error="($event.target as HTMLImageElement).src = DEFAULT_COMPANY_LOGO_URL"
                 />
                 <p class="text-xs text-muted-foreground truncate">{{ job.company.name }}</p>
               </div>

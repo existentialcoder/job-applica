@@ -163,7 +163,7 @@ STEP 2 — If is_job_page is true, extract every field below. All strings must b
   required_skills  — array of technical skills, tools, programming languages, and frameworks explicitly required or strongly preferred.
                      Do NOT include human/spoken languages (e.g. German, English) here — only software and technical skills.
 
-  For the extracted company make sure to extract these details as well - [name, website, email, size, industry, description, logo_url].
+  For the extracted company make sure to extract these details as well - [name, website, email, size, industry, description].
   If any of these details are not present in the job posting, return them as null.
   If on job portal like Linkedin or Indeed use the company name to fetch the details from the company page and return them in the response.
   If not do a web search to extract the same. Return it as json in the company key itself
@@ -174,8 +174,7 @@ STEP 2 — If is_job_page is true, extract every field below. All strings must b
     "email": "careers@acme.com",
     "size": 100,
     "industry": "Information Technology",
-    "description": "Acme Corp is a leading provider of innovative solutions in the tech industry.",
-    "logo_url": "https://www.acme.com/logo.png"
+    "description": "Acme Corp is a leading provider of innovative solutions in the tech industry."
   }}
 
   For the extracted location, return a JSON object with these fields:
@@ -310,6 +309,7 @@ class AnthropicProvider(LLMProvider):
 
     async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
         import anthropic
+        from anthropic.types import TextBlock
 
         client = anthropic.AsyncAnthropic()
         msg = await client.messages.create(
@@ -318,7 +318,9 @@ class AnthropicProvider(LLMProvider):
             system=system,
             messages=[{'role': 'user', 'content': user}],
         )
-        return msg.content[0].text
+        block = msg.content[0]
+        assert isinstance(block, TextBlock)  # no tool use / thinking is requested above
+        return block.text
 
 
 # ── DeepSeek ──────────────────────────────────────────────────────────────────
@@ -338,11 +340,12 @@ class DeepSeekProvider(LLMProvider):
 
     async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
         from openai import AsyncOpenAI
+        from openai.types.chat import ChatCompletionMessageParam
 
         from ..core.config import settings
 
         client = AsyncOpenAI(api_key=settings.DEEPSEEK_API_KEY, base_url=self._BASE_URL)
-        messages: list[dict] = []
+        messages: list[ChatCompletionMessageParam] = []
         if system and self.use_cache:
             messages.append({'role': 'system', 'content': system})
         messages.append({'role': 'user', 'content': user})
@@ -367,11 +370,12 @@ class GeminiProvider(LLMProvider):
 
     async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
         from openai import AsyncOpenAI
+        from openai.types.chat import ChatCompletionMessageParam
 
         from ..core.config import settings
 
         client = AsyncOpenAI(api_key=settings.GEMINI_API_KEY, base_url=self._BASE_URL)
-        messages: list[dict] = []
+        messages: list[ChatCompletionMessageParam] = []
         if system:
             messages.append({'role': 'system', 'content': system})
         messages.append({'role': 'user', 'content': user})

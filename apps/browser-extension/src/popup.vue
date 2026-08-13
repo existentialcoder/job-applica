@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import dataservice, { type BoardData, type JobExtractResult, type CompanyResult, type ATSReport, type ExtractedLocation } from './lib/dataservice';
 import ext from './lib/ext';
 import { config, loadConfig, saveConfig, resetConfig } from './lib/config';
+import { DEFAULT_COMPANY_LOGO_URL } from '@job-applica/ui/lib/constants';
 import { Button } from '@job-applica/ui/components/ui/button';
 import { Input } from '@job-applica/ui/components/ui/input';
 import { Label } from '@job-applica/ui/components/ui/label';
@@ -825,7 +826,12 @@ const platformBadgeVariant: Record<string, any> = {
         <!-- Company -->
         <div class="flex flex-col gap-1.5">
           <Label for="company">Company</Label>
-          <Image :src="company.logo_url" :alt="company.name" />
+          <img
+            :src="company.logo_url || DEFAULT_COMPANY_LOGO_URL"
+            :alt="company.name"
+            class="w-6 h-6 rounded-full object-contain bg-muted"
+            @error="($event.target as HTMLImageElement).src = DEFAULT_COMPANY_LOGO_URL"
+          />
           <Input id="company" v-model="company.name" type="text" placeholder="e.g. Acme Corp" />
         </div>
 

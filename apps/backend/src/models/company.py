@@ -8,12 +8,12 @@ from ..db.base_class import Base
 class Company(Base):
     __tablename__ = 'companies'
     name: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
-    website: Mapped[str] = mapped_column(Text, nullable=True)
-    email: Mapped[str] = mapped_column(Text, nullable=True)
-    logo_url: Mapped[str] = mapped_column(Text, nullable=True)
-    size: Mapped[int] = mapped_column(Integer, nullable=True)
-    industry: Mapped[str] = mapped_column(Text, nullable=True)
-    description: Mapped[str] = mapped_column(Text, nullable=True)
+    website: Mapped[str | None] = mapped_column(Text, nullable=True)
+    email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    industry: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     def __repr__(self):
         return f"<Company id={self.id} name='{self.name}'>"
