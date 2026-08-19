@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import ClassVar
 
 from fastapi import Query
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, Field, HttpUrl, ValidationInfo, field_validator
 
 from .base import BaseSchema
 from .company import CompanyBase, CompanyCreate
@@ -175,6 +175,7 @@ class JobFilterParams(BaseModel):
     applied_to: datetime | None = Field(None, description='Filter jobs applied before this date')
     ats_score_min: float | None = Field(None, description='Minimum ATS score filter', ge=0.0)
     ats_score_max: float | None = Field(None, description='Maximum ATS score filter', le=100.0)
+    source_url: HttpUrl | None = Field(None, description='Filter jobs by source URL')
 
     _LIST_FIELDS: ClassVar[set[str]] = {
         'company',

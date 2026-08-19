@@ -124,7 +124,8 @@ async def get_jobs(db: AsyncSession, user: UserBase, pagination: dict, filter: J
             base_q = base_q.where(Job.ats_score >= filter.ats_score_min)
         if filter.ats_score_max is not None:
             base_q = base_q.where(Job.ats_score <= filter.ats_score_max)
-
+        if filter.source_url:
+            base_q = base_q.where(Job.source_url.ilike(f'%{filter.source_url}%'))
     count_result = await db.execute(select(func.count()).select_from(base_q.subquery()))
     total = count_result.scalar() or 0
 
