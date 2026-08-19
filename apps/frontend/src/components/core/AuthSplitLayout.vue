@@ -640,7 +640,7 @@ defineSlots<{ default: () => unknown }>();
         </div>
         <div class="relative px-10 pb-10">
           <p class="text-base text-indigo-200 font-medium tracking-wide">
-            Your job search is not a full-time job anymore
+            Your job search should not be a full-time job!
           </p>
         </div>
       </div>
