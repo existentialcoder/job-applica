@@ -10,6 +10,7 @@ import { ALL_MENU_ITEMS, SETTINGS_MENU_ITEM } from '@/config/app';
 import router from '@/router';
 import { useAppStore } from '@/stores/app';
 import { useFeatureStore } from '@/stores/features';
+import { useSettingsStore } from '@/stores/settings';
 
 const route = useRoute();
 const featureStore = useFeatureStore();
@@ -19,14 +20,15 @@ const menus = computed(() => ALL_MENU_ITEMS.filter((m) => !m.flag || featureStor
 const handleNavigate = (path: string) => {
   router.push(path);
   if (window.innerWidth < 1025) {
-    store.toggleSidebar();
+    settingsStore.toggleSidebar();
   }
 };
 
 const store = useAppStore();
+const settingsStore = useSettingsStore();
 
 const toggleSidebar = () => {
-  store.toggleSidebar();
+  settingsStore.toggleSidebar();
 };
 </script>
 
@@ -41,11 +43,11 @@ const toggleSidebar = () => {
         <div class="h-[64px]">
           <div
             class="px-4 h-[64px] flex fixed z-10 items-center border-b-[1px]"
-            :class="store.sidebarExpanded ? 'justify-between' : 'justify-center'"
-            :style="{ width: `${store.sidebarExpanded ? 280 : 64}px` }"
+            :class="settingsStore.settings.sidebarExpanded ? 'justify-between' : 'justify-center'"
+            :style="{ width: `${settingsStore.settings.sidebarExpanded ? 280 : 64}px` }"
           >
             <button
-              v-if="!store.sidebarExpanded"
+              v-if="!settingsStore.settings.sidebarExpanded"
               class="cursor-pointer rounded-md p-0.5 hover:opacity-80 transition-opacity"
               @click="handleNavigate('/home')"
               aria-label="Go to home"
@@ -73,7 +75,7 @@ const toggleSidebar = () => {
 
           <!-- Collapsed: dedicated expand trigger, anchored at the sidebar edge near the logo -->
           <button
-            v-if="!store.sidebarExpanded"
+            v-if="!settingsStore.settings.sidebarExpanded"
             class="absolute right-2 top-6 z-20 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
             @click="toggleSidebar"
             aria-label="Expand sidebar"
@@ -84,7 +86,7 @@ const toggleSidebar = () => {
 
         <!-- Scrollable menu -->
         <ScrollArea style="height: calc(100vh - 64px - 72px)">
-          <div class="transition-all" :class="store.sidebarExpanded ? 'p-4' : 'p-2'">
+          <div class="transition-all" :class="settingsStore.settings.sidebarExpanded ? 'p-4' : 'p-2'">
             <ul>
               <li
                 v-for="menu in menus"
@@ -101,16 +103,16 @@ const toggleSidebar = () => {
                       >
                         <span
                           class="flex items-center"
-                          :class="store.sidebarExpanded ? 'mr-4' : 'm-0'"
+                          :class="settingsStore.settings.sidebarExpanded ? 'mr-4' : 'm-0'"
                         >
                           <Icon :name="menu.icon" />
                         </span>
                         <transition name="fade" :duration="300">
-                          <span v-show="store.sidebarExpanded">{{ menu.title }}</span>
+                          <span v-show="settingsStore.settings.sidebarExpanded">{{ menu.title }}</span>
                         </transition>
                       </Toggle>
                     </TooltipTrigger>
-                    <template v-if="!store.sidebarExpanded">
+                    <template v-if="!settingsStore.settings.sidebarExpanded">
                       <TooltipContent side="right">
                         <p class="text-sm">{{ menu.title }}</p>
                       </TooltipContent>
@@ -126,7 +128,7 @@ const toggleSidebar = () => {
       <!-- Bottom: Settings pinned -->
       <div
         class="border-t-[1px] transition-all duration-400"
-        :class="store.sidebarExpanded ? 'p-4' : 'p-2'"
+        :class="settingsStore.settings.sidebarExpanded ? 'p-4' : 'p-2'"
       >
         <TooltipProvider :disable-hoverable-content="true">
           <Tooltip :delay-duration="0">
@@ -136,15 +138,15 @@ const toggleSidebar = () => {
                 :pressed="route.path.startsWith(SETTINGS_MENU_ITEM.path)"
                 @click="handleNavigate(SETTINGS_MENU_ITEM.path)"
               >
-                <span class="flex items-center" :class="store.sidebarExpanded ? 'mr-4' : 'm-0'">
+                <span class="flex items-center" :class="settingsStore.settings.sidebarExpanded ? 'mr-4' : 'm-0'">
                   <Icon :name="SETTINGS_MENU_ITEM.icon" />
                 </span>
                 <transition name="fade" :duration="300">
-                  <span v-show="store.sidebarExpanded">{{ SETTINGS_MENU_ITEM.title }}</span>
+                  <span v-show="settingsStore.settings.sidebarExpanded">{{ SETTINGS_MENU_ITEM.title }}</span>
                 </transition>
               </Toggle>
             </TooltipTrigger>
-            <template v-if="!store.sidebarExpanded">
+            <template v-if="!settingsStore.settings.sidebarExpanded">
               <TooltipContent side="right">
                 <p class="text-sm">{{ SETTINGS_MENU_ITEM.title }}</p>
               </TooltipContent>

@@ -35,10 +35,14 @@ import { ATS_SCORE_TIERS, DEFAULT_BOARD_STAGES } from '@/lib/constants';
 import dataservice, { type JobFilters } from '@/lib/dataservice';
 import { emptyJobFilters, type JobFiltersFormValues } from '@/lib/jobFilters';
 import { toast } from '@/lib/toast';
-import type { JobData, JobCreatePayload, StageData, ATSReport, BoardData } from '@/lib/types';
+import type { JobData, JobCreatePayload, StageData, ATSReport } from '@/lib/types';
+import { useBoardsStore } from '@/stores/boards';
 import { useCompaniesStore } from '@/stores/companies';
+import { useSettingsStore } from '@/stores/settings';
 
 const companiesStore = useCompaniesStore();
+const settingsStore = useSettingsStore();
+const boardsStore = useBoardsStore();
 const { storeUrl: extensionInstallLink } = useExtensionLink();
 
 const props = defineProps<{
@@ -50,8 +54,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'stages-updated', stages: StageData[]): void;
 }>();
-
-const selectedLayout = ref<'list' | 'board'>('list');
 
 const allJobs = ref<JobData[]>([]);
 const totalJobs = ref(0);
@@ -69,7 +71,6 @@ const searchQuery = ref('');
 const filterPlatform = ref('__all__');
 const currentPage = ref(1);
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-const pageSize = ref(20);
 
 const isFiltersPanelOpen = ref(false);
 const jobFilters = reactive<JobFiltersFormValues>(emptyJobFilters());
@@ -82,7 +83,9 @@ const statusOptions = ref<string[]>(
 watch(
   () => props.stages,
   (stages) => {
-    if (stages?.length) statusOptions.value = stages.map((s) => s.label);
+    if (stages?.length) {
+      statusOptions.value = stages.map((s) => s.label);
+    }
   },
   { immediate: true }
 );
@@ -143,8 +146,6 @@ function buildBaseFilters(): JobFilters {
   return filters;
 }
 
-// Board view groups jobs by status into columns, so the general status filter
-// (a table-view concept) is dropped — each column already scopes itself to one status.
 const boardBaseFilters = computed(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { status: _status, ...rest } = buildBaseFilters();
@@ -156,7 +157,7 @@ async function loadJobs() {
   const res = await dataservice.getJobs({
     ...buildBaseFilters(),
     page: currentPage.value,
-    per_page: pageSize.value
+    per_page: settingsStore.settings.perPage as number
   });
   allJobs.value = res.items;
   totalJobs.value = res.total;
@@ -175,10 +176,14 @@ watch([searchQuery, filterPlatform], () => {
   loadJobs();
 });
 
-function onPageSizeChange(value: string) {
-  pageSize.value = Number(value);
+async function onPageSizeChange(value: string) {
+  await settingsStore.setPerPage(Number(value));
   currentPage.value = 1;
   loadJobs();
+}
+
+async function onLayoutChange(value: string) {
+  await settingsStore.setViewMode(value as 'list' | 'board');
 }
 
 function onTableSelectionChange(val: JobData[]) {
@@ -295,7 +300,7 @@ async function handleAddStage(stage: StageData) {
   if (!props.boardId || !props.stages) return;
   const newStages = [...props.stages, stage];
   try {
-    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
+    const updated = await boardsStore.updateBoard(props.boardId, { stages: newStages }, { silent: true });
     if (updated) emit('stages-updated', updated.stages);
     else toast.error('Failed to add stage');
   } catch {
@@ -308,7 +313,7 @@ async function handleRemoveStage(key: string) {
   const newStages = props.stages.filter((s) => s.key !== key);
   if (newStages.length === 0) return;
   try {
-    const updated = await dataservice.updateBoard(props.boardId, { stages: newStages });
+    const updated = await boardsStore.updateBoard(props.boardId, { stages: newStages }, { silent: true });
     if (updated) {
       emit('stages-updated', updated.stages);
       await loadJobs();
@@ -325,10 +330,11 @@ async function handleUpdateStage(payload: { oldKey: string; stage: StageData }) 
   const { oldKey, stage } = payload;
   const newStages = props.stages.map((s) => (s.key === oldKey ? stage : s));
   const keyRenames = oldKey !== stage.key ? { [oldKey]: stage.key } : undefined;
-  const updated = await dataservice.updateBoard(props.boardId, {
-    stages: newStages,
-    key_renames: keyRenames
-  });
+  const updated = await boardsStore.updateBoard(
+    props.boardId,
+    { stages: newStages, key_renames: keyRenames },
+    { silent: true }
+  );
   if (updated) {
     emit('stages-updated', updated.stages);
     if (keyRenames) await loadJobs();
@@ -390,21 +396,11 @@ const route = useRoute();
 const router = useRouter();
 
 onMounted(async () => {
-  const settings = await dataservice.getSettings();
-  if (settings.view_mode === 'board' || settings.view_mode === 'list') {
-    selectedLayout.value = settings.view_mode as 'list' | 'board';
-  }
-  if (PAGE_SIZE_OPTIONS.includes(settings.per_page as number)) {
-    pageSize.value = settings.per_page as number;
-  }
-  if (settings.saved_job_filters && typeof settings.saved_job_filters === 'object') {
-    Object.assign(jobFilters, emptyJobFilters(), settings.saved_job_filters);
-  }
+  await Promise.all([await settingsStore.fetch(), await boardsStore.fetch(), companiesStore.fetch()]);
+  Object.assign(jobFilters, emptyJobFilters(), settingsStore.settings.savedJobFilters);
   if (!props.boardId) {
-    const boards: BoardData[] = await dataservice.getBoards();
-    boardOptions.value = boards.map((b) => ({ label: b.name, value: String(b.id) }));
+    boardOptions.value = boardsStore.boards.map((b) => ({ label: b.name, value: String(b.id) }));
   }
-  companiesStore.fetch();
   if (route.query.query) {
     searchQuery.value = route.query.query as string;
   }
@@ -414,14 +410,6 @@ onMounted(async () => {
     const tab = route.query.tab === 'ats' ? 'ats' : 'details';
     if (job) openEditModal(job, tab);
   }
-});
-
-watch(selectedLayout, (val) => {
-  dataservice.updateSettings({ view_mode: val });
-});
-
-watch(pageSize, (val) => {
-  dataservice.updateSettings({ per_page: val });
 });
 </script>
 
@@ -470,7 +458,11 @@ watch(pageSize, (val) => {
         <Button size="sm" @click="openAddModal">Add Job</Button>
         <div class="flex items-center gap-1">
           <Label class="text-sm text-muted-foreground">View:</Label>
-          <Select v-model="selectedLayout" class="w-28">
+          <Select
+            :model-value="settingsStore.settings.viewMode ?? undefined"
+            @update:model-value="onLayoutChange"
+            class="w-28"
+          >
             <SelectTrigger class="w-28">
               <SelectValue />
             </SelectTrigger>
@@ -486,14 +478,14 @@ watch(pageSize, (val) => {
     </div>
 
     <!-- Stats row -->
-    <div v-if="totalJobs > 0  && selectedLayout === 'list'" class="text-sm text-muted-foreground">
+    <div v-if="totalJobs > 0  && settingsStore.settings.viewMode === 'list'" class="text-sm text-muted-foreground">
       Showing {{ allJobs.length }} of {{ totalJobs }} applications
     </div>
 
     <!-- Loading skeleton -->
     <div v-if="isLoading">
       <!-- Table skeleton -->
-      <div v-if="selectedLayout === 'list'" class="rounded-md border border-border overflow-hidden">
+      <div v-if="settingsStore.settings.viewMode === 'list'" class="rounded-md border border-border overflow-hidden">
         <div
           class="bg-muted/40 px-4 py-2.5 grid grid-cols-[2rem_1fr_10rem_7rem_7rem_6rem] gap-3 border-b border-border"
         >
@@ -551,19 +543,7 @@ watch(pageSize, (val) => {
       v-else-if="allJobs.length === 0"
       class="flex flex-col items-center justify-center py-16 gap-3 text-center"
     >
-      <svg
-        class="w-12 h-12 text-muted-foreground/30"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="1.5"
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-        />
-      </svg>
+      <Icon name="Clipboard" :size="48" default-class="text-muted-foreground/30" />
       <p class="text-muted-foreground font-medium">
         No applications {{ filtersApplied ? 'matching your filters.' : 'tracked yet.' }}
       </p>
@@ -571,7 +551,7 @@ watch(pageSize, (val) => {
     </div>
 
     <TableApplications
-      v-else-if="selectedLayout === 'list'"
+      v-else-if="settingsStore.settings.viewMode === 'list'"
       :jobs="allJobs"
       :status-options="statusOptions"
       @selection-change="onTableSelectionChange"
@@ -581,7 +561,7 @@ watch(pageSize, (val) => {
     />
 
     <BoardApplications
-      v-else-if="selectedLayout === 'board'"
+      v-else-if="settingsStore.settings.viewMode === 'board'"
       ref="boardRef"
       :base-filters="boardBaseFilters"
       :stages="stages"
@@ -594,10 +574,10 @@ watch(pageSize, (val) => {
       @add-job="handleQuickAddJob"
     />
 
-    <div v-if="selectedLayout === 'list' && totalJobs > 0" class="flex items-center justify-between py-4">
+    <div v-if="settingsStore.settings.viewMode === 'list' && totalJobs > 0" class="flex items-center justify-between py-4">
       <div class="flex items-center gap-2">
         <Label class="text-sm text-muted-foreground">Rows per page</Label>
-        <Select :model-value="String(pageSize)" @update:model-value="onPageSizeChange">
+        <Select :model-value="String(settingsStore.settings.perPage)" @update:model-value="onPageSizeChange">
           <SelectTrigger class="w-20">
             <SelectValue />
           </SelectTrigger>
@@ -612,10 +592,10 @@ watch(pageSize, (val) => {
       </div>
 
       <Pagination
-        v-if="totalJobs > pageSize"
+        v-if="totalJobs > (settingsStore.settings.perPage ?? 0)"
         v-slot="{ page }"
         :total="totalJobs"
-        :items-per-page="pageSize"
+        :items-per-page="settingsStore.settings.perPage as number"
         :sibling-count="1"
         :page="currentPage"
         show-edges

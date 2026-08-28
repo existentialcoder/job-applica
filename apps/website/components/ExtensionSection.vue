@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { DewLogo } from '@job-applica/ui/components/icons'
+
 const t = useT()
 const e = t.extension
 const { storeUrl, storeName } = useExtensionLink()

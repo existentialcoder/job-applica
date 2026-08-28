@@ -1,7 +1,7 @@
 services:
   app:
     volumes:
-      - ./apps/backend:/app
+      - ../apps/backend:/app
     environment:
       WATCHFILES_FORCE_POLLING: "true"
     command: sh -c "python scripts/db_init.py && uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
@@ -17,14 +17,14 @@ services:
 
   frontend-builder:
     build:
-      context: .
+      context: ..
       dockerfile: apps/frontend/Dockerfile.dev
     environment:
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "300"
     volumes:
-      - ./apps/frontend:/repo/apps/frontend
-      - ./packages/ui:/repo/packages/ui
+      - ../apps/frontend:/repo/apps/frontend
+      - ../packages/ui:/repo/packages/ui
       - root_node_modules:/repo/node_modules
       - frontend_node_modules:/repo/apps/frontend/node_modules
       - ui_node_modules:/repo/packages/ui/node_modules
@@ -32,12 +32,10 @@ services:
 
   frontend:
     build:
-      context: .
+      context: ..
       dockerfile: apps/frontend/Dockerfile.nginx
     volumes:
       - frontend_dist:/usr/share/nginx/html:ro
-    ports:
-      - "5173:80"
     depends_on:
       - frontend-builder
 

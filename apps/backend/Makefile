@@ -35,6 +35,7 @@ run-db:
 		docker run \
 			--name $(DB_CONTAINER) \
 			-e POSTGRES_PASSWORD=password \
+			-e POSTGRES_DB=job_applica \
 			-p 5432:5432 \
 			-v $(DB_VOLUME):/var/lib/postgresql/data \
 			-d postgres:16; \

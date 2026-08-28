@@ -13,7 +13,9 @@ export const useCompaniesStore = defineStore('companies', () => {
   const loaded = ref(false);
 
   async function fetch(force = false) {
-    if (loaded.value && !force) return;
+    if (loaded.value && !force) {
+      return;
+    }
     const result = await dataservice.getCompanies();
     companies.value = Array.isArray(result) ? result : [];
     loaded.value = true;

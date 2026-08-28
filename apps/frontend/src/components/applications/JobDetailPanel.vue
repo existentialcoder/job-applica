@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AtsGauge } from '@job-applica/ui';
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { Badge } from '@/components/ui/badge';
@@ -26,14 +27,18 @@ import {
 } from '@/lib/constants';
 import dataservice from '@/lib/dataservice';
 import { toast } from '@/lib/toast';
-import type { JobData, JobCreatePayload, ATSReport, ResumeData, BoardData } from '@/lib/types';
+import type { JobData, JobCreatePayload, ATSReport } from '@/lib/types';
+import { useBoardsStore } from '@/stores/boards.js';
 import { useCompaniesStore } from '@/stores/companies';
+import { useResumesStore } from '@/stores/resumes.js';
 import CompanyCombobox from './CompanyCombobox.vue';
 
 const COUNTRY_COMBOBOX_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }));
 
 const router = useRouter();
 const companiesStore = useCompaniesStore();
+const boardsStore = useBoardsStore();
+const resumesStore = useResumesStore();
 
 const props = defineProps<{
   open: boolean;
@@ -63,7 +68,6 @@ const PLATFORM_OPTIONS = [
 
 const activeTab = ref<'details' | 'ats'>('details');
 
-// ── Details fields ────────────────────────────────────────────────────────────
 const title = ref('');
 const companyName = ref('');
 const locationCity = ref('');
@@ -92,19 +96,22 @@ watch(status, (newVal) => {
   }
 });
 
-const allBoards = ref<BoardData[]>([]);
-
 onMounted(async () => {
-  allBoards.value = await dataservice.getBoards();
+  await companiesStore.fetch();
 });
-companiesStore.fetch();
+
+function onBoardSelectOpenChange(open: boolean) {
+  if (open) {
+    boardsStore.fetch();
+  }
+}
 
 const boardOptions = computed(() =>
-  allBoards.value.map((b) => ({ label: b.name, value: String(b.id) }))
+  boardsStore.boards.map((b) => ({ label: b.name, value: String(b.id) }))
 );
 
 const currentBoardStageLabels = computed(() => {
-  const currentBoard = allBoards.value.find((b) => b.id === boardId.value);
+  const currentBoard = boardsStore.boards.find((b) => b.id === boardId.value);
   if (currentBoard?.stages.length) return currentBoard.stages.map((s) => s.label);
   return props.statusOptions?.length
     ? props.statusOptions
@@ -118,7 +125,6 @@ function onBoardChange(val: string) {
   }
 }
 
-// ── Inline URL edit ──────────────────────────────────────────────────────────
 const isEditingUrl = ref(false);
 const pendingUrl = ref('');
 const urlInputRef = ref<HTMLInputElement | null>(null);
@@ -138,15 +144,13 @@ function cancelUrl() {
   isEditingUrl.value = false;
 }
 
-const resumes = ref<ResumeData[]>([]);
-const resumesLoaded = ref(false);
 const selectedResumeId = ref<string>('');
 const atsReport = ref<ATSReport | null>(null);
 const isScoring = ref(false);
 
 const selectedResumeName = computed(() => {
   if (!selectedResumeId.value) return '';
-  const r = resumes.value.find((r) => String(r.id) === selectedResumeId.value);
+  const r = resumesStore.resumes.find((r) => String(r.id) === selectedResumeId.value);
   return r?.original_name ?? '';
 });
 
@@ -163,25 +167,13 @@ function atsTierLabel(score: number) {
   return { label: tier.label, cls: tier.badgeClass };
 }
 
-// SVG gauge helpers — full circle circumference for r=42: 2π*42 ≈ 263.9
-const CIRC = 263.9;
-function gaugeOffset(score: number) {
-  return CIRC - (score / 100) * CIRC;
-}
-
 async function loadResumes() {
-  if (resumesLoaded.value) return;
-  resumes.value = await dataservice.getResumes();
-  resumesLoaded.value = true;
-  // Pre-select the linked resume if set, else default
+  await resumesStore.fetch();
   if (props.job?.ats_resume_id) {
     selectedResumeId.value = String(props.job.ats_resume_id);
   } else {
-    const def = resumes.value.find((r) => (r as any).is_default);
-    if (def) selectedResumeId.value = String(def.id);
-    else if (resumes.value.length) {
-      selectedResumeId.value = String(resumes.value[0].id);
-    }
+    const def = resumesStore.resumes.find((r) => (r as any).is_default);
+    selectedResumeId.value = def ? String(def.id) : resumesStore.resumes.length ? String(resumesStore.resumes[0].id) : '';
   }
 }
 
@@ -205,7 +197,9 @@ async function calculateScore() {
 
 watch(activeTab, (tab) => {
   emit('tab-change', tab);
-  if (tab === 'ats') loadResumes();
+  if (tab === 'ats') {
+    loadResumes();
+  }
 });
 
 watch(
@@ -214,13 +208,14 @@ watch(
     if (!open) {
       isEditingUrl.value = false;
       atsReport.value = null;
-      resumesLoaded.value = false;
       selectedResumeId.value = '';
       return;
     }
     activeTab.value = props.initialTab ?? 'details';
     const job = props.job;
-    if (!job) return;
+    if (!job) {
+      return;
+    }
     title.value = job.title || '';
     companyName.value = job.company?.name || '';
     locationCity.value = job.location?.city || '';
@@ -241,7 +236,9 @@ watch(
       atsReport.value = job.ats_report as ATSReport;
     }
 
-    if (activeTab.value === 'ats') loadResumes();
+    if (activeTab.value === 'ats') {
+      loadResumes();
+    }
   }
 );
 
@@ -334,30 +331,14 @@ const statusVariantMap: Record<string, string> = {
                   title="Confirm"
                   @click="confirmUrl"
                 >
-                  <svg
-                    class="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                  >
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
+                  <Icon name="Check" :size="14" :stroke-width="2.5" />
                 </button>
                 <button
                   class="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors p-0.5"
                   title="Cancel"
                   @click="cancelUrl"
                 >
-                  <svg
-                    class="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                  >
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <Icon name="X" :size="14" :stroke-width="2.5" />
                 </button>
               </template>
 
@@ -369,19 +350,7 @@ const statusVariantMap: Record<string, string> = {
                   class="flex items-center gap-1 text-xs text-primary hover:underline flex-shrink-0"
                   :title="sourceUrl"
                 >
-                  <svg
-                    class="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
+                  <Icon name="ExternalLink" :size="12" />
                   Job URL
                 </a>
                 <button
@@ -389,19 +358,7 @@ const statusVariantMap: Record<string, string> = {
                   title="Edit link"
                   @click="startEditUrl"
                 >
-                  <svg
-                    class="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                    />
-                  </svg>
+                  <Icon name="Pencil" :size="12" />
                 </button>
               </template>
 
@@ -410,19 +367,7 @@ const statusVariantMap: Record<string, string> = {
                 class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 @click="startEditUrl"
               >
-                <svg
-                  class="w-3 h-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                  />
-                </svg>
+                <Icon name="Link2" :size="12" />
                 Add link
               </button>
             </div>
@@ -433,15 +378,7 @@ const statusVariantMap: Record<string, string> = {
             aria-label="Close"
             @click="$emit('update:open', false)"
           >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <Icon name="X" :size="16" />
           </button>
         </div>
 
@@ -463,7 +400,6 @@ const statusVariantMap: Record<string, string> = {
           </Tabs>
         </div>
 
-        <!-- ── Scrollable content ────────────────────────────────────────────── -->
         <div style="flex: 1; min-height: 0; overflow-y: auto">
           <!-- ── Details pane ────────────────────────────────────────────────── -->
           <div v-show="activeTab === 'details'" class="px-5 py-4 space-y-4">
@@ -501,6 +437,7 @@ const statusVariantMap: Record<string, string> = {
               <Select
                 :model-value="boardId != null ? String(boardId) : undefined"
                 @update:model-value="onBoardChange"
+                @update:open="onBoardSelectOpenChange"
               >
                 <SelectTrigger><SelectValue placeholder="Select board" /></SelectTrigger>
                 <SelectContent>
@@ -610,19 +547,7 @@ const statusVariantMap: Record<string, string> = {
               v-if="!hasDescription"
               class="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3"
             >
-              <svg
-                class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
+              <Icon name="TriangleAlert" :size="16" default-class="text-amber-400 flex-shrink-0 mt-0.5" />
               <div class="text-xs text-amber-400 leading-relaxed">
                 <span class="font-medium">No job description found.</span>
                 Switch to the
@@ -641,44 +566,20 @@ const statusVariantMap: Record<string, string> = {
                   class="text-xs text-primary hover:underline flex items-center gap-1"
                   @click="router.push('/resumes')"
                 >
-                  <svg
-                    class="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                    />
-                  </svg>
+                  <Icon name="Upload" :size="12" />
                   Upload a CV
                 </button>
               </div>
 
               <div
-                v-if="!resumesLoaded"
+                v-if="!resumesStore.loaded"
                 class="h-9 rounded-md border border-input bg-muted/40 animate-pulse"
               />
-              <template v-else-if="resumes.length === 0">
+              <template v-else-if="resumesStore.resumes.length === 0">
                 <div
                   class="rounded-lg border border-dashed border-border px-4 py-5 text-center space-y-2"
                 >
-                  <svg
-                    class="w-8 h-8 mx-auto text-muted-foreground/40"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
+                  <Icon name="FileText" :size="32" default-class="mx-auto text-muted-foreground/40" />
                   <p class="text-sm text-muted-foreground">No CVs uploaded yet</p>
                 </div>
               </template>
@@ -688,21 +589,9 @@ const statusVariantMap: Record<string, string> = {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem v-for="r in resumes" :key="r.id" :value="String(r.id)">
+                    <SelectItem v-for="r in resumesStore.resumes" :key="r.id" :value="String(r.id)">
                       <span class="flex items-center gap-2">
-                        <svg
-                          class="w-3.5 h-3.5 text-muted-foreground flex-shrink-0"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          stroke-width="1.5"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
+                        <Icon name="FileText" :size="14" default-class="text-muted-foreground flex-shrink-0" />
                         {{ r.original_name }}
                       </span>
                     </SelectItem>
@@ -713,41 +602,13 @@ const statusVariantMap: Record<string, string> = {
 
             <!-- Calculate button / no-CV CTA -->
             <Button
-              v-if="!(resumesLoaded && resumes.length === 0)"
+              v-if="!(resumesStore.loaded && resumesStore.resumes.length === 0)"
               class="w-full gap-2"
               :disabled="!canScore"
               @click="calculateScore"
             >
-              <svg
-                v-if="isScoring"
-                class="w-3.5 h-3.5 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                />
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
-              <svg
-                v-else
-                class="w-3.5 h-3.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
+              <Icon v-if="isScoring" name="LoaderCircle" :size="14" default-class="animate-spin" />
+              <Icon v-else name="ChartColumn" :size="14" />
               {{
                 isScoring
                   ? 'Analysing…'
@@ -763,37 +624,10 @@ const statusVariantMap: Record<string, string> = {
               <div class="border-t pt-5 space-y-5">
                 <!-- Gauge + score -->
                 <div class="flex items-center gap-6">
-                  <div class="relative w-24 h-24 flex-shrink-0">
-                    <svg class="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="42"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="8"
-                        class="text-muted/30"
-                      />
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="42"
-                        fill="none"
-                        :stroke="atsScoreColor(atsReport.score)"
-                        stroke-width="8"
-                        stroke-linecap="round"
-                        :stroke-dasharray="CIRC"
-                        :stroke-dashoffset="gaugeOffset(atsReport.score)"
-                        style="transition: stroke-dashoffset 0.8s ease"
-                      />
-                    </svg>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center">
-                      <span class="text-2xl font-bold leading-none">{{
-                        Math.round(atsReport.score)
-                      }}</span>
-                      <span class="text-[10px] text-muted-foreground mt-0.5">/ 100</span>
-                    </div>
-                  </div>
+                  <AtsGauge :percentage="atsReport.score" :size="96" :stroke-width="8" :color="atsScoreColor(atsReport.score)">
+                    <span class="text-2xl font-bold leading-none">{{ Math.round(atsReport.score) }}</span>
+                    <span class="text-[10px] text-muted-foreground mt-0.5">/ 100</span>
+                  </AtsGauge>
 
                   <div class="space-y-2 min-w-0">
                     <div class="flex items-center gap-2">
@@ -823,15 +657,7 @@ const statusVariantMap: Record<string, string> = {
                 <!-- Matched skills -->
                 <div v-if="atsReport?.matched_skills.length" class="space-y-2">
                   <p class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                    <svg
-                      class="w-3.5 h-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Icon name="Check" :size="14" :stroke-width="2.5" />
                     Matched skills ({{ atsReport?.matched_skills.length }})
                   </p>
                   <div class="flex flex-wrap gap-1.5">
@@ -847,15 +673,7 @@ const statusVariantMap: Record<string, string> = {
                 <!-- Matched experience -->
                 <div v-if="atsReport.matched_experience?.length" class="space-y-2">
                   <p class="text-xs font-semibold text-emerald-400/70 flex items-center gap-1.5">
-                    <svg
-                      class="w-3.5 h-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Icon name="Check" :size="14" :stroke-width="2.5" />
                     Matched experience ({{ atsReport?.matched_experience.length }})
                   </p>
                   <ul class="space-y-1">
@@ -875,19 +693,7 @@ const statusVariantMap: Record<string, string> = {
                 <!-- Missing skills -->
                 <div v-if="atsReport.missing_skills.length" class="space-y-2">
                   <p class="text-xs font-semibold text-red-400 flex items-center gap-1.5">
-                    <svg
-                      class="w-3.5 h-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
+                    <Icon name="X" :size="14" :stroke-width="2.5" />
                     Missing skills ({{ atsReport.missing_skills.length }})
                   </p>
                   <div class="flex flex-wrap gap-1.5">
@@ -903,19 +709,7 @@ const statusVariantMap: Record<string, string> = {
                 <!-- Experience gaps -->
                 <div v-if="atsReport.experience_gaps?.length" class="space-y-2">
                   <p class="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
-                    <svg
-                      class="w-3.5 h-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-                      />
-                    </svg>
+                    <Icon name="TriangleAlert" :size="14" :stroke-width="2.5" />
                     Experience gaps ({{ atsReport.experience_gaps.length }})
                   </p>
                   <ul class="space-y-1">
@@ -935,19 +729,7 @@ const statusVariantMap: Record<string, string> = {
                 <!-- Suggestions -->
                 <div v-if="atsReport.suggestions.length" class="space-y-2">
                   <p class="text-xs font-semibold text-primary flex items-center gap-1.5">
-                    <svg
-                      class="w-3.5 h-3.5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
+                    <Icon name="Zap" :size="14" :stroke-width="2.5" />
                     Suggestions
                   </p>
                   <ul class="space-y-2">
@@ -970,22 +752,9 @@ const statusVariantMap: Record<string, string> = {
             <!-- Empty state when no report yet -->
             <template v-else-if="!isScoring">
               <div class="flex flex-col items-center justify-center py-6 text-center gap-3">
-                <div class="relative w-20 h-20">
-                  <svg class="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="8"
-                      class="text-muted/30"
-                    />
-                  </svg>
-                  <div class="absolute inset-0 flex items-center justify-center">
-                    <span class="text-xl font-bold text-muted-foreground/30">—</span>
-                  </div>
-                </div>
+                <AtsGauge :size="80" :stroke-width="8">
+                  <span class="text-xl font-bold text-muted-foreground/30">—</span>
+                </AtsGauge>
                 <p class="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
                   Select a CV above and click
                   <span class="font-medium text-foreground">Calculate Match Score</span> to see how
@@ -996,7 +765,6 @@ const statusVariantMap: Record<string, string> = {
           </div>
         </div>
 
-        <!-- ── Footer ────────────────────────────────────────────────────────── -->
         <div
           v-if="activeTab === 'details'"
           class="flex items-center justify-end gap-2 px-5 py-4 border-t"

@@ -25,8 +25,6 @@ function userId(): number {
   return id;
 }
 
-// Singleton promise — if multiple requests fail with 401 simultaneously,
-// they all wait on the same refresh attempt instead of hammering the endpoint.
 let refreshPromise: Promise<boolean> | null = null;
 
 async function tryRefreshToken(): Promise<boolean> {
@@ -119,6 +117,8 @@ export interface CompanyResponse {
   logo_url?: string;
 }
 
+export type FeatureFlags = Record<string, boolean>
+
 function toFrontendPaginated(data: {
   meta: Record<string, number>;
   results: JobData[];
@@ -132,7 +132,17 @@ function toFrontendPaginated(data: {
   };
 }
 
-export default {
+const features = {
+  async getFeatures(): Promise<FeatureFlags | {}> {
+    const response = await apiFetch(`${API_BASE}/features`);
+    if (!response.ok) {
+      return {};
+    }
+    return response.json();
+  }
+};
+
+const jobs = {
   async getJobs(filters: JobFilters = {}): Promise<PaginatedJobs> {
     const params = new URLSearchParams();
     if (filters.query) params.set('query', filters.query);
@@ -204,8 +214,10 @@ export default {
       headers: { ...authHeaders() }
     });
     return response.ok;
-  },
+  }
+};
 
+const boards = {
   async getBoards(): Promise<BoardData[]> {
     const response = await apiFetch(`${API_BASE}/boards`, {
       headers: { ...authHeaders() }
@@ -261,7 +273,9 @@ export default {
       method: 'POST',
       headers: { ...authHeaders() }
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      return null;
+    }
     return response.json();
   },
 
@@ -281,50 +295,52 @@ export default {
     const response = await apiFetch(url, { headers: { ...authHeaders() } });
     if (!response.ok) return null;
     return response.json();
-  },
+  }
+};
 
-  // ── Profile ────────────────────────────────────────────────────────────────
-  async updateProfile(payload: { first_name?: string; last_name?: string; avatar_url?: string }) {
-    const uid = userId();
-    const response = await apiFetch(`${API_BASE}/users/${uid}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify(payload)
-    });
-    if (!response.ok) throw new Error('Failed to update profile');
-    return response.json();
-  },
+const profile = {async updateProfile(payload: { first_name?: string; last_name?: string; avatar_url?: string }) {
+  const uid = userId();
+  const response = await apiFetch(`${API_BASE}/users/${uid}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error('Failed to update profile');
+  return response.json();
+},
 
-  async uploadAvatar(file: File): Promise<{ avatar_url: string }> {
-    const uid = userId();
-    const form = new FormData();
-    form.append('file', file);
-    const response = await apiFetch(`${API_BASE}/users/${uid}/avatar`, {
-      method: 'POST',
-      headers: { ...authHeaders() },
-      body: form
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.detail || 'Upload failed');
-    }
-    return response.json();
-  },
+async uploadAvatar(file: File): Promise<{ avatar_url: string }> {
+  const uid = userId();
+  const form = new FormData();
+  form.append('file', file);
+  const response = await apiFetch(`${API_BASE}/users/${uid}/avatar`, {
+    method: 'POST',
+    headers: { ...authHeaders() },
+    body: form
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Upload failed');
+  }
+  return response.json();
+},
 
-  async changePassword(payload: { current_password: string; new_password: string }) {
-    const uid = userId();
-    const response = await apiFetch(`${API_BASE}/users/${uid}/change-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify(payload)
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.detail || 'Failed to change password');
-    }
-    return response.json();
-  },
+async changePassword(payload: { current_password: string; new_password: string }) {
+  const uid = userId();
+  const response = await apiFetch(`${API_BASE}/users/${uid}/change-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to change password');
+  }
+  return response.json();
+}
+};
 
+const settings = {
   async getSettings(): Promise<Record<string, unknown>> {
     const uid = userId();
     const response = await apiFetch(`${API_BASE}/users/${uid}/settings`, {
@@ -344,9 +360,10 @@ export default {
     });
     if (!response.ok) throw new Error('Failed to update settings');
     return response.json();
-  },
+  }
+};
 
-  // ── Skills catalog ─────────────────────────────────────────────────────────
+const skills = {
   async getSkills(): Promise<SkillData[]> {
     const response = await apiFetch(`${API_BASE}/skills`, { headers: { ...authHeaders() } });
     if (!response.ok) return [];
@@ -381,9 +398,10 @@ export default {
     });
     if (!response.ok) throw new Error('Failed to remove skill');
     return response.json();
-  },
+  }
+};
 
-  // ── Resumes ────────────────────────────────────────────────────────────────
+const resumes = {
   async getResumes(): Promise<ResumeData[]> {
     const uid = userId();
     const response = await apiFetch(`${API_BASE}/users/${uid}/resumes`, {
@@ -436,10 +454,10 @@ export default {
       method: 'DELETE',
       headers: { ...authHeaders() }
     });
-  },
+  }
+};
 
-  // ── Connected Accounts ──────────────────────────────────────────────────────
-
+const connectedAccounts = {
   async getConnectedAccounts(): Promise<ConnectedAccount[]> {
     const response = await apiFetch(`${API_BASE}/connected-accounts`, {
       headers: { ...authHeaders() }
@@ -492,4 +510,15 @@ export default {
 
     return allCompanies;
   }
+};
+
+export default {
+  ...features,
+  ...jobs,
+  ...boards,
+  ...profile,
+  ...settings,
+  ...skills,
+  ...resumes,
+  ...connectedAccounts
 };

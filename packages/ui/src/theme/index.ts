@@ -88,7 +88,6 @@ export const BG_THEMES: { light: Record<string, BgThemeEntry>; dark: Record<stri
   },
 };
 
-// Flat map of all theme keys → accent + accentFg (lightweight, for consumers that don't need full BgThemeEntry)
 export const THEME_ACCENTS: Record<string, { accent: string; accentFg: string }> = Object.fromEntries(
   [...Object.entries(BG_THEMES.light), ...Object.entries(BG_THEMES.dark)]
     .map(([key, t]) => [key, { accent: t.accent, accentFg: t.accentFg }])

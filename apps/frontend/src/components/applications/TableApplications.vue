@@ -2,7 +2,6 @@
 import type { Column } from '@tanstack/vue-table';
 import { h, ref, nextTick } from 'vue';
 import { Badge } from '@/components/ui/badge';
-// DropdownMenu imports kept for the actions column
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTable, type ColumnDef } from '@/components/ui/data-table';
@@ -14,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import Icon from '@/components/ui/Icon.vue';
 import {
   Select,
   SelectContent,
@@ -193,11 +193,7 @@ const columns: ColumnDef<RowData>[] = [
           default: () => [
             h(DropdownMenuTrigger, { asChild: true }, () =>
               h(Button, { variant: 'ghost', size: 'icon', class: 'h-8 w-8' }, () =>
-                h('svg', { class: 'w-4 h-4', fill: 'currentColor', viewBox: '0 0 20 20' }, [
-                  h('circle', { cx: '10', cy: '4', r: '1.5' }),
-                  h('circle', { cx: '10', cy: '10', r: '1.5' }),
-                  h('circle', { cx: '10', cy: '16', r: '1.5' })
-                ])
+                h(Icon, { name: 'EllipsisVertical', size: 16 })
               )
             ),
             h(DropdownMenuContent, { align: 'end' }, () => [
@@ -245,15 +241,7 @@ function transformRows(jobs: JobData[]): RowData[] {
         class="w-full flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
         @click="openAddRow"
       >
-        <svg
-          class="w-3.5 h-3.5 flex-shrink-0"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2.5"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-        </svg>
+        <Icon name="Plus" :size="14" :stroke-width="2.5" default-class="flex-shrink-0" />
         New
       </button>
 

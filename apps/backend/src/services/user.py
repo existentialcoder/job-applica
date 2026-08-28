@@ -2,6 +2,7 @@ import os
 
 import jwt
 from fastapi import HTTPException, UploadFile
+from fastapi.security import OAuth2PasswordRequestForm
 from jwt import InvalidTokenError
 from pydantic import EmailStr, ValidationError
 from sqlalchemy import func, select
@@ -12,7 +13,8 @@ from ..core.constants import Constants
 from ..core.utils import create_token, hash_password, verify_password
 from ..models.skill import Skill
 from ..models.user import User
-from ..schemas.user import TokenPayload, UserBase, UserLogin, UserLoginTokenResponse, UserNameCheckResponse, UserSignup
+from ..schemas.settings import UserSettings
+from ..schemas.user import TokenPayload, UserBase, UserLoginTokenResponse, UserNameCheckResponse, UserSignup
 from ..utils.file_uploader import FileUploader
 
 UPLOAD_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'uploads'))
@@ -42,11 +44,13 @@ async def create_user(db: AsyncSession, user_data: UserSignup) -> UserBase:
         raise HTTPException(status_code=409, detail=f'User already exists with user_name: ${user_data.user_name}')
 
     user_name = user_data.email or user_data.user_name
+    assert user_name is not None  # signup_user route already rejects payloads with neither
     user_obj = User(**user_data.model_dump(exclude={'password', 'security_answer'}, exclude_unset=True))
     user_obj.hashed_password = hash_password(user_data.password)
     user_obj.user_name = user_name
     if user_data.security_answer:
         user_obj.hashed_security_answer = hash_password(user_data.security_answer)
+    user_obj.settings = UserSettings().model_dump()
 
     db.add(user_obj)
     await db.commit()
@@ -60,7 +64,7 @@ async def check_user_name_availability(db: AsyncSession, user_name: str) -> User
     return UserNameCheckResponse(is_available=existing_user_count.scalar() == 0)
 
 
-async def user_login(db: AsyncSession, login_data: UserLogin) -> UserLoginTokenResponse:
+async def user_login(db: AsyncSession, login_data: OAuth2PasswordRequestForm) -> UserLoginTokenResponse:
     result = await db.execute(
         select(User).where((User.email == login_data.username) | (User.user_name == login_data.username))
     )
@@ -77,7 +81,7 @@ async def user_login(db: AsyncSession, login_data: UserLogin) -> UserLoginTokenR
     if not verify_password(login_data.password, user_data.hashed_password):
         raise HTTPException(status_code=401, detail='Incorrect password')
 
-    token_data: TokenPayload = {
+    token_data: dict = {
         'sub': str(user_data.id),
         'user_name': user_data.user_name,
         'signup_key': user_data.signup_key,
@@ -186,7 +190,7 @@ async def change_password(db: AsyncSession, user_id: int, current_password: str,
 
 async def get_settings(db: AsyncSession, user_id: int) -> dict:
     user = await _get_user_or_404(db, user_id)
-    return user.settings or {}
+    return {**UserSettings().model_dump(), **(user.settings or {})}
 
 
 async def update_settings(db: AsyncSession, user_id: int, settings_patch: dict) -> dict:

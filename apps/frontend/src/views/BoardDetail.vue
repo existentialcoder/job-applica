@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { BoardSettingsModal } from '@/components/applications';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import { DEFAULT_BOARD_STAGES } from '@/lib/constants';
 import dataservice from '@/lib/dataservice';
 import type { BoardData, JobData, JobCreatePayload } from '@/lib/types';
 import { useAppStore } from '@/stores/app';
+import { useBoardsStore } from '@/stores/boards';
 import Applications from '@/views/Applications.vue';
 
 const DEFAULT_COLOR_BY_KEY: Record<string, string> = Object.fromEntries(
@@ -30,13 +31,13 @@ const DEFAULT_COLOR_BY_KEY: Record<string, string> = Object.fromEntries(
 const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
+const boardsStore = useBoardsStore();
 
 const boardId = computed(() => Number(route.params.boardId));
 const board = ref<BoardData | null>(null);
 const isLoading = ref(true);
 const isNotFound = ref(false);
 
-const allBoards = ref<BoardData[]>([]);
 const isBoardSwitcherOpen = ref(false);
 
 function switchBoard(target: BoardData) {
@@ -61,21 +62,18 @@ const refreshCounter = ref(0);
 
 async function loadBoard() {
   isLoading.value = true;
-  const data = await dataservice.getBoard(boardId.value);
-  if (!data) {
+  const boardDetails = boardsStore.boards.find(board => board.id === boardId.value);
+  if (!boardDetails) {
     isNotFound.value = true;
     isLoading.value = false;
     return;
   }
 
-  // Auto-heal stages where key ≠ label (artifact of the old rename bug), and mandatory
-  // stages missing a color (artifact of boards created before default colors were locked in).
-  // Silently migrate jobs and fix the stored keys/colors so the UI and DB stay in sync.
-  const mismatched = data.stages.filter((s) => s.key !== s.label);
-  const missingColor = data.stages.filter((s) => !s.color && DEFAULT_COLOR_BY_KEY[s.key]);
+  const mismatched = boardDetails.stages.filter((s) => s.key !== s.label);
+  const missingColor = boardDetails.stages.filter((s) => !s.color && DEFAULT_COLOR_BY_KEY[s.key]);
   if (mismatched.length > 0 || missingColor.length > 0) {
     const keyRenames: Record<string, string> = {};
-    const fixedStages = data.stages.map((s) => {
+    const fixedStages = boardDetails.stages.map((s) => {
       let fixed = s;
       if (s.key !== s.label) {
         keyRenames[s.key] = s.label;
@@ -86,13 +84,13 @@ async function loadBoard() {
       }
       return fixed;
     });
-    const fixed = await dataservice.updateBoard(data.id, {
+    const fixed = await boardsStore.updateBoard(boardDetails.id, {
       stages: fixedStages,
       key_renames: keyRenames
     });
-    board.value = fixed ?? data;
+    board.value = fixed ?? boardDetails;
   } else {
-    board.value = data;
+    board.value = boardDetails;
   }
 
   appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: board.value!.name }]);
@@ -108,7 +106,7 @@ async function saveSettings(payload: {
 }) {
   if (!board.value) return;
   isSaving.value = true;
-  const updated = await dataservice.updateBoard(board.value.id, {
+  const updated = await boardsStore.updateBoard(board.value.id, {
     name: payload.name,
     color: payload.color,
     description: payload.description || undefined,
@@ -118,8 +116,10 @@ async function saveSettings(payload: {
   isSaving.value = false;
   if (updated) {
     board.value = updated;
-    const idx = allBoards.value.findIndex((b) => b.id === updated.id);
-    if (idx !== -1) allBoards.value[idx] = updated;
+    const idx = boardsStore.boards.findIndex((b) => b.id === updated.id);
+    if (idx !== -1) {
+      boardsStore.boards[idx] = updated;
+    }
     appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: updated.name }]);
     isSettingsOpen.value = false;
     if (Object.keys(payload.key_renames).length > 0) refreshCounter.value++;
@@ -129,9 +129,11 @@ async function saveSettings(payload: {
 async function confirmDelete() {
   if (!board.value) return;
   isDeleting.value = true;
-  const ok = await dataservice.deleteBoard(board.value.id);
+  const ok = await boardsStore.deleteBoard(board.value.id);
   isDeleting.value = false;
-  if (ok) router.push('/boards');
+  if (ok) {
+    router.push('/boards');
+  }
 }
 
 // ── Download ──────────────────────────────────────────────────────────────────
@@ -302,30 +304,17 @@ async function handleImport(event: Event) {
   }
 }
 
-watch(boardId, loadBoard, { immediate: true });
-
-onMounted(async () => {
-  allBoards.value = await dataservice.getBoards();
-});
-
-onUnmounted(() => {
-  appStore.setBreadcrumbs([]);
-});
+watch(boardId, async () => {
+  await boardsStore.fetch();
+  await loadBoard();
+}, { immediate: true });
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <!-- Loading -->
     <div v-if="isLoading" class="flex justify-center py-16">
-      <svg
-        class="w-6 h-6 animate-spin text-muted-foreground"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-      </svg>
+      <Icon name="LoaderCircle" :size="24" default-class="animate-spin text-muted-foreground" />
     </div>
 
     <!-- Not found -->
@@ -371,7 +360,7 @@ onUnmounted(() => {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  v-for="b in allBoards"
+                  v-for="b in boardsStore.boards"
                   :key="b.id"
                   :class="{ 'bg-muted': b.id === board.id }"
                   @click="switchBoard(b)"
@@ -431,11 +420,7 @@ onUnmounted(() => {
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" size="icon" title="Board actions">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <circle cx="10" cy="4" r="1.5" />
-                  <circle cx="10" cy="10" r="1.5" />
-                  <circle cx="10" cy="16" r="1.5" />
-                </svg>
+                <Icon name="EllipsisVertical" :size="16" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

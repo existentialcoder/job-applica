@@ -8,15 +8,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import dataservice from '@/lib/dataservice';
 import type { BoardData } from '@/lib/types';
 import { useAppStore } from '@/stores/app';
+import { useBoardsStore } from '@/stores/boards';
 import Applications from '@/views/Applications.vue';
 
 const router = useRouter();
 const appStore = useAppStore();
+const boardsStore = useBoardsStore();
 
-const allBoards = ref<BoardData[]>([]);
 const isBoardSwitcherOpen = ref(false);
 
 function switchBoard(target: BoardData) {
@@ -26,7 +26,6 @@ function switchBoard(target: BoardData) {
 
 onMounted(async () => {
   appStore.setBreadcrumbs([{ label: 'Boards', path: '/boards' }, { label: 'All Applications' }]);
-  allBoards.value = await dataservice.getBoards();
 });
 
 onUnmounted(() => {
@@ -66,7 +65,7 @@ onUnmounted(() => {
                 <Icon name="Check" class="w-3.5 h-3.5 ml-auto text-primary flex-shrink-0" />
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem v-for="b in allBoards" :key="b.id" @click="switchBoard(b)">
+              <DropdownMenuItem v-for="b in boardsStore.boards" :key="b.id" @click="switchBoard(b)">
                 <span
                   :class="['w-2 h-2 rounded-full mr-2 flex-shrink-0', b.color || 'bg-blue-500']"
                 />

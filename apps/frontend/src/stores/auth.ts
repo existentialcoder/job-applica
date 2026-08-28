@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import router from '@/router';
-import { useAppStore } from '@/stores/app';
+import { useSettingsStore } from '@/stores/settings';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
@@ -27,6 +27,8 @@ interface SignupPayload {
 }
 
 export const useAuthStore = defineStore('auth', () => {
+  const settingsStore = useSettingsStore();
+  
   const accessToken = ref<string | null>(localStorage.getItem('access_token'));
   const user = ref<UserProfile | null>(JSON.parse(localStorage.getItem('user') || 'null'));
 
@@ -56,11 +58,13 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     window.dispatchEvent(new CustomEvent('ja:auth', { detail: { token: null } }));
-    useAppStore().resetTheme();
+    settingsStore.reset();
   }
 
   async function fetchMe(): Promise<void> {
-    if (!accessToken.value) return;
+    if (!accessToken.value) {
+      return;
+    }
 
     try {
       let response = await fetch(`${API_BASE}/auth/me`, {
@@ -95,7 +99,6 @@ export const useAuthStore = defineStore('auth', () => {
             });
           }
         } catch {
-          // Network error during refresh — stay logged in, retry later
           return;
         }
       }
@@ -111,7 +114,7 @@ export const useAuthStore = defineStore('auth', () => {
           email: data.email ?? null,
           avatar_url: data.avatar_url ?? null
         });
-        await useAppStore().syncSettingsFromServer();
+        await settingsStore.fetch();
       } else if (response.status === 401) {
         // Still 401 after refresh — session is truly expired
         clearAuth();

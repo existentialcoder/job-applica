@@ -33,6 +33,9 @@ export * from './components/ui/textarea'
 export * from './components/ui/toggle'
 export * from './components/ui/tooltip'
 
+// Icons
+export * from './components/icons'
+
 // Standalone components
 export { default as Breadcrumb } from './components/ui/Breadcrumb.vue'
 export { default as Icon } from './components/ui/Icon.vue'

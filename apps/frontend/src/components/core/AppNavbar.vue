@@ -15,8 +15,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
+import { useSettingsStore } from '@/stores/settings';
 
 const store = useAppStore();
+const settingsStore = useSettingsStore();
 const authStore = useAuthStore();
 const router = useRouter();
 
@@ -44,8 +46,8 @@ async function handleLogout() {
     <Button
       variant="outline"
       class="p-[6px] w-8 h-8 transition-all duration-200 block lg:hidden"
-      :class="store.sidebarExpanded ? 'bg-transparent' : 'dark:bg-white'"
-      @click="store.toggleSidebar()"
+      :class="settingsStore.settings.sidebarExpanded ? 'bg-transparent' : 'dark:bg-white'"
+      @click="settingsStore.toggleSidebar()"
     >
       <Menu class="transition-all duration-500 text-black" />
     </Button>
@@ -67,20 +69,24 @@ async function handleLogout() {
         variant="outline"
         class="border-0 p-[6px] ml-2 w-8 h-8"
         :title="
-          store.themeMode === 'light'
+          settingsStore.settings.themeMode === 'light'
             ? 'Switch to Dark'
-            : store.themeMode === 'dark'
+            : settingsStore.settings.themeMode === 'dark'
               ? 'Switch to System'
               : 'Switch to Light'
         "
         @click="
-          store.setThemeMode(
-            store.themeMode === 'light' ? 'dark' : store.themeMode === 'dark' ? 'system' : 'light'
+          settingsStore.setThemeMode(
+            settingsStore.settings.themeMode === 'light'
+              ? 'dark'
+              : settingsStore.settings.themeMode === 'dark'
+                ? 'system'
+                : 'light'
           )
         "
       >
-        <Sun v-if="store.themeMode === 'light'" class="w-4 h-4" />
-        <MoonStar v-else-if="store.themeMode === 'dark'" class="w-4 h-4" />
+        <Sun v-if="settingsStore.settings.themeMode === 'light'" class="w-4 h-4" />
+        <MoonStar v-else-if="settingsStore.settings.themeMode === 'dark'" class="w-4 h-4" />
         <Monitor v-else class="w-4 h-4" />
       </Button>
       <div class="border-x-[1px] border-gray-300 h-[24px] w-[1px] mx-2" />

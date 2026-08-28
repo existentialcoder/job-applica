@@ -344,15 +344,7 @@ function locationText(job: JobData): string {
                 title="Remove stage"
                 @click="$emit('remove-stage', col.key)"
               >
-                <svg
-                  class="w-3.5 h-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <Icon name="X" :size="14" :stroke-width="2" />
               </button>
             </div>
           </div>
@@ -383,11 +375,7 @@ function locationText(job: JobData): string {
                     class="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     @click.stop
                   >
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <circle cx="10" cy="4" r="1.5" />
-                      <circle cx="10" cy="10" r="1.5" />
-                      <circle cx="10" cy="16" r="1.5" />
-                    </svg>
+                    <Icon name="EllipsisVertical" :size="16" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" @click.stop>
@@ -465,15 +453,7 @@ function locationText(job: JobData): string {
               class="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
               @click="startQuickAdd(col.key)"
             >
-              <svg
-                class="w-3.5 h-3.5 flex-shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
+              <Icon name="Plus" :size="14" :stroke-width="2" default-class="flex-shrink-0" />
               Add a card
             </button>
 
@@ -530,15 +510,7 @@ function locationText(job: JobData): string {
               class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-2 border-dashed border-muted-foreground/20 text-sm text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-muted/10 transition-colors"
               @click="openAddStage"
             >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
+              <Icon name="Plus" :size="16" :stroke-width="2" />
               Add a list
             </button>
           </div>

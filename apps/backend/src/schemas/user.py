@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import BaseModel, EmailStr, model_validator
 
 from .base import BaseSchema
+from .settings import UserSettings
 
 
 class UserSignupKey(enum.StrEnum):
@@ -29,7 +30,6 @@ class UserBase(BaseSchema):
     security_question: str | None = None
     avatar_url: str | None = None
     plan: str = 'free'
-    settings: dict[str, Any] = {}
 
     @model_validator(mode='before')
     @classmethod
@@ -37,16 +37,14 @@ class UserBase(BaseSchema):
         hashed_password = (
             data.get('hashed_password') if isinstance(data, dict) else getattr(data, 'hashed_password', None)
         )
-        has_password = bool(hashed_password) and len(hashed_password) > 0
+        has_password = bool(hashed_password)
         if isinstance(data, dict):
             return {**data, 'has_password': has_password}
         return {**{field: getattr(data, field, None) for field in cls.model_fields}, 'has_password': has_password}
 
 
-class UserSettings(BaseModel):
-    """Partial update payload — only provided keys are merged into existing settings."""
-
-    settings: dict[str, Any]
+class UserSettingsRequest(BaseModel):
+    settings: UserSettings
 
 
 class UserSignup(BaseModel):
@@ -64,11 +62,6 @@ class UserSignup(BaseModel):
         if not self.email and not (self.security_question and self.security_answer and self.security_answer.strip()):
             raise ValueError('A security question and answer are required when signing up without an email')
         return self
-
-
-class UserLogin(BaseModel):
-    user_id: str
-    password: str
 
 
 class UserLoginTokenResponse(BaseModel):
