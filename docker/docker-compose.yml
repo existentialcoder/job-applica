@@ -17,27 +17,25 @@ services:
 
   app:
     build:
-      context: ./apps/backend
+      context: ../apps/backend
     env_file:
-      - apps/backend/.env
+      - ../apps/backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/job_applica
-    ports:
-      - "8000:8000"
     volumes:
-      - ./apps/backend/uploads:/app/uploads
+      - ../apps/backend/uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
 
   frontend:
     build:
-      context: .
+      context: ..
       dockerfile: apps/frontend/Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
     ports:
-      - "5173:80"
+      - "8000:80"
     depends_on:
       - app
 

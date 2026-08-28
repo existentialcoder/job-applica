@@ -4,6 +4,7 @@ import dataservice, { type BoardData, type JobExtractResult, type CompanyResult,
 import ext from './lib/ext';
 import { config, loadConfig, saveConfig, resetConfig } from './lib/config';
 import { DEFAULT_COMPANY_LOGO_URL } from '@job-applica/ui/lib/constants';
+import { DewLogo, GoogleLogo, LinkedInLogo, AtsGauge, Icon } from '@job-applica/ui';
 import { Button } from '@job-applica/ui/components/ui/button';
 import { Input } from '@job-applica/ui/components/ui/input';
 import { Label } from '@job-applica/ui/components/ui/label';
@@ -508,20 +509,7 @@ const platformBadgeVariant: Record<string, any> = {
   <div class="popup-container w-full bg-background text-foreground flex flex-col">
     <!-- Header -->
     <div class="flex items-center justify-between px-4 py-3 border-b border-border">
-      <div class="flex items-center gap-2">
-        <svg width="22" height="22" viewBox="20 0 432 480" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <defs>
-            <linearGradient id="popup-dew" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#4F46E5"/>
-              <stop offset="100%" stop-color="#7C3AED"/>
-            </linearGradient>
-          </defs>
-          <path fill="url(#popup-dew)" d="M 430,112 C 452,222 362,470 230,470 A 200,200 0 0 1 30,270 C 30,78 172,8 430,112 Z"/>
-          <circle cx="248" cy="154" r="22" fill="white"/>
-          <path fill="white" d="M 231,194 L 265,194 L 265,360 Q 265,442 210,442 Q 172,442 172,406 L 172,388 Q 172,418 210,418 Q 248,418 248,360 L 248,194 Z"/>
-        </svg>
-        <span class="text-sm font-bold">Job<span class="text-indigo-400">Applica</span></span>
-      </div>
+      <DewLogo :size="22" show-wordmark uid="popup-dew" />
       <div class="flex items-center gap-2">
         <Badge v-if="platform" :variant="platformBadgeVariant[platform] || 'secondary'" class="text-xs">
           {{ platform }}
@@ -534,24 +522,14 @@ const platformBadgeVariant: Record<string, any> = {
         <button @click="view === 'settings' ? closeSettings() : openSettings()"
           class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition"
           title="Settings">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"/>
-            <path stroke-linecap="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-          </svg>
+          <Icon name="Settings" :size="16" />
         </button>
         <!-- Dark mode toggle -->
         <button @click="toggleDark"
           class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition"
           :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
-          <!-- Sun icon (shown in dark mode) -->
-          <svg v-if="isDark" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="5"/>
-            <path stroke-linecap="round" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
-          <!-- Moon icon (shown in light mode) -->
-          <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-          </svg>
+          <Icon v-if="isDark" name="Sun" :size="16" />
+          <Icon v-else name="Moon" :size="16" />
         </button>
       </div>
     </div>
@@ -560,9 +538,7 @@ const platformBadgeVariant: Record<string, any> = {
     <div v-if="view === 'settings'" class="p-4 flex flex-col gap-4">
       <div class="flex items-center gap-2">
         <button @click="closeSettings" class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition" title="Back">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-          </svg>
+          <Icon name="ChevronLeft" :size="16" />
         </button>
         <span class="text-sm font-semibold">Settings</span>
       </div>
@@ -635,30 +611,15 @@ const platformBadgeVariant: Record<string, any> = {
       <!-- OAuth buttons -->
       <Button variant="outline" class="w-full gap-2 justify-center" type="button"
         :disabled="isOAuthLoading !== null" @click="openOAuth('google')">
-        <svg v-if="isOAuthLoading === 'google'" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg"
-          fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-        </svg>
-        <svg v-else class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-        </svg>
+        <Icon v-if="isOAuthLoading === 'google'" name="LoaderCircle" :size="16" default-class="animate-spin" />
+        <GoogleLogo v-else :size="16" />
         {{ isOAuthLoading === 'google' ? 'Opening…' : 'Continue with Google' }}
       </Button>
 
       <Button variant="outline" class="w-full gap-2 justify-center" type="button"
         :disabled="isOAuthLoading !== null" @click="openOAuth('linkedin')">
-        <svg v-if="isOAuthLoading === 'linkedin'" class="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg"
-          fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-        </svg>
-        <svg v-else class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#0A66C2">
-          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-        </svg>
+        <Icon v-if="isOAuthLoading === 'linkedin'" name="LoaderCircle" :size="16" default-class="animate-spin" />
+        <LinkedInLogo v-else :size="16" />
         {{ isOAuthLoading === 'linkedin' ? 'Opening…' : 'Continue with LinkedIn' }}
       </Button>
 
@@ -691,10 +652,7 @@ const platformBadgeVariant: Record<string, any> = {
     <div v-else-if="view === 'setup'" class="p-4 flex flex-col gap-4">
       <div class="flex flex-col items-center gap-2 text-center pt-2">
         <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
-          </svg>
+          <Icon name="Kanban" :size="24" default-class="text-primary" />
         </div>
         <p class="text-sm font-semibold">Create your first job board</p>
         <p class="text-xs text-muted-foreground">Create your first board. You can edit the name on the dashboard later.</p>
@@ -711,10 +669,7 @@ const platformBadgeVariant: Record<string, any> = {
       </div>
       <p v-if="createBoardError" class="text-xs text-destructive">{{ createBoardError }}</p>
       <Button @click="handleCreateBoard" :disabled="isCreatingBoard || !newBoardName.trim()" class="w-full">
-        <svg v-if="isCreatingBoard" class="w-4 h-4 animate-spin mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-        </svg>
+        <Icon v-if="isCreatingBoard" name="LoaderCircle" :size="16" default-class="animate-spin mr-2" />
         {{ isCreatingBoard ? 'Creating...' : 'Create Board' }}
       </Button>
     </div>
@@ -722,10 +677,7 @@ const platformBadgeVariant: Record<string, any> = {
     <!-- No job detected view -->
     <div v-else-if="view === 'no-job'" class="p-4 flex flex-col items-center gap-3 text-center">
       <div class="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-        <svg class="w-6 h-6 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M20.25 14.15v4.073a2.25 2.25 0 01-2.25 2.25h-12a2.25 2.25 0 01-2.25-2.25v-4.073M15.75 9.75L12 6m0 0L8.25 9.75M12 6v12" />
-        </svg>
+        <Icon name="Inbox" :size="24" default-class="text-muted-foreground/50" />
       </div>
       <div>
         <p class="text-sm font-medium">Not a job listing</p>
@@ -740,9 +692,7 @@ const platformBadgeVariant: Record<string, any> = {
       <template v-if="existingJobId !== null">
         <div class="flex flex-col items-center gap-3 py-4 text-center">
           <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-            <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
+            <Icon name="Check" :size="24" default-class="text-green-600 dark:text-green-400" />
           </div>
           <div>
             <p class="text-sm font-medium">Job saved already</p>
@@ -869,24 +819,9 @@ const platformBadgeVariant: Record<string, any> = {
         <div class="rounded-md border border-border bg-muted/30 p-3 flex items-center gap-3">
           <!-- Score gauge -->
           <template v-if="atsReport">
-            <div class="relative w-14 h-14 flex-shrink-0">
-              <svg class="w-14 h-14 -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="10" class="text-muted/40" />
-                <circle
-                  cx="50" cy="50" r="42"
-                  fill="none"
-                  :stroke="atsGaugeStroke"
-                  stroke-width="10"
-                  stroke-linecap="round"
-                  :stroke-dasharray="263.9"
-                  :stroke-dashoffset="263.9 - (atsReport.score / 100) * 263.9"
-                  style="transition: stroke-dashoffset 0.6s ease"
-                />
-              </svg>
-              <div class="absolute inset-0 flex flex-col items-center justify-center">
-                <span class="text-sm font-bold leading-none">{{ Math.round(atsReport.score) }}</span>
-              </div>
-            </div>
+            <AtsGauge :percentage="atsReport.score" :size="56" :stroke-width="10" :color="atsGaugeStroke">
+              <span class="text-sm font-bold leading-none">{{ Math.round(atsReport.score) }}</span>
+            </AtsGauge>
             <div class="flex flex-col">
               <span class="text-xs font-semibold">Match Score</span>
               <span class="text-xs text-muted-foreground">Score on how your CV matches with this JD</span>
@@ -895,9 +830,7 @@ const platformBadgeVariant: Record<string, any> = {
           <!-- No resume uploaded -->
           <template v-else-if="noResume">
             <div class="w-14 h-14 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
-              <svg class="w-6 h-6 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <Icon name="FileText" :size="24" default-class="text-muted-foreground/50" />
             </div>
             <div class="flex flex-col gap-1">
               <span class="text-xs font-semibold">No CV uploaded</span>
@@ -915,11 +848,7 @@ const platformBadgeVariant: Record<string, any> = {
         <!-- Save + Re-fetch -->
         <div class="flex flex-col gap-2">
           <Button @click="saveJob" :disabled="isSaveBtnLoading || !jobTitle" class="w-full">
-            <svg v-if="isSaveBtnLoading" class="w-4 h-4 animate-spin mr-2" xmlns="http://www.w3.org/2000/svg" fill="none"
-              viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
+            <Icon v-if="isSaveBtnLoading" name="LoaderCircle" :size="16" default-class="animate-spin mr-2" />
             {{ isSaveBtnLoading ? 'Saving...' : 'Save Job' }}
           </Button>
           <button @click="retryFetch" class="text-xs text-muted-foreground hover:text-primary text-center transition">

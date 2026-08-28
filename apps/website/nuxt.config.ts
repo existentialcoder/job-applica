@@ -1,6 +1,12 @@
+import { fileURLToPath } from 'node:url';
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
+
+  alias: {
+    '@job-applica/ui': fileURLToPath(new URL('../../packages/ui/src', import.meta.url)),
+  },
 
   css: ['~/assets/css/main.css'],
 

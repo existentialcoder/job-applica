@@ -311,30 +311,14 @@ function handleSave() {
                 :disabled="i === 0"
                 @click="moveUp(i)"
               >
-                <svg
-                  class="w-3.5 h-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
-                </svg>
+                <Icon name="ChevronUp" :size="14" :stroke-width="2.5" />
               </button>
               <button
                 class="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
                 :disabled="i === stages.length - 1"
                 @click="moveDown(i)"
               >
-                <svg
-                  class="w-3.5 h-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
+                <Icon name="ChevronDown" :size="14" :stroke-width="2.5" />
               </button>
 
               <button
@@ -343,15 +327,7 @@ function handleSave() {
                 @click="removeStage(i)"
                 title="Remove stage"
               >
-                <svg
-                  class="w-3.5 h-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <Icon name="X" :size="14" :stroke-width="2" />
               </button>
             </template>
           </div>
@@ -367,15 +343,7 @@ function handleSave() {
             class="w-full flex items-center gap-2 px-3 py-2 rounded-md border-2 border-dashed border-muted-foreground/20 text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
             @click="openAddStage"
           >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
+            <Icon name="Plus" :size="16" :stroke-width="2" />
             Add a stage
           </button>
         </div>

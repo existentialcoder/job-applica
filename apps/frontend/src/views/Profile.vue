@@ -8,11 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import dataservice from '@/lib/dataservice';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
-import { useAppStore, BG_THEMES } from '@/stores/app';
+import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
+import { useSettingsStore, BG_THEMES } from '@/stores/settings';
 
 const authStore = useAuthStore();
 const appStore = useAppStore();
+const settingsStore = useSettingsStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -148,41 +150,19 @@ onMounted(() => {
                 <div
                   class="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <svg
+                  <Icon
                     v-if="!avatarUploading"
-                    class="w-5 h-5 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                    />
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  <svg
+                    name="Camera"
+                    :size="20"
+                    :stroke-width="2"
+                    default-class="text-white"
+                  />
+                  <Icon
                     v-else
-                    class="w-4 h-4 text-white animate-spin"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                    />
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
+                    name="LoaderCircle"
+                    :size="16"
+                    default-class="text-white animate-spin"
+                  />
                 </div>
                 <input
                   type="file"
@@ -236,19 +216,7 @@ onMounted(() => {
               v-if="!passwordChangeEnabled"
               class="flex items-start gap-2 text-sm text-muted-foreground"
             >
-              <svg
-                class="w-5 h-5 flex-shrink-0 mt-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.5"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <Icon name="Info" :size="20" default-class="flex-shrink-0 mt-0.5" />
               <p>
                 Your account uses Google or LinkedIn sign-in. Password management is handled by your
                 provider.
@@ -298,58 +266,19 @@ onMounted(() => {
                 :class="
                   cn(
                     'flex-1 flex flex-col items-center gap-2 rounded-lg border-2 p-3 text-xs font-medium transition-colors capitalize',
-                    appStore.themeMode === mode
+                    settingsStore.settings.themeMode === mode
                       ? 'border-primary text-primary'
                       : 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
                   )
                 "
-                @click="appStore.setThemeMode(mode)"
+                @click="settingsStore.setThemeMode(mode)"
               >
                 <!-- Light icon -->
-                <svg
-                  v-if="mode === 'light'"
-                  class="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
-                  />
-                </svg>
+                <Icon v-if="mode === 'light'" name="Sun" :size="20" />
                 <!-- Dark icon -->
-                <svg
-                  v-else-if="mode === 'dark'"
-                  class="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
-                  />
-                </svg>
+                <Icon v-else-if="mode === 'dark'" name="Moon" :size="20" />
                 <!-- System icon -->
-                <svg
-                  v-else
-                  class="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3"
-                  />
-                </svg>
+                <Icon v-else name="Monitor" :size="20" />
                 {{ mode }}
               </button>
             </div>
@@ -360,24 +289,24 @@ onMounted(() => {
             <div>
               <p class="text-sm font-semibold">Themes</p>
               <p class="text-xs text-muted-foreground mt-0.5">
-                Choose a theme for {{ appStore.isDark ? 'dark' : 'light' }} mode
+                Choose a theme for {{ settingsStore.isDark ? 'dark' : 'light' }} mode
               </p>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <button
-                v-for="(theme, key) in appStore.isDark ? BG_THEMES.dark : BG_THEMES.light"
+                v-for="(theme, key) in settingsStore.isDark ? BG_THEMES.dark : BG_THEMES.light"
                 :key="key"
                 :class="
                   cn(
                     'relative rounded-xl overflow-hidden border-2 transition-all text-left',
-                    (appStore.isDark ? appStore.darkBgTheme : appStore.lightBgTheme) === key
+                    (settingsStore.isDark ? settingsStore.settings.darkBgTheme : settingsStore.settings.lightBgTheme) === key
                       ? 'border-primary shadow-sm'
                       : 'border-transparent hover:border-muted-foreground/20'
                   )
                 "
                 @click="
-                  appStore.isDark ? appStore.setDarkBgTheme(key) : appStore.setLightBgTheme(key)
+                  settingsStore.isDark ? settingsStore.setDarkBgTheme(key) : settingsStore.setLightBgTheme(key)
                 "
               >
                 <!-- Mini app mockup -->
@@ -454,26 +383,19 @@ onMounted(() => {
                     class="text-[11px] font-semibold leading-none"
                     :style="{
                       color:
-                        (appStore.isDark ? appStore.darkBgTheme : appStore.lightBgTheme) === key
+                        (settingsStore.isDark ? settingsStore.settings.darkBgTheme : settingsStore.settings.lightBgTheme) === key
                           ? 'hsl(var(--primary))'
                           : theme.preview.text
                     }"
                     >{{ theme.label }}</span
                   >
-                  <svg
-                    v-if="(appStore.isDark ? appStore.darkBgTheme : appStore.lightBgTheme) === key"
-                    class="w-3 h-3 text-primary flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="3"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M4.5 12.75l6 6 9-13.5"
-                    />
-                  </svg>
+                  <Icon
+                    v-if="(settingsStore.isDark ? settingsStore.settings.darkBgTheme : settingsStore.settings.lightBgTheme) === key"
+                    name="Check"
+                    :size="12"
+                    :stroke-width="3"
+                    default-class="text-primary flex-shrink-0"
+                  />
                 </div>
               </button>
             </div>

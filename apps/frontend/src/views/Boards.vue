@@ -18,16 +18,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import dataservice from '@/lib/dataservice';
-import { toast } from '@/lib/toast';
 import type { BoardData } from '@/lib/types';
 import { useAppStore } from '@/stores/app';
+import { useBoardsStore } from '@/stores/boards';
 
 const router = useRouter();
 const appStore = useAppStore();
-
-const boards = ref<BoardData[]>([]);
-const isLoading = ref(true);
+const boardsStore = useBoardsStore();
 
 const isCreateOpen = ref(false);
 const newBoardName = ref('');
@@ -58,36 +55,21 @@ const COLOR_OPTIONS = [
   { value: 'bg-cyan-500', label: 'Cyan' }
 ];
 
-async function loadBoards() {
-  isLoading.value = true;
-  boards.value = await dataservice.getBoards();
-  isLoading.value = false;
-}
-
 async function createBoard() {
   if (!newBoardName.value.trim()) return;
   isSaving.value = true;
-  try {
-    const board = await dataservice.createBoard({
-      name: newBoardName.value.trim(),
-      color: newBoardColor.value,
-      description: newBoardDesc.value.trim() || undefined
-    });
-    if (board) {
-      isCreateOpen.value = false;
-      newBoardName.value = '';
-      newBoardDesc.value = '';
-      newBoardColor.value = 'bg-blue-500';
-      boards.value.push(board);
-      toast.success('Board created');
-    } else {
-      toast.error('Failed to create board');
-    }
-  } catch {
-    toast.error('Failed to create board');
-  } finally {
-    isSaving.value = false;
+  const ok = await boardsStore.createBoard({
+    name: newBoardName.value.trim(),
+    color: newBoardColor.value,
+    description: newBoardDesc.value.trim() || undefined
+  });
+  if (ok) {
+    isCreateOpen.value = false;
+    newBoardName.value = '';
+    newBoardDesc.value = '';
+    newBoardColor.value = 'bg-blue-500';
   }
+  isSaving.value = false;
 }
 
 function openBoard(board: BoardData) {
@@ -106,40 +88,20 @@ function openEdit(board: BoardData, e: Event) {
 async function saveEdit() {
   if (!editingBoard.value || !editName.value.trim()) return;
   isSaving.value = true;
-  try {
-    const updated = await dataservice.updateBoard(editingBoard.value.id, {
-      name: editName.value.trim(),
-      color: editColor.value,
-      description: editDesc.value.trim() || undefined
-    });
-    if (updated) {
-      const idx = boards.value.findIndex((b) => b.id === updated.id);
-      if (idx !== -1) boards.value[idx] = updated;
-      isEditOpen.value = false;
-      toast.success('Board updated');
-    } else {
-      toast.error('Failed to update board');
-    }
-  } catch {
-    toast.error('Failed to update board');
-  } finally {
-    isSaving.value = false;
+  const ok = await boardsStore.updateBoard(editingBoard.value.id, {
+    name: editName.value.trim(),
+    color: editColor.value,
+    description: editDesc.value.trim() || undefined
+  });
+  if (ok) {
+    isEditOpen.value = false;
   }
+  isSaving.value = false;
 }
 
 async function makeDefault(board: BoardData, e: Event) {
   e.stopPropagation();
-  try {
-    const updated = await dataservice.setDefaultBoard(board.id);
-    if (updated) {
-      boards.value = boards.value.map((b) => ({ ...b, is_default: b.id === board.id }));
-      toast.success(`"${board.name}" set as default`);
-    } else {
-      toast.error('Failed to set default board');
-    }
-  } catch {
-    toast.error('Failed to set default board');
-  }
+  await boardsStore.setDefaultBoard(board.id);
 }
 
 function openDelete(board: BoardData, e: Event) {
@@ -151,27 +113,17 @@ function openDelete(board: BoardData, e: Event) {
 async function confirmDelete() {
   if (!deletingBoard.value) return;
   isDeleting.value = true;
-  const name = deletingBoard.value.name;
-  try {
-    const ok = await dataservice.deleteBoard(deletingBoard.value.id);
-    if (ok) {
-      boards.value = boards.value.filter((b) => b.id !== deletingBoard.value!.id);
-      isDeleteOpen.value = false;
-      deletingBoard.value = null;
-      toast.success(`"${name}" deleted`);
-    } else {
-      toast.error('Failed to delete board');
-    }
-  } catch {
-    toast.error('Failed to delete board');
-  } finally {
-    isDeleting.value = false;
+  const ok = await boardsStore.deleteBoard(deletingBoard.value.id);
+  if (ok) {
+    isDeleteOpen.value = false;
+    deletingBoard.value = null;
   }
+  isDeleting.value = false;
 }
 
 onMounted(async () => {
   appStore.setBreadcrumbs([]);
-  await loadBoards();
+  await boardsStore.fetch();
 });
 
 onUnmounted(() => {
@@ -181,7 +133,6 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Page header -->
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-semibold">Application Boards</h1>
@@ -202,21 +153,13 @@ onUnmounted(() => {
     </div>
 
     <!-- Loading -->
-    <div v-if="isLoading" class="flex justify-center py-16">
-      <svg
-        class="w-6 h-6 animate-spin text-muted-foreground"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-      </svg>
+    <div v-if="boardsStore.loading" class="flex justify-center py-16">
+      <Icon name="LoaderCircle" :size="24" default-class="animate-spin text-muted-foreground" />
     </div>
 
     <!-- Empty state -->
     <div
-      v-else-if="boards.length === 0"
+      v-else-if="boardsStore.boards.length === 0"
       class="flex flex-col items-center justify-center py-20 gap-4 text-center"
     >
       <div class="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
@@ -233,7 +176,7 @@ onUnmounted(() => {
     <!-- Board grid -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <div
-        v-for="board in boards"
+        v-for="board in boardsStore.boards"
         :key="board.id"
         class="group relative flex flex-col rounded-xl border border-border bg-card hover:shadow-md hover:border-primary/30 transition-all cursor-pointer"
         @click="openBoard(board)"
@@ -263,11 +206,7 @@ onUnmounted(() => {
                 <button
                   class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground flex-shrink-0"
                 >
-                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <circle cx="10" cy="4" r="1.5" />
-                    <circle cx="10" cy="10" r="1.5" />
-                    <circle cx="10" cy="16" r="1.5" />
-                  </svg>
+                  <Icon name="EllipsisVertical" :size="16" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" @click.stop>
@@ -297,7 +236,6 @@ onUnmounted(() => {
           <p v-else class="text-sm text-muted-foreground/40 italic">No description</p>
         </div>
 
-        <!-- Footer: stage count + arrow -->
         <div
           class="px-4 py-2 border-t border-border/50 bg-muted/20 flex items-center justify-between"
         >
@@ -362,7 +300,6 @@ onUnmounted(() => {
       </DialogContent>
     </Dialog>
 
-    <!-- Edit board dialog -->
     <Dialog v-model:open="isEditOpen">
       <DialogContent class="max-w-md">
         <DialogHeader>

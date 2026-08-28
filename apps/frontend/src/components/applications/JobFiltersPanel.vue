@@ -20,10 +20,10 @@ import {
   WORK_MODEL_OPTIONS,
   COUNTRY_OPTIONS
 } from '@/lib/constants';
-import dataservice from '@/lib/dataservice';
 import { emptyJobFilters, resolvePresetRange, type JobFiltersFormValues } from '@/lib/jobFilters';
 import { toast } from '@/lib/toast';
 import { useCompaniesStore } from '@/stores/companies';
+import { useSettingsStore } from '@/stores/settings';
 
 const props = defineProps<{
   open: boolean;
@@ -33,6 +33,7 @@ const props = defineProps<{
 }>();
 
 const companiesStore = useCompaniesStore();
+const settingsStore = useSettingsStore();
 
 const emit = defineEmits<{
   (e: 'update:open', val: boolean): void;
@@ -102,21 +103,13 @@ function clear() {
 }
 
 async function saveAsDefault() {
-  try {
-    await dataservice.updateSettings({ saved_job_filters: { ...draft } });
-    toast.success('Saved as your default filter');
-  } catch {
-    toast.error('Failed to save filter');
-  }
+  const ok = await settingsStore.setSavedJobFilters({ ...draft });
+  if (ok) toast.success('Saved as your default filter');
 }
 
 async function clearSavedDefault() {
-  try {
-    await dataservice.updateSettings({ saved_job_filters: null });
-    toast.success('Saved default filter cleared');
-  } catch {
-    toast.error('Failed to clear saved filter');
-  }
+  const ok = await settingsStore.setSavedJobFilters(null);
+  if (ok) toast.success('Saved default filter cleared');
 }
 </script>
 

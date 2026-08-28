@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core.config import settings
 from ....models.resume import Resume
-from ....schemas import user as schemas
+from ....schemas import user as user_schemas
 from ....services import resume as resume_service
 from ....services import user as user_service
 from ...deps.auth import get_current_user
@@ -27,7 +27,7 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 
-def _check_self(user_id: int, current_user: schemas.UserBase):
+def _check_self(user_id: int, current_user: user_schemas.UserBase):
     if user_id != current_user.id:
         raise HTTPException(status_code=403, detail='Forbidden')
 
@@ -47,9 +47,9 @@ def _resume_response(r, user_id: int) -> dict:
     }
 
 
-@public_router.post('/check-user-name', response_model=schemas.UserNameCheckResponse)
+@public_router.post('/check-user-name', response_model=user_schemas.UserNameCheckResponse)
 async def check_user_name_availability(
-    payload: schemas.UserNameCheckRequest,
+    payload: user_schemas.UserNameCheckRequest,
     db: AsyncSession = Depends(get_db),
 ):
     return await user_service.check_user_name_availability(db, payload.user_name)
@@ -57,13 +57,13 @@ async def check_user_name_availability(
 
 @public_router.get('/security-questions', response_model=list[str])
 async def get_security_questions():
-    return [q.value for q in schemas.SecurityQuestion]
+    return [q.value for q in user_schemas.SecurityQuestion]
 
 
-@router.get('/{user_id}', response_model=schemas.UserBase)
+@router.get('/{user_id}', response_model=user_schemas.UserBase)
 async def get_user(
     user_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
 ):
     _check_self(user_id, current_user)
     return current_user
@@ -73,7 +73,7 @@ async def get_user(
 async def update_user(
     user_id: int,
     payload: UpdateProfileRequest,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
@@ -90,7 +90,7 @@ async def update_user(
 async def upload_avatar(
     user_id: int,
     file: UploadFile = File(...),
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
@@ -102,7 +102,7 @@ async def upload_avatar(
 async def change_password(
     user_id: int,
     payload: ChangePasswordRequest,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
@@ -113,7 +113,7 @@ async def change_password(
 @router.get('/{user_id}/settings')
 async def get_settings(
     user_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
@@ -123,18 +123,19 @@ async def get_settings(
 @router.patch('/{user_id}/settings')
 async def update_settings(
     user_id: int,
-    payload: schemas.UserSettings,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    payload: user_schemas.UserSettingsRequest,
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
-    return {'settings': await user_service.update_settings(db, user_id, payload.settings)}
+    settings_patch = payload.settings.model_dump(exclude_unset=True)
+    return {'settings': await user_service.update_settings(db, user_id, settings_patch)}
 
 
 @router.get('/{user_id}/skills')
 async def get_user_skills(
     user_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
@@ -145,7 +146,7 @@ async def get_user_skills(
 async def add_user_skill(
     user_id: int,
     skill_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
@@ -156,7 +157,7 @@ async def add_user_skill(
 async def remove_user_skill(
     user_id: int,
     skill_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
@@ -166,7 +167,7 @@ async def remove_user_skill(
 @router.get('/{user_id}/resumes')
 async def list_resumes(
     user_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
@@ -180,14 +181,14 @@ async def list_resumes(
 )
 async def upload_resume(
     user_id: int,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    background_tasks: BackgroundTasks = None,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
     resume = await resume_service.upload_resume(db, user_id, file)
-    if background_tasks and resume.parsed_text:
+    if resume.parsed_text:
         background_tasks.add_task(resume_service.sync_skills_background, user_id, resume.parsed_text)
     return _resume_response(resume, user_id)
 
@@ -196,7 +197,7 @@ async def upload_resume(
 async def delete_resume(
     user_id: int,
     resume_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)
@@ -208,7 +209,7 @@ async def delete_resume(
 async def set_default_resume(
     user_id: int,
     resume_id: int,
-    current_user: schemas.UserBase = Depends(get_current_user),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     _check_self(user_id, current_user)

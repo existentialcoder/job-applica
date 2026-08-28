@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { DonutChart } from '@job-applica/ui';
 import { LayoutDashboard } from 'lucide-vue-next';
 import { ref, computed, watch, onMounted } from 'vue';
 import DashboardWidget from '@/components/core/DashboardWidget.vue';
@@ -13,14 +14,17 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import dataservice from '@/lib/dataservice';
-import type { DashboardStats, BoardData } from '@/lib/types';
+import type { DashboardStats } from '@/lib/types';
+import { useBoardsStore } from '@/stores/boards';
+import { useSettingsStore } from '@/stores/settings';
+
+const boardsStore = useBoardsStore();
+const settingsStore = useSettingsStore();
 
 const stats = ref<DashboardStats | null>(null);
-const boards = ref<BoardData[]>([]);
 const boardId = ref<number | null>(null);
 const loading = ref(true);
 
-// shadcn Select works with strings; bridge to number | null
 const boardIdStr = computed({
   get: () => (boardId.value == null ? '__all__' : String(boardId.value)),
   set: (v: string) => {
@@ -53,15 +57,14 @@ const WIDGET_DEFS = [
 
 type WidgetId = (typeof WIDGET_DEFS)[number]['id']
 
-const hiddenWidgets = ref<WidgetId[]>([]);
+const hiddenWidgets = computed(() => (settingsStore.settings.hiddenWidgets ?? []) as WidgetId[]);
 
 function isVisible(id: WidgetId) {
   return !hiddenWidgets.value.includes(id);
 }
 
 async function setHidden(ids: WidgetId[]) {
-  hiddenWidgets.value = ids;
-  await dataservice.updateSettings({ hidden_widgets: ids });
+  await settingsStore.setHiddenWidgets(ids);
 }
 
 function removeWidget(id: WidgetId) {
@@ -78,7 +81,6 @@ function toggleWidget(id: WidgetId) {
 
 const hiddenCount = computed(() => hiddenWidgets.value.length);
 
-// ── Data ──────────────────────────────────────────────────────────────────────
 async function fetchStats() {
   loading.value = true;
   stats.value = await dataservice.getDashboardStats(boardId.value ?? undefined);
@@ -86,18 +88,15 @@ async function fetchStats() {
 }
 
 onMounted(async () => {
-  const [, boardList, settings] = await Promise.all([
-    fetchStats(),
-    dataservice.getBoards(),
-    dataservice.getSettings()
-  ]);
-  boards.value = boardList;
-  hiddenWidgets.value = (settings.hidden_widgets as WidgetId[] | undefined) ?? [];
+  await Promise.all([settingsStore.fetch(), fetchStats()]);
 });
+
+function onBoardSelectOpenChange(open: boolean) {
+  if (open) boardsStore.fetch();
+}
 
 watch(boardId, fetchStats);
 
-// ── Funnel ────────────────────────────────────────────────────────────────────
 const TERMINAL_KEYS = new Set(['Saved', 'Rejected', 'Withdrawn']);
 const funnelData = computed(() => {
   if (!stats.value) return [];
@@ -112,7 +111,6 @@ const funnelData = computed(() => {
 });
 const funnelMax = computed(() => Math.max(1, ...funnelData.value.map((d) => d.count)));
 
-// ── Weekly ────────────────────────────────────────────────────────────────────
 const weeklyMax = computed(() => Math.max(1, ...(stats.value?.by_week.map((w) => w.count) ?? [1])));
 
 function fmtWeek(iso: string) {
@@ -120,7 +118,6 @@ function fmtWeek(iso: string) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-// ── Outcome donut ─────────────────────────────────────────────────────────────
 const outcomeSegments = computed(() => {
   const o = stats.value?.overview;
   if (!o) return [];
@@ -202,20 +199,7 @@ function stagePillClass(tailwindColor: string): string {
                     isVisible(w.id) ? 'bg-primary border-primary' : 'bg-transparent border-border'
                   "
                 >
-                  <svg
-                    v-if="isVisible(w.id)"
-                    class="w-2.5 h-2.5 text-white"
-                    viewBox="0 0 10 10"
-                    fill="none"
-                  >
-                    <path
-                      d="M2 5l2.5 2.5L8 3"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
+                  <Icon v-if="isVisible(w.id)" name="Check" :size="10" :stroke-width="1.5" default-class="text-white" />
                 </div>
                 <div class="min-w-0">
                   <p class="text-sm font-medium leading-tight">{{ w.label }}</p>
@@ -227,14 +211,14 @@ function stagePillClass(tailwindColor: string): string {
         </Popover>
 
         <!-- Board filter -->
-        <Select v-model="boardIdStr">
+        <Select v-model="boardIdStr" @update:open="onBoardSelectOpenChange">
           <SelectTrigger class="h-9 w-[160px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               <SelectItem value="__all__">All boards</SelectItem>
-              <SelectItem v-for="b in boards" :key="b.id" :value="String(b.id)">{{
+              <SelectItem v-for="b in boardsStore.boards" :key="b.id" :value="String(b.id)">{{
                 b.name
               }}</SelectItem>
             </SelectGroup>
@@ -258,15 +242,7 @@ function stagePillClass(tailwindColor: string): string {
             class="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
             title="Remove widget"
           >
-            <svg
-              class="w-3.5 h-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <Icon name="X" :size="14" />
           </button>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -314,15 +290,7 @@ function stagePillClass(tailwindColor: string): string {
             class="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
             title="Remove widget"
           >
-            <svg
-              class="w-3.5 h-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <Icon name="X" :size="14" />
           </button>
         </div>
         <div class="grid grid-cols-3 gap-4">
@@ -471,33 +439,7 @@ function stagePillClass(tailwindColor: string): string {
               No outcome data yet
             </div>
             <div v-else class="flex flex-col items-center gap-4">
-              <svg
-                :viewBox="'0 0 128 128'"
-                :class="['−rotate-90', expanded ? 'w-48 h-48' : 'w-32 h-32']"
-                style="transform: rotate(-90deg)"
-              >
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="54"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="16"
-                  class="text-muted/30"
-                />
-                <circle
-                  v-for="seg in outcomeSegments"
-                  :key="seg.label"
-                  cx="64"
-                  cy="64"
-                  r="54"
-                  fill="none"
-                  :stroke="seg.color"
-                  stroke-width="16"
-                  :stroke-dasharray="`${seg.dash} ${2 * Math.PI * 54 - seg.dash}`"
-                  :stroke-dashoffset="-seg.offset"
-                />
-              </svg>
+              <DonutChart :segments="outcomeSegments" :size="expanded ? 192 : 128" :stroke-width="16" />
               <div class="w-full space-y-1.5">
                 <div
                   v-for="seg in outcomeSegments"

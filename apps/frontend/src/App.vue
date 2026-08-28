@@ -3,12 +3,14 @@ import { computed, onMounted } from 'vue';
 import { RouterView } from 'vue-router';
 import { Toaster } from 'vue-sonner';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
 import { useFeatureStore } from '@/stores/features';
+import { useSettingsStore } from '@/stores/settings';
 
-const appStore = useAppStore();
-const toasterTheme = computed(() => (appStore.isDark ? 'dark' : 'light'));
+const settingsStore = useSettingsStore();
+const featuretStore = useFeatureStore();
+const authStore = useAuthStore();
+const toasterTheme = computed(() => (settingsStore.isDark ? 'dark' : 'light'));
 
 async function handleTokenMessageFromExtension(e: Event) {
   const { access_token, refresh_token } = (
@@ -25,16 +27,16 @@ async function handleTokenMessageFromExtension(e: Event) {
 }
 
 onMounted(async () => {
-  await useFeatureStore().load();
-  await useAppStore().initTheme();
+  await featuretStore.load();
+  await settingsStore.initTheme();
 
-  const authStore = useAuthStore();
   if (authStore.isAuthenticated) {
     await authStore.fetchMe();
   }
 
   window.addEventListener('ja:token-from-extension', handleTokenMessageFromExtension);
 });
+
 </script>
 
 <template>
