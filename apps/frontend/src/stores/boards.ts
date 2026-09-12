@@ -39,6 +39,7 @@ export const useBoardsStore = defineStore('boards', () => {
     name: string;
     color?: string;
     description?: string;
+    stages?: { key: string; label: string; color: string }[];
   }): Promise<boolean> {
     const board = await dataservice.createBoard(payload);
     if (!board) {

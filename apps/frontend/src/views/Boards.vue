@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { COLOR_PALETTE, DEFAULT_BOARD_STAGES } from '@/lib/constants';
 import type { BoardData } from '@/lib/types';
 import { useAppStore } from '@/stores/app';
 import { useBoardsStore } from '@/stores/boards';
@@ -44,24 +45,14 @@ const isDeleteOpen = ref(false);
 const deletingBoard = ref<BoardData | null>(null);
 const isDeleting = ref(false);
 
-const COLOR_OPTIONS = [
-  { value: 'bg-blue-500', label: 'Blue' },
-  { value: 'bg-violet-500', label: 'Violet' },
-  { value: 'bg-emerald-500', label: 'Emerald' },
-  { value: 'bg-amber-500', label: 'Amber' },
-  { value: 'bg-rose-500', label: 'Rose' },
-  { value: 'bg-slate-500', label: 'Slate' },
-  { value: 'bg-orange-500', label: 'Orange' },
-  { value: 'bg-cyan-500', label: 'Cyan' }
-];
-
 async function createBoard() {
   if (!newBoardName.value.trim()) return;
   isSaving.value = true;
   const ok = await boardsStore.createBoard({
     name: newBoardName.value.trim(),
     color: newBoardColor.value,
-    description: newBoardDesc.value.trim() || undefined
+    description: newBoardDesc.value.trim() || undefined,
+    stages: DEFAULT_BOARD_STAGES
   });
   if (ok) {
     isCreateOpen.value = false;
@@ -154,7 +145,7 @@ onUnmounted(() => {
 
     <!-- Loading -->
     <div v-if="boardsStore.loading" class="flex justify-center py-16">
-      <Icon name="LoaderCircle" :size="24" default-class="animate-spin text-muted-foreground" />
+      <Loader :size="24" variant="dew" />
     </div>
 
     <!-- Empty state -->
@@ -276,7 +267,7 @@ onUnmounted(() => {
             <Label>Color</Label>
             <div class="flex flex-wrap gap-2">
               <button
-                v-for="opt in COLOR_OPTIONS"
+                v-for="opt in COLOR_PALETTE"
                 :key="opt.value"
                 :class="[
                   'w-7 h-7 rounded-full transition-all',
@@ -318,7 +309,7 @@ onUnmounted(() => {
             <Label>Color</Label>
             <div class="flex flex-wrap gap-2">
               <button
-                v-for="opt in COLOR_OPTIONS"
+                v-for="opt in COLOR_PALETTE"
                 :key="opt.value"
                 :class="[
                   'w-7 h-7 rounded-full transition-all',

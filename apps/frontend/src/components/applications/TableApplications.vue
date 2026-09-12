@@ -22,9 +22,13 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { DEFAULT_COMPANY_LOGO_URL } from '@/lib/constants';
+import { DEFAULT_COMPANY_LOGO_URL, DEFAULT_BOARD_STAGES } from '@/lib/constants';
+import { findStage } from '@/lib/stages';
 import type { JobData } from '@/lib/types';
+import { useBoardsStore } from '@/stores/boards';
 import StatusDropdownCell from './StatusDropdownCell.vue';
+
+const boardsStore = useBoardsStore();
 
 const props = defineProps<{
   jobs: JobData[];
@@ -79,17 +83,6 @@ interface RowData {
   platform: string;
   work_model: string;
 }
-
-const statusVariants: Record<string, string> = {
-  Saved: 'secondary',
-  Applied: 'default',
-  'Phone Screen': 'warning',
-  Interview: 'warning',
-  Technical: 'warning',
-  Offer: 'success',
-  Rejected: 'danger',
-  Withdrawn: 'outline'
-};
 
 const columns: ColumnDef<RowData>[] = [
   {
@@ -178,7 +171,8 @@ const columns: ColumnDef<RowData>[] = [
       h(StatusDropdownCell, {
         jobId: row.original.id,
         status: row.original.status,
-        statusOptions: props.statusOptions ?? Object.keys(statusVariants),
+        statusOptions: props.statusOptions ?? DEFAULT_BOARD_STAGES.map((s) => s.label),
+        color: findStage(boardsStore.boards, row.original._raw.board_id, row.original.status)?.color,
         onChange: (jobId: number, status: string) => emit('status-change', jobId, status)
       }),
     enableSorting: false

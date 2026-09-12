@@ -94,6 +94,14 @@ export interface JobData {
   updated_at?: string;
 }
 
+export interface JobTimeline {
+  id: number;
+  from_status: string;
+  to_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
@@ -142,7 +150,7 @@ export interface DashboardOverview {
 export interface DashboardStageInfo {
   key: string;
   label: string;
-  color: string;
+  color?: string | null;
 }
 export interface StageCount {
   stage: string;

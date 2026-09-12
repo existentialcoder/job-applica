@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.models.board import DEFAULT_STAGES, Board
+from src.models.board import MANDATORY_STAGE_KEYS, Board
 from src.models.company import Company
 from src.models.job import Job
 from src.schemas.dashboard import (
@@ -33,7 +33,9 @@ async def _load_stages(db: AsyncSession, user_id: int, board_id: int | None) -> 
         default = result.scalar_one_or_none()
         if default and default.stages:
             return default.stages
-    return DEFAULT_STAGES
+    # No stages saved on the board (e.g. created without an explicit stage list) —
+    # fall back to the mandatory keys only; colors are frontend-owned and unknown here.
+    return [{'key': k, 'label': k} for k in MANDATORY_STAGE_KEYS]
 
 
 async def get_dashboard_stats(db: AsyncSession, user_id: int, board_id: int | None = None) -> DashboardStats:
@@ -65,8 +67,8 @@ async def get_dashboard_stats(db: AsyncSession, user_id: int, board_id: int | No
     interview_keys = active_keys - {applied_key}
     total_interviews = sum(1 for j in all_jobs if j.status in interview_keys)
 
-    total_ghosted = sum(1 for j in all_jobs if j.status == applied_key and j.updated_at and j.updated_at < ghost_cutoff)
-    total_stuck = sum(1 for j in all_jobs if j.status in active_keys and j.updated_at and j.updated_at < stuck_cutoff)
+    total_ghosted = sum(1 for j in all_jobs if j.status == applied_key and j.updated_at < ghost_cutoff)
+    total_stuck = sum(1 for j in all_jobs if j.status in active_keys and j.updated_at < stuck_cutoff)
 
     base = total_applied or 1
     responded = total_interviews + total_rejected + total_withdrawn + total_offers
@@ -118,7 +120,7 @@ async def get_dashboard_stats(db: AsyncSession, user_id: int, board_id: int | No
     top_companies = [CompanyCount(company=name, count=cnt) for name, cnt in company_result.all()]
 
     return DashboardStats(
-        stages=[StageInfo(key=s['key'], label=s['label'], color=s['color']) for s in raw_stages],
+        stages=[StageInfo(key=s['key'], label=s['label'], color=s.get('color')) for s in raw_stages],
         overview=OverviewStats(
             total_saved=total_saved,
             total_applied=total_applied,

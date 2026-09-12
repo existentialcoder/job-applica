@@ -17,16 +17,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { DEFAULT_BOARD_STAGES } from '@/lib/constants';
 import dataservice from '@/lib/dataservice';
 import type { BoardData, JobData, JobCreatePayload } from '@/lib/types';
 import { useAppStore } from '@/stores/app';
 import { useBoardsStore } from '@/stores/boards';
 import Applications from '@/views/Applications.vue';
-
-const DEFAULT_COLOR_BY_KEY: Record<string, string> = Object.fromEntries(
-  DEFAULT_BOARD_STAGES.map((s) => [s.key, s.color])
-);
 
 const route = useRoute();
 const router = useRouter();
@@ -70,19 +65,14 @@ async function loadBoard() {
   }
 
   const mismatched = boardDetails.stages.filter((s) => s.key !== s.label);
-  const missingColor = boardDetails.stages.filter((s) => !s.color && DEFAULT_COLOR_BY_KEY[s.key]);
-  if (mismatched.length > 0 || missingColor.length > 0) {
+  if (mismatched.length > 0) {
     const keyRenames: Record<string, string> = {};
     const fixedStages = boardDetails.stages.map((s) => {
-      let fixed = s;
       if (s.key !== s.label) {
         keyRenames[s.key] = s.label;
-        fixed = { ...fixed, key: s.label };
+        return { ...s, key: s.label };
       }
-      if (!fixed.color && DEFAULT_COLOR_BY_KEY[fixed.key]) {
-        fixed = { ...fixed, color: DEFAULT_COLOR_BY_KEY[fixed.key] };
-      }
-      return fixed;
+      return s;
     });
     const fixed = await boardsStore.updateBoard(boardDetails.id, {
       stages: fixedStages,
@@ -314,7 +304,7 @@ watch(boardId, async () => {
   <div class="flex flex-col gap-4">
     <!-- Loading -->
     <div v-if="isLoading" class="flex justify-center py-16">
-      <Icon name="LoaderCircle" :size="24" default-class="animate-spin text-muted-foreground" />
+      <Loader :size="24" variant="dew" />
     </div>
 
     <!-- Not found -->

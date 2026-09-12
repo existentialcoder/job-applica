@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.board import DEFAULT_STAGES, MANDATORY_STAGE_KEYS, MANDATORY_STAGE_LABELS, Board
+from ..models.board import MANDATORY_STAGE_KEYS, Board
 from ..models.job import Job
 from ..schemas.board import BoardBase, BoardCreate, BoardUpdate
 from ..schemas.user import UserBase
@@ -23,8 +23,13 @@ def _validate_mandatory_stages(stages: list[dict], key_renames: dict[str, str] |
         raise HTTPException(status_code=400, detail='Mandatory stages must stay in their original relative order')
 
     for s in stages:
-        if s['key'] in MANDATORY_STAGE_LABELS and s['label'] != MANDATORY_STAGE_LABELS[s['key']]:
+        if s['key'] in MANDATORY_STAGE_KEYS and s['label'] != s['key']:
             raise HTTPException(status_code=400, detail=f'Cannot rename mandatory stage "{s["key"]}"')
+
+
+def _strip_mandatory_colors(stages: list[dict]) -> list[dict]:
+    """Color is frontend-owned for mandatory stages — only custom stages persist one."""
+    return [{k: v for k, v in s.items() if k != 'color'} if s['key'] in MANDATORY_STAGE_KEYS else s for s in stages]
 
 
 async def get_boards(db: AsyncSession, user: UserBase) -> list[BoardBase]:
@@ -34,7 +39,7 @@ async def get_boards(db: AsyncSession, user: UserBase) -> list[BoardBase]:
     boards = [BoardBase.model_validate(b) for b in result.scalars().all()]
     for board in boards:
         job_count_result = await db.execute(select(func.count(Job.id)).where(Job.board_id == board.id))
-        board.number_of_jobs = job_count_result.scalar()
+        board.number_of_jobs = job_count_result.scalar() or 0
     return boards
 
 
@@ -54,9 +59,10 @@ async def create_board(db: AsyncSession, user: UserBase, board_in: BoardCreate) 
     existing_count_result = await db.execute(select(func.count(Board.id)).where(Board.user_id == user.id))
     is_first = existing_count_result.scalar() == 0
 
-    stages = [s.model_dump() for s in board_in.stages] if board_in.stages else DEFAULT_STAGES
+    stages = [s.model_dump() for s in board_in.stages] if board_in.stages else []
     if board_in.stages:
         _validate_mandatory_stages(stages)
+    stages = _strip_mandatory_colors(stages)
     board = Board(
         name=board_in.name,
         color=board_in.color,
@@ -87,6 +93,7 @@ async def update_board(db: AsyncSession, user: UserBase, board_id: int, board_in
     if board_in.stages is not None:
         new_stages = [s.model_dump() for s in board_in.stages]
         _validate_mandatory_stages(new_stages, board_in.key_renames)
+        new_stages = _strip_mandatory_colors(new_stages)
         renamed_old_keys: set[str] = set()
 
         if board_in.key_renames:

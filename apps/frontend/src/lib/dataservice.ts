@@ -1,8 +1,10 @@
+import { normalizeBoard, normalizeBoards } from '@/lib/stages';
 import { toast } from '@/lib/toast';
 import router from '@/router';
 import { useAuthStore } from '@/stores/auth';
 import type {
   JobData,
+  JobTimeline,
   JobCreatePayload,
   JobUpdatePayload,
   BoardData,
@@ -182,6 +184,17 @@ const jobs = {
     return response.json();
   },
 
+  async getJobTimeline(jobId: number | undefined): Promise<JobTimeline[] | null> {
+    if (!jobId) {
+      return null;
+    }
+    const response = await apiFetch(`${API_BASE}/jobs/${jobId}/timeline`, {
+      headers: { ...authHeaders() }
+    });
+
+    return response.json();
+  },
+
   async createJob(payload: JobCreatePayload): Promise<JobData | null> {
     const response = await apiFetch(`${API_BASE}/jobs/`, {
       method: 'POST',
@@ -223,7 +236,7 @@ const boards = {
       headers: { ...authHeaders() }
     });
     if (!response.ok) return [];
-    return response.json();
+    return normalizeBoards(await response.json());
   },
 
   async getBoard(boardId: number): Promise<BoardData | null> {
@@ -231,7 +244,7 @@ const boards = {
       headers: { ...authHeaders() }
     });
     if (!response.ok) return null;
-    return response.json();
+    return normalizeBoard(await response.json());
   },
 
   async createBoard(payload: {
@@ -246,7 +259,7 @@ const boards = {
       body: JSON.stringify(payload)
     });
     if (!response.ok) return null;
-    return response.json();
+    return normalizeBoard(await response.json());
   },
 
   async updateBoard(
@@ -265,7 +278,7 @@ const boards = {
       body: JSON.stringify(payload)
     });
     if (!response.ok) return null;
-    return response.json();
+    return normalizeBoard(await response.json());
   },
 
   async setDefaultBoard(boardId: number): Promise<BoardData | null> {
@@ -276,7 +289,7 @@ const boards = {
     if (!response.ok) {
       return null;
     }
-    return response.json();
+    return normalizeBoard(await response.json());
   },
 
   async deleteBoard(boardId: number): Promise<boolean> {

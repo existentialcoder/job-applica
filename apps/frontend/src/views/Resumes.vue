@@ -115,7 +115,8 @@ function formatDate(iso: string | null) {
             @change="handleFileChange"
           />
           <Button as="span" size="sm" :disabled="resumesStore.newResumeUpload" class="cursor-pointer">
-            <Icon name="Upload" :size="14" :stroke-width="2" default-class="mr-1.5" />
+            <Loader v-if="resumesStore.newResumeUpload" :size="14" class="mr-1.5" />
+            <Icon v-else name="Upload" :size="14" :stroke-width="2" default-class="mr-1.5" />
             {{ resumesStore.newResumeUpload ? 'Uploading…' : 'Upload CV' }}
           </Button>
         </label>
@@ -281,12 +282,7 @@ function formatDate(iso: string | null) {
               />
               <span v-else class="w-4 h-4 rounded-sm bg-muted flex-shrink-0" />
               <span class="truncate">{{ skill.label }}</span>
-              <Icon
-                v-if="addingId === skill.id"
-                name="LoaderCircle"
-                :size="14"
-                default-class="ml-auto animate-spin text-muted-foreground flex-shrink-0"
-              />
+              <Loader v-if="addingId === skill.id" :size="14" class="ml-auto flex-shrink-0" />
               <Icon
                 v-else
                 name="Plus"

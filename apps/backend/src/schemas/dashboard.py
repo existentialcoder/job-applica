@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class StageInfo(BaseModel):
     key: str
     label: str
-    color: str
+    color: str | None = None
 
 
 class OverviewStats(BaseModel):

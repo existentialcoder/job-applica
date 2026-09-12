@@ -2,7 +2,6 @@
 import { AtsGauge } from '@job-applica/ui';
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -19,6 +18,7 @@ import {
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Timeline, TimelineContent, TimelineDot, TimelineItem, TimelineTime, TimelineTitle } from '@/components/ui/timeline';
 import {
   ATS_SCORE_TIERS,
   COUNTRY_OPTIONS,
@@ -26,12 +26,14 @@ import {
   DEFAULT_BOARD_STAGES
 } from '@/lib/constants';
 import dataservice from '@/lib/dataservice';
+import { findStage } from '@/lib/stages';
 import { toast } from '@/lib/toast';
-import type { JobData, JobCreatePayload, ATSReport } from '@/lib/types';
+import type { JobData, JobCreatePayload, AtsTier, JobTimeline, ATSReport } from '@/lib/types';
 import { useBoardsStore } from '@/stores/boards.js';
 import { useCompaniesStore } from '@/stores/companies';
 import { useResumesStore } from '@/stores/resumes.js';
 import CompanyCombobox from './CompanyCombobox.vue';
+import StageBadge from './StageBadge.vue';
 
 const COUNTRY_COMBOBOX_OPTIONS = COUNTRY_OPTIONS.map((c) => ({ label: c, value: c }));
 
@@ -66,7 +68,7 @@ const PLATFORM_OPTIONS = [
   'Other'
 ];
 
-const activeTab = ref<'details' | 'ats'>('details');
+const activeTab = ref<'details' | 'ats' | 'timeline'>('details');
 
 const title = ref('');
 const companyName = ref('');
@@ -82,6 +84,8 @@ const sourceUrl = ref('');
 const appliedDate = ref('');
 const description = ref('');
 const notes = ref('');
+const jobTimeline = ref<JobTimeline[] | null>(null);
+const jobTimelineLoading = ref(false);
 
 function getAtsTier(score: number): AtsTier {
   for (let i = ATS_SCORE_TIERS.length - 1; i >= 0; i--) {
@@ -177,6 +181,12 @@ async function loadResumes() {
   }
 }
 
+async function loadJobTimeline() {
+  jobTimelineLoading.value = true;
+  jobTimeline.value = await dataservice.getJobTimeline(props.job?.id);
+  jobTimelineLoading.value = false;
+}
+
 async function calculateScore() {
   if (!props.job || !canScore.value) return;
   isScoring.value = true;
@@ -199,6 +209,10 @@ watch(activeTab, (tab) => {
   emit('tab-change', tab);
   if (tab === 'ats') {
     loadResumes();
+  }
+
+  if (tab === 'timeline') {
+    loadJobTimeline();
   }
 });
 
@@ -264,23 +278,58 @@ function handleSave() {
   });
 }
 
-const statusVariantMap: Record<string, string> = {
-  Saved: 'secondary',
-  Applied: 'default',
-  'Phone Screen': 'warning',
-  Interview: 'warning',
-  Technical: 'warning',
-  Offer: 'success',
-  Rejected: 'danger',
-  Withdrawn: 'outline'
-};
+const timelineStates = computed(() => {
+  if (jobTimeline.value?.length) {
+    const result = jobTimeline.value.map(timeline => {
+      const targetStatus = findStage(boardsStore.boards, props.job?.board_id, timeline.to_status);
+
+      return {
+        label: targetStatus?.label,
+        color: targetStatus?.color,
+        ts: timeline.created_at
+      };
+    });
+
+    const targetStatus = findStage(boardsStore.boards, props.job?.board_id, jobTimeline.value[0].from_status);
+
+    if (!targetStatus) {
+      return result;
+    }
+
+    return [
+      {
+        label: targetStatus?.label,
+        color: targetStatus?.color,
+        ts: props.job?.created_at
+      },
+      ...result
+    ];
+  }
+  return null;
+});
+
+function formatTimelineDate(iso?: string): string {
+  if (!iso) {
+    return '';
+  }
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+const currentStatusStage = computed(() =>
+  findStage(boardsStore.boards, props.job?.board_id, props.job?.status) ?? null
+);
 </script>
 
 <template>
   <Sheet :open="open" @update:open="$emit('update:open', $event)">
     <SheetContent side="right" class="!w-[40vw] !max-w-[40vw] !p-0 !gap-0">
       <div style="display: flex; flex-direction: column; height: 100vh; overflow: hidden">
-        <!-- ── Header ────────────────────────────────────────────────────────── -->
         <div class="flex items-start gap-3 px-5 pt-5 pb-4 border-b" style="flex-shrink: 0">
           <!-- Company logo avatar -->
           <div
@@ -306,12 +355,7 @@ const statusVariantMap: Record<string, string> = {
               <span v-if="job?.company && job?.status" class="text-muted-foreground/40 text-sm"
                 >·</span
               >
-              <Badge
-                v-if="job?.status"
-                :variant="(statusVariantMap[job.status] as any) || 'outline'"
-                class="text-xs"
-                >{{ job.status }}</Badge
-              >
+              <StageBadge v-if="job?.status" :color="currentStatusStage?.color" :label="job.status" />
             </div>
 
             <!-- ── Inline URL editor ─────────────────────────────────────────── -->
@@ -382,7 +426,6 @@ const statusVariantMap: Record<string, string> = {
           </button>
         </div>
 
-        <!-- ── Tab bar ───────────────────────────────────────────────────────── -->
         <div class="px-5 pt-3 pb-3 border-b" style="flex-shrink: 0">
           <Tabs v-model="activeTab">
             <TabsList>
@@ -396,12 +439,12 @@ const statusVariantMap: Record<string, string> = {
                   >{{ Math.round(job.ats_score) }}</span
                 >
               </TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
         <div style="flex: 1; min-height: 0; overflow-y: auto">
-          <!-- ── Details pane ────────────────────────────────────────────────── -->
           <div v-show="activeTab === 'details'" class="px-5 py-4 space-y-4">
             <div class="space-y-1.5">
               <Label>Job Title <span class="text-destructive">*</span></Label>
@@ -554,7 +597,7 @@ const statusVariantMap: Record<string, string> = {
                 <button class="underline hover:no-underline" @click="activeTab = 'details'">
                   Details tab
                 </button>
-                and input the JD manually to enable ATS scoring.
+                and input the JD manually to enable scoring.
               </div>
             </div>
 
@@ -571,9 +614,9 @@ const statusVariantMap: Record<string, string> = {
                 </button>
               </div>
 
-              <div
+              <Skeleton
                 v-if="!resumesStore.loaded"
-                class="h-9 rounded-md border border-input bg-muted/40 animate-pulse"
+                class="h-9 rounded-md border border-input"
               />
               <template v-else-if="resumesStore.resumes.length === 0">
                 <div
@@ -607,7 +650,7 @@ const statusVariantMap: Record<string, string> = {
               :disabled="!canScore"
               @click="calculateScore"
             >
-              <Icon v-if="isScoring" name="LoaderCircle" :size="14" default-class="animate-spin" />
+              <Loader v-if="isScoring" :size="14" />
               <Icon v-else name="ChartColumn" :size="14" />
               {{
                 isScoring
@@ -760,6 +803,29 @@ const statusVariantMap: Record<string, string> = {
                   <span class="font-medium text-foreground">Calculate Match Score</span> to see how
                   well you match this role.
                 </p>
+              </div>
+            </template>
+          </div>
+
+          <div v-show="activeTab === 'timeline'" class="px-5 py-5 space-y-5">
+            <Skeleton v-if="jobTimelineLoading" class="h-6 rounded-md w-1/2" />
+            <template v-else>
+               <Timeline v-if="timelineStates?.length">
+                <TimelineItem v-for="(state, index) in timelineStates" :key="`${state.label}-${index}`">
+                  <template #dot>
+                    <TimelineDot :class="state.color" />
+                  </template>
+                  <TimelineContent>
+                    <TimelineTitle>{{ state.label }}</TimelineTitle>
+                    <TimelineTime v-if="state.ts" :datetime="state.ts">
+                      {{ formatTimelineDate(state.ts) }}
+                    </TimelineTime>
+                  </TimelineContent>
+                </TimelineItem>
+              </Timeline>
+
+              <div v-else class="text-center text-sm text-muted-foreground">
+                No timeline events yet.
               </div>
             </template>
           </div>

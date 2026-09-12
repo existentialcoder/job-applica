@@ -6,7 +6,9 @@ from .base import BaseSchema
 class StageSchema(BaseModel):
     key: str
     label: str
-    color: str
+    # Only set for custom (non-mandatory) stages — a mandatory stage's color is
+    # resolved entirely on the frontend from DEFAULT_BOARD_STAGES and never persisted.
+    color: str | None = None
 
     model_config = {'from_attributes': True}
 

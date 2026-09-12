@@ -1,4 +1,5 @@
 import enum
+from datetime import date
 
 from sqlalchemy import JSON, Column, Date, Enum, Float, ForeignKey, Integer, Table, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -68,7 +69,7 @@ class Job(Base):
 
     source_url: Mapped[str] = mapped_column(Text, nullable=True)
     source_platform: Mapped[SourcePlatform] = mapped_column(Enum(SourcePlatform, name='sourceplatform'), nullable=True)
-    applied_date: Mapped[Date] = mapped_column(Date, nullable=True)
+    applied_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     notes: Mapped[str] = mapped_column(Text, nullable=True)
     ats_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     ats_resume_id: Mapped[int | None] = mapped_column(ForeignKey('resumes.id', ondelete='SET NULL'), nullable=True)
@@ -91,3 +92,12 @@ class Job(Base):
 
     def __repr__(self):
         return f'<Job id={self.id} title={self.title}>'
+
+
+class JobStatusHistory(Base):
+    __tablename__ = 'job_status_history'
+
+    job: Mapped['Job'] = relationship('Job')
+    job_id: Mapped[int] = mapped_column(ForeignKey('jobs.id', ondelete='CASCADE'), nullable=False, index=True)
+    from_status: Mapped[str | None] = mapped_column(Text, nullable=True)
+    to_status: Mapped[str] = mapped_column(Text, nullable=False)

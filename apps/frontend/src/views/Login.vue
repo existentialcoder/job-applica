@@ -132,7 +132,7 @@ function loginWithLinkedIn() {
         <p v-if="loginError" class="text-sm text-destructive text-center">{{ loginError }}</p>
 
         <Button class="w-full" type="submit" :disabled="isLoading">
-          <Icon v-if="isLoading" name="LoaderCircle" :size="16" default-class="animate-spin mr-2" />
+          <Loader v-if="isLoading" :size="16" class="mr-2" />
           {{ isLoading ? 'Signing in...' : 'Continue' }}
         </Button>
       </form>

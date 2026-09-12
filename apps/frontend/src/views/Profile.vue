@@ -157,12 +157,7 @@ onMounted(() => {
                     :stroke-width="2"
                     default-class="text-white"
                   />
-                  <Icon
-                    v-else
-                    name="LoaderCircle"
-                    :size="16"
-                    default-class="text-white animate-spin"
-                  />
+                  <Loader v-else :size="16" />
                 </div>
                 <input
                   type="file"
@@ -309,7 +304,6 @@ onMounted(() => {
                   settingsStore.isDark ? settingsStore.setDarkBgTheme(key) : settingsStore.setLightBgTheme(key)
                 "
               >
-                <!-- Mini app mockup -->
                 <div class="h-24 flex" :style="{ background: theme.body }">
                   <!-- Sidebar strip -->
                   <div

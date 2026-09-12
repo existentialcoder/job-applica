@@ -29,7 +29,7 @@ onMounted(async () => {
 <template>
   <main class="h-screen w-screen flex items-center justify-center bg-background">
     <div class="flex flex-col items-center gap-3">
-      <Icon name="LoaderCircle" :size="32" default-class="animate-spin text-primary" />
+      <Loader :size="32" variant="dew" />
       <p class="text-sm text-muted-foreground">Completing sign-in from extension…</p>
     </div>
   </main>

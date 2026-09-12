@@ -309,7 +309,7 @@ function loginWithLinkedIn() {
         <p v-if="signupError" class="text-sm text-destructive text-center">{{ signupError }}</p>
 
         <Button class="w-full" type="submit" :disabled="isLoading || usernameStatus === 'checking'">
-          <Icon v-if="isLoading" name="LoaderCircle" :size="16" default-class="animate-spin mr-2" />
+          <Loader v-if="isLoading" :size="16" class="mr-2" />
           {{ isLoading ? 'Creating account...' : 'Continue' }}
         </Button>
       </form>
