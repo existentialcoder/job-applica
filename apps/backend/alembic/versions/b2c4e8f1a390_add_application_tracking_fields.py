@@ -5,16 +5,16 @@ Revises: ea3fb2d04124
 Create Date: 2026-04-23 10:00:00.000000
 
 """
-from typing import Sequence, Union
 
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
-
+from alembic import op
 
 revision: str = 'b2c4e8f1a390'
-down_revision: Union[str, Sequence[str], None] = 'ea3fb2d04124'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = 'ea3fb2d04124'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 APPLICATION_STATUSES = ['Saved', 'Applied', 'Phone Screen', 'Interview', 'Technical', 'Offer', 'Rejected', 'Withdrawn']
 SOURCE_PLATFORMS = ['LinkedIn', 'Indeed', 'Glassdoor', 'Monster', 'ZipRecruiter', 'Jobscan', 'Other']
@@ -23,7 +23,6 @@ SOURCE_PLATFORMS = ['LinkedIn', 'Indeed', 'Glassdoor', 'Monster', 'ZipRecruiter'
 def upgrade() -> None:
     # 1. Add new columns first as VARCHAR so we can migrate data freely
     op.add_column('jobs', sa.Column('status_temp', sa.String(50), nullable=True))
-    op.add_column('jobs', sa.Column('source_url', sa.String(500), nullable=True))
     op.add_column('jobs', sa.Column('applied_date', sa.Date(), nullable=True))
     op.add_column('jobs', sa.Column('notes', sa.Text(), nullable=True))
     op.add_column('jobs', sa.Column('source_platform_temp', sa.String(50), nullable=True))
@@ -36,13 +35,15 @@ def upgrade() -> None:
     # 3. Create the new PostgreSQL enum types
     op.execute("""
         DO $$ BEGIN
-            CREATE TYPE applicationstatus AS ENUM ('Saved', 'Applied', 'Phone Screen', 'Interview', 'Technical', 'Offer', 'Rejected', 'Withdrawn');
+            CREATE TYPE applicationstatus AS ENUM ('Saved', 'Applied',
+            'Phone Screen', 'Interview', 'Technical', 'Offer', 'Rejected', 'Withdrawn');
         EXCEPTION WHEN duplicate_object THEN null;
         END $$
     """)
     op.execute("""
         DO $$ BEGIN
-            CREATE TYPE sourceplatform AS ENUM ('LinkedIn', 'Indeed', 'Glassdoor', 'Monster', 'ZipRecruiter', 'Jobscan', 'Other');
+            CREATE TYPE sourceplatform AS ENUM ('LinkedIn', 'Indeed',
+            'Glassdoor', 'Monster', 'ZipRecruiter', 'Jobscan', 'Other');
         EXCEPTION WHEN duplicate_object THEN null;
         END $$
     """)
@@ -51,23 +52,28 @@ def upgrade() -> None:
     op.drop_column('jobs', 'status')
 
     # 5. Add new typed status column from temp
-    op.add_column('jobs', sa.Column('status', sa.Enum(*APPLICATION_STATUSES, name='applicationstatus', create_type=False), nullable=True))
+    op.add_column(
+        'jobs',
+        sa.Column('status', sa.Enum(*APPLICATION_STATUSES, name='applicationstatus', create_type=False), nullable=True),
+    )
     op.execute("UPDATE jobs SET status = status_temp::applicationstatus")
     op.alter_column('jobs', 'status', nullable=False)
     op.drop_column('jobs', 'status_temp')
 
     # 6. Add typed source_platform column from temp
-    op.add_column('jobs', sa.Column('source_platform', sa.Enum(*SOURCE_PLATFORMS, name='sourceplatform', create_type=False), nullable=True))
+    op.add_column(
+        'jobs',
+        sa.Column(
+            'source_platform', sa.Enum(*SOURCE_PLATFORMS, name='sourceplatform', create_type=False), nullable=True
+        ),
+    )
     op.drop_column('jobs', 'source_platform_temp')
 
     # 7. Drop old jobstatus enum if it exists
     op.execute("DROP TYPE IF EXISTS jobstatus")
 
     # 8. Expand description from VARCHAR(500) to Text
-    op.alter_column('jobs', 'description',
-                    existing_type=sa.String(500),
-                    type_=sa.Text(),
-                    existing_nullable=True)
+    op.alter_column('jobs', 'description', existing_type=sa.String(500), type_=sa.Text(), existing_nullable=True)
 
 
 def downgrade() -> None:
@@ -82,7 +88,10 @@ def downgrade() -> None:
     """)
 
     op.drop_column('jobs', 'status')
-    op.add_column('jobs', sa.Column('status', sa.Enum('Open', 'Closed', 'Pending', name='jobstatus', create_type=False), nullable=True))
+    op.add_column(
+        'jobs',
+        sa.Column('status', sa.Enum('Open', 'Closed', 'Pending', name='jobstatus', create_type=False), nullable=True),
+    )
     op.execute("UPDATE jobs SET status = status_temp::jobstatus")
     op.alter_column('jobs', 'status', nullable=False)
     op.drop_column('jobs', 'status_temp')

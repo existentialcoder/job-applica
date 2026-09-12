@@ -17,23 +17,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { DEFAULT_COMPANY_LOGO_URL, MANDATORY_STAGE_KEYS } from '@/lib/constants';
+import { COLOR_PALETTE, DEFAULT_BOARD_STAGES, DEFAULT_COMPANY_LOGO_URL, MANDATORY_STAGE_KEYS } from '@/lib/constants';
 import dataservice, { type JobFilters } from '@/lib/dataservice';
 import type { JobData, StageData } from '@/lib/types';
+import StageBadge from './StageBadge.vue';
 
 const PAGE_SIZE = 10;
 const SCROLL_THRESHOLD_PX = 80;
-
-const DEFAULT_COLUMNS: StageData[] = [
-  { key: 'Saved', label: 'Saved', color: 'bg-slate-500' },
-  { key: 'Applied', label: 'Applied', color: 'bg-blue-500' },
-  { key: 'Phone Screen', label: 'Phone Screen', color: 'bg-amber-500' },
-  { key: 'Interview', label: 'Interview', color: 'bg-amber-500' },
-  { key: 'Technical', label: 'Technical', color: 'bg-orange-500' },
-  { key: 'Offer', label: 'Offer', color: 'bg-emerald-500' },
-  { key: 'Rejected', label: 'Rejected', color: 'bg-red-500' },
-  { key: 'Withdrawn', label: 'Withdrawn', color: 'bg-zinc-400' }
-];
 
 const props = defineProps<{
   baseFilters: JobFilters
@@ -50,22 +40,10 @@ const emit = defineEmits<{
   (e: 'add-job', payload: { title: string; company_name?: string; status: string }): void
 }>();
 
-const STAGE_COLORS = [
-  'bg-slate-500',
-  'bg-blue-500',
-  'bg-violet-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-rose-500',
-  'bg-orange-500',
-  'bg-cyan-500',
-  'bg-pink-500',
-  'bg-teal-500'
-];
-
 // ── Add stage state ───────────────────────────────────────────────────────────
 const showAddStage = ref(false);
 const newStageName = ref('');
+const newStageColor = ref(COLOR_PALETTE[0].value);
 const addStageInputRef = ref<HTMLInputElement | null>(null);
 
 // ── Stage rename state ────────────────────────────────────────────────────────
@@ -83,12 +61,13 @@ function isMandatory(key: string): boolean {
 }
 
 function getNextColor(): string {
-  const used = (props.stages ?? DEFAULT_COLUMNS).map((s) => s.color);
-  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0];
+  const used = (props.stages ?? DEFAULT_BOARD_STAGES).map((s) => s.color);
+  return COLOR_PALETTE.find((c) => !used.includes(c.value))?.value ?? COLOR_PALETTE[0].value;
 }
 
 async function openAddStage() {
   showAddStage.value = true;
+  newStageColor.value = getNextColor();
   await nextTick();
   addStageInputRef.value?.focus();
 }
@@ -101,7 +80,7 @@ function cancelAddStage() {
 function submitAddStage() {
   const key = newStageName.value.trim();
   if (!key) return;
-  emit('add-stage', { key, label: key, color: getNextColor() });
+  emit('add-stage', { key, label: key, color: newStageColor.value });
   newStageName.value = '';
   showAddStage.value = false;
 }
@@ -123,7 +102,7 @@ function commitEditStage() {
     cancelEditStage();
     return;
   }
-  const stage = (props.stages ?? DEFAULT_COLUMNS).find((s) => s.key === editingStageKey.value);
+  const stage = (props.stages ?? DEFAULT_BOARD_STAGES).find((s) => s.key === editingStageKey.value);
   if (stage && label !== stage.label) {
     const oldKey = stage.key;
     emit('update-stage', { oldKey, stage: { ...stage, key: label, label } });
@@ -159,7 +138,7 @@ function cancelQuickAdd() {
   addingJobForStatus.value = null;
 }
 
-const COLUMNS = computed(() => (props.stages?.length ? props.stages : DEFAULT_COLUMNS));
+const COLUMNS = computed(() => (props.stages?.length ? props.stages : DEFAULT_BOARD_STAGES));
 
 interface ColumnState {
   jobs: JobData[]
@@ -295,9 +274,7 @@ function locationText(job: JobData): string {
         <div v-for="col in COLUMNS" :key="col.key" class="w-64 flex flex-col gap-2 flex-shrink-0">
           <!-- Column header -->
           <div class="flex items-center justify-between px-1 group/col">
-            <div class="flex items-center gap-2 min-w-0 flex-1">
-              <div :class="['w-2 h-2 rounded-full flex-shrink-0', col.color]" />
-
+            <StageBadge :color="col.color" class="flex-1">
               <!-- Editing mode -->
               <input
                 v-if="editingStageKey === col.key"
@@ -332,7 +309,7 @@ function locationText(job: JobData): string {
                 name="Lock"
                 class="w-3 h-3 text-muted-foreground/60 flex-shrink-0"
               />
-            </div>
+            </StageBadge>
 
             <div class="flex items-center gap-1 flex-shrink-0">
               <span class="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
@@ -437,11 +414,8 @@ function locationText(job: JobData): string {
               class="flex items-center justify-center h-12 text-xs text-muted-foreground/50 border-2 border-dashed border-muted-foreground/20 rounded-md"
             ></div>
 
-            <div
-              v-if="columnState[col.key]?.loading"
-              class="flex items-center justify-center h-8 text-xs text-muted-foreground/60"
-            >
-              Loading…
+            <div v-if="columnState[col.key]?.loading" class="flex items-center justify-center h-8">
+              <Loader :size="14" />
             </div>
           </div>
 
@@ -520,8 +494,21 @@ function locationText(job: JobData): string {
             v-else
             class="flex flex-col gap-2 p-3 rounded-lg border border-border bg-card shadow-sm"
           >
-            <div class="flex items-center gap-2">
-              <div :class="['w-3 h-3 rounded-full flex-shrink-0', getNextColor()]" />
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                v-for="c in COLOR_PALETTE"
+                :key="c.value"
+                type="button"
+                :class="[
+                  'w-5 h-5 rounded-full flex-shrink-0 transition-all',
+                  c.value,
+                  newStageColor === c.value
+                    ? 'ring-2 ring-offset-2 ring-primary scale-110'
+                    : 'hover:scale-105'
+                ]"
+                :title="c.label"
+                @click="newStageColor = c.value"
+              />
             </div>
             <input
               ref="addStageInputRef"

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Check } from 'lucide-vue-next';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,6 +7,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import StageBadge from './StageBadge.vue';
 
 const emit = defineEmits<{
   (e: 'change', jobId: number, status: string): void;
@@ -17,24 +17,14 @@ defineProps<{
   jobId: number;
   status: string;
   statusOptions: string[];
+  color?: string;
 }>();
-
-const statusVariants: Record<string, string> = {
-  Saved: 'secondary',
-  Applied: 'default',
-  'Phone Screen': 'warning',
-  Interview: 'warning',
-  Technical: 'warning',
-  Offer: 'success',
-  Rejected: 'danger',
-  Withdrawn: 'outline'
-};
 </script>
 
 <template>
   <DropdownMenu>
     <DropdownMenuTrigger class="cursor-pointer outline-none">
-      <Badge :variant="(statusVariants[status] as any) || 'outline'">{{ status }}</Badge>
+      <StageBadge :color="color" :label="status" />
     </DropdownMenuTrigger>
     <DropdownMenuContent align="start">
       <DropdownMenuItem

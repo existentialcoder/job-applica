@@ -1,3 +1,4 @@
+import { DEFAULT_BOARD_STAGES } from '@job-applica/ui/lib/constants';
 import ext from './ext';
 import { config } from './config';
 
@@ -401,7 +402,7 @@ export default {
   async createBoard(name: string): Promise<BoardData | null> {
     const response = await authedFetch(`${config.apiBase}/boards`, {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, stages: DEFAULT_BOARD_STAGES }),
     });
     if (!response.ok) return null;
     return response.json();

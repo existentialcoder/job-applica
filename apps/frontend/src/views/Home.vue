@@ -2,6 +2,7 @@
 import { DonutChart } from '@job-applica/ui';
 import { LayoutDashboard } from 'lucide-vue-next';
 import { ref, computed, watch, onMounted } from 'vue';
+import StageBadge from '@/components/applications/StageBadge.vue';
 import DashboardWidget from '@/components/core/DashboardWidget.vue';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -14,6 +15,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import dataservice from '@/lib/dataservice';
+import { resolveStageColor } from '@/lib/stages';
 import type { DashboardStats } from '@/lib/types';
 import { useBoardsStore } from '@/stores/boards';
 import { useSettingsStore } from '@/stores/settings';
@@ -105,7 +107,7 @@ const funnelData = computed(() => {
     .map((s) => ({
       key: s.key,
       label: s.label,
-      color: s.color,
+      color: resolveStageColor(s),
       count: stats.value!.by_stage.find((b) => b.stage === s.key)?.count ?? 0
     }));
 });
@@ -147,13 +149,6 @@ const outcomeSegments = computed(() => {
 const platformMax = computed(() =>
   Math.max(1, ...(stats.value?.by_platform.map((p) => p.count) ?? [1]))
 );
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function stagePillClass(tailwindColor: string): string {
-  const match = tailwindColor.match(/^bg-(\w+-\d+)$/) ?? tailwindColor.match(/^(\w+-\d+)$/);
-  const base = match?.[1] ?? 'indigo-500';
-  return `bg-${base}/15 text-${base.replace(/\d+$/, '400')}`;
-}
 </script>
 
 <template>
@@ -229,7 +224,7 @@ function stagePillClass(tailwindColor: string): string {
 
     <!-- Loading skeleton -->
     <div v-if="loading" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div v-for="i in 4" :key="i" class="h-28 rounded-xl bg-muted animate-pulse" />
+      <Skeleton v-for="i in 4" :key="i" class="h-28 rounded-xl" />
     </div>
 
     <template v-else-if="stats">
@@ -335,14 +330,7 @@ function stagePillClass(tailwindColor: string): string {
             <div class="space-y-3" :class="expanded ? 'max-h-96 overflow-y-auto pr-1' : ''">
               <div v-for="(item, i) in funnelData" :key="item.key" class="space-y-1">
                 <div class="flex justify-between items-center">
-                  <span
-                    :class="[
-                      'text-xs px-2 py-0.5 rounded-full font-medium',
-                      stagePillClass(item.color)
-                    ]"
-                  >
-                    {{ item.label }}
-                  </span>
+                  <StageBadge :color="item.color" :label="item.label" />
                   <span class="text-xs font-semibold tabular-nums">{{ item.count }}</span>
                 </div>
                 <div class="h-2 rounded-full bg-muted overflow-hidden">

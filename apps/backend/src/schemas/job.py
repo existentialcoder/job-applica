@@ -212,3 +212,8 @@ class JobFilterParams(BaseModel):
         items = [v] if isinstance(v, str) else v
         parts = [part for item in items for part in (item.split(',') if isinstance(item, str) else [item])]
         return [int(part) for part in parts] if info.field_name == 'board_id' else parts
+
+
+class JobTimeLineBase(BaseSchema):
+    from_status: str | None = None
+    to_status: str

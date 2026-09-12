@@ -97,7 +97,9 @@ async function disconnect(provider: 'google' | 'linkedin') {
         Connected Accounts
       </h2>
 
-      <div v-if="loading" class="text-sm text-muted-foreground py-2">Loading…</div>
+      <div v-if="loading" class="flex items-center py-2">
+        <Loader :size="16" />
+      </div>
 
       <div
         v-else-if="accounts.length === 0"

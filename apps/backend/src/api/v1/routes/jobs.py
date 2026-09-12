@@ -46,6 +46,11 @@ async def create_job(
     return await job_service.create_job(db, user, job_in)
 
 
+@router.get('/{job_id}/timeline', response_model=list[schemas.JobTimeLineBase], description='Get the timeline of a job')
+async def get_job_timeline(job_id: int, user: UserBase = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    return await job_service.get_job_timeline(db, user, job_id)
+
+
 @router.patch('/{job_id}', response_model=schemas.JobBase, description='Update existing job')
 async def update_job(
     job_id: int,

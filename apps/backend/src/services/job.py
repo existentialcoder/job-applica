@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
 from ..core.constants import Constants
 from ..models.company import Company
-from ..models.job import Job
+from ..models.job import Job, JobStatusHistory
 from ..schemas.company import CompanyCreate
 from ..schemas.job import JobBase, JobCreate, JobFilterParams, JobUpdate
 from ..schemas.skill import SkillCreate
@@ -142,6 +142,29 @@ async def get_job(db: AsyncSession, user: UserBase, job_id: int) -> JobBase | No
     return None
 
 
+async def get_job_timeline(db: AsyncSession, user: UserBase, job_id: int) -> list[JobStatusHistory]:
+    result = await db.execute(
+        select(JobStatusHistory).where(JobStatusHistory.job_id == job_id).order_by(JobStatusHistory.created_at.asc())
+    )
+    timeline = list(result.scalars().all())
+
+    if len(timeline) == 0:
+        job_details = await get_job_with_id(db, user, job_id)
+        if job_details is None:
+            raise HTTPException(status_code=404, detail='Job not found')
+        timeline.append(
+            JobStatusHistory(
+                job_id=job_id,
+                from_status=None,
+                to_status=job_details.status,
+                created_at=job_details.created_at,
+                updated_at=job_details.updated_at,
+            )
+        )
+
+    return timeline
+
+
 async def delete_job(db: AsyncSession, user: UserBase, job_id: int) -> bool:
     db_job = await get_job_with_id(db, user, job_id)
     if not db_job:
@@ -179,6 +202,7 @@ async def create_job(db: AsyncSession, user: UserBase, job_in: JobCreate) -> Job
         raise HTTPException(status_code=400, detail='Company is required')
     db_job = Job(**job_data)
     db.add(db_job)
+    db.add(JobStatusHistory(job=db_job, to_status=db_job.status))
     await db.commit()
     result = await db.execute(_eager(select(Job).where(Job.id == db_job.id)))
     return JobBase.model_validate(result.scalar_one())
@@ -190,6 +214,10 @@ async def update_job(db: AsyncSession, job_id: int, user: UserBase, job_in: JobU
         return None
 
     job_data = await get_transformed_job(db, job_in, user)
+
+    if 'status' in job_data and job_data['status'] != db_job.status:
+        db.add(JobStatusHistory(job_id=db_job.id, from_status=db_job.status, to_status=job_data['status']))
+
     for key, value in job_data.items():
         setattr(db_job, key, value)
 

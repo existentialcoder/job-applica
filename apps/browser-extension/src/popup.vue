@@ -4,7 +4,7 @@ import dataservice, { type BoardData, type JobExtractResult, type CompanyResult,
 import ext from './lib/ext';
 import { config, loadConfig, saveConfig, resetConfig } from './lib/config';
 import { DEFAULT_COMPANY_LOGO_URL } from '@job-applica/ui/lib/constants';
-import { DewLogo, GoogleLogo, LinkedInLogo, AtsGauge, Icon } from '@job-applica/ui';
+import { DewLogo, GoogleLogo, LinkedInLogo, AtsGauge, Icon, Loader, Skeleton } from '@job-applica/ui';
 import { Button } from '@job-applica/ui/components/ui/button';
 import { Input } from '@job-applica/ui/components/ui/input';
 import { Label } from '@job-applica/ui/components/ui/label';
@@ -571,36 +571,36 @@ const platformBadgeVariant: Record<string, any> = {
     <div v-else-if="view === 'loading'" class="p-4 flex flex-col gap-3">
       <div class="flex flex-col gap-3">
         <div class="flex flex-col gap-1.5">
-          <div class="h-3 w-10 rounded bg-muted animate-pulse"></div>
-          <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          <Skeleton class="h-3 w-10" />
+          <Skeleton class="h-9 rounded-md" />
         </div>
         <div class="flex flex-col gap-1.5">
-          <div class="h-3 w-14 rounded bg-muted animate-pulse"></div>
-          <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          <Skeleton class="h-3 w-14" />
+          <Skeleton class="h-9 rounded-md" />
         </div>
         <div class="flex flex-col gap-1.5">
-          <div class="h-3 w-16 rounded bg-muted animate-pulse"></div>
-          <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          <Skeleton class="h-3 w-16" />
+          <Skeleton class="h-9 rounded-md" />
         </div>
         <div class="flex flex-col gap-1.5">
-          <div class="h-3 w-14 rounded bg-muted animate-pulse"></div>
-          <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          <Skeleton class="h-3 w-14" />
+          <Skeleton class="h-9 rounded-md" />
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div class="flex flex-col gap-1.5">
-            <div class="h-3 w-10 rounded bg-muted animate-pulse"></div>
-            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+            <Skeleton class="h-3 w-10" />
+            <Skeleton class="h-9 rounded-md" />
           </div>
           <div class="flex flex-col gap-1.5">
-            <div class="h-3 w-20 rounded bg-muted animate-pulse"></div>
-            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+            <Skeleton class="h-3 w-20" />
+            <Skeleton class="h-9 rounded-md" />
           </div>
         </div>
         <div class="flex flex-col gap-1.5">
-          <div class="h-3 w-9 rounded bg-muted animate-pulse"></div>
-          <div class="h-14 rounded-md bg-muted animate-pulse"></div>
+          <Skeleton class="h-3 w-9" />
+          <Skeleton class="h-14 rounded-md" />
         </div>
-        <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+        <Skeleton class="h-9 rounded-md" />
       </div>
     </div>
 
@@ -611,14 +611,14 @@ const platformBadgeVariant: Record<string, any> = {
       <!-- OAuth buttons -->
       <Button variant="outline" class="w-full gap-2 justify-center" type="button"
         :disabled="isOAuthLoading !== null" @click="openOAuth('google')">
-        <Icon v-if="isOAuthLoading === 'google'" name="LoaderCircle" :size="16" default-class="animate-spin" />
+        <Loader v-if="isOAuthLoading === 'google'" :size="16" />
         <GoogleLogo v-else :size="16" />
         {{ isOAuthLoading === 'google' ? 'Opening…' : 'Continue with Google' }}
       </Button>
 
       <Button variant="outline" class="w-full gap-2 justify-center" type="button"
         :disabled="isOAuthLoading !== null" @click="openOAuth('linkedin')">
-        <Icon v-if="isOAuthLoading === 'linkedin'" name="LoaderCircle" :size="16" default-class="animate-spin" />
+        <Loader v-if="isOAuthLoading === 'linkedin'" :size="16" />
         <LinkedInLogo v-else :size="16" />
         {{ isOAuthLoading === 'linkedin' ? 'Opening…' : 'Continue with LinkedIn' }}
       </Button>
@@ -644,6 +644,7 @@ const platformBadgeVariant: Record<string, any> = {
       </div>
       <p v-if="loginError" class="text-xs text-destructive">{{ loginError }}</p>
       <Button @click="handleLogin" :disabled="isLoginLoading" class="w-full">
+        <Loader v-if="isLoginLoading" :size="16" class="mr-2" />
         {{ isLoginLoading ? 'Signing in...' : 'Sign In' }}
       </Button>
     </div>
@@ -669,7 +670,7 @@ const platformBadgeVariant: Record<string, any> = {
       </div>
       <p v-if="createBoardError" class="text-xs text-destructive">{{ createBoardError }}</p>
       <Button @click="handleCreateBoard" :disabled="isCreatingBoard || !newBoardName.trim()" class="w-full">
-        <Icon v-if="isCreatingBoard" name="LoaderCircle" :size="16" default-class="animate-spin mr-2" />
+        <Loader v-if="isCreatingBoard" :size="16" class="mr-2" />
         {{ isCreatingBoard ? 'Creating...' : 'Create Board' }}
       </Button>
     </div>
@@ -709,42 +710,42 @@ const platformBadgeVariant: Record<string, any> = {
         <div class="flex flex-col gap-3">
           <!-- Board -->
           <div class="flex flex-col gap-1.5">
-            <div class="h-3 w-10 rounded bg-muted animate-pulse"></div>
-            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+            <Skeleton class="h-3 w-10" />
+            <Skeleton class="h-9 rounded-md" />
           </div>
           <!-- Title -->
           <div class="flex flex-col gap-1.5">
-            <div class="h-3 w-14 rounded bg-muted animate-pulse"></div>
-            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+            <Skeleton class="h-3 w-14" />
+            <Skeleton class="h-9 rounded-md" />
           </div>
           <!-- Company -->
           <div class="flex flex-col gap-1.5">
-            <div class="h-3 w-16 rounded bg-muted animate-pulse"></div>
-            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+            <Skeleton class="h-3 w-16" />
+            <Skeleton class="h-9 rounded-md" />
           </div>
           <!-- Location -->
           <div class="flex flex-col gap-1.5">
-            <div class="h-3 w-14 rounded bg-muted animate-pulse"></div>
-            <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+            <Skeleton class="h-3 w-14" />
+            <Skeleton class="h-9 rounded-md" />
           </div>
           <!-- Status + Work model -->
           <div class="grid grid-cols-2 gap-2">
             <div class="flex flex-col gap-1.5">
-              <div class="h-3 w-10 rounded bg-muted animate-pulse"></div>
-              <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+              <Skeleton class="h-3 w-10" />
+              <Skeleton class="h-9 rounded-md" />
             </div>
             <div class="flex flex-col gap-1.5">
-              <div class="h-3 w-20 rounded bg-muted animate-pulse"></div>
-              <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+              <Skeleton class="h-3 w-20" />
+              <Skeleton class="h-9 rounded-md" />
             </div>
           </div>
           <!-- Notes -->
           <div class="flex flex-col gap-1.5">
-            <div class="h-3 w-9 rounded bg-muted animate-pulse"></div>
-            <div class="h-14 rounded-md bg-muted animate-pulse"></div>
+            <Skeleton class="h-3 w-9" />
+            <Skeleton class="h-14 rounded-md" />
           </div>
           <!-- Save button -->
-          <div class="h-9 rounded-md bg-muted animate-pulse"></div>
+          <Skeleton class="h-9 rounded-md" />
           <p class="text-center text-xs text-muted-foreground">
             {{ isFetchingData ? 'Analysing page…' : 'Scoring your CV…' }}
           </p>
@@ -848,7 +849,7 @@ const platformBadgeVariant: Record<string, any> = {
         <!-- Save + Re-fetch -->
         <div class="flex flex-col gap-2">
           <Button @click="saveJob" :disabled="isSaveBtnLoading || !jobTitle" class="w-full">
-            <Icon v-if="isSaveBtnLoading" name="LoaderCircle" :size="16" default-class="animate-spin mr-2" />
+            <Loader v-if="isSaveBtnLoading" :size="16" class="mr-2" />
             {{ isSaveBtnLoading ? 'Saving...' : 'Save Job' }}
           </Button>
           <button @click="retryFetch" class="text-xs text-muted-foreground hover:text-primary text-center transition">

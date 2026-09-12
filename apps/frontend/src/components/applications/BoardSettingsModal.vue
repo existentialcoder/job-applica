@@ -10,8 +10,10 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MANDATORY_STAGE_KEYS } from '@/lib/constants';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { COLOR_PALETTE, DEFAULT_BOARD_STAGES, MANDATORY_STAGE_KEYS } from '@/lib/constants';
 import type { BoardData, StageData } from '@/lib/types';
+import StageBadge from './StageBadge.vue';
 
 const props = defineProps<{
   open: boolean
@@ -32,32 +34,6 @@ const emit = defineEmits<{
   ): void
 }>();
 
-const STAGE_COLORS = [
-  'bg-slate-500',
-  'bg-blue-500',
-  'bg-violet-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-rose-500',
-  'bg-orange-500',
-  'bg-cyan-500',
-  'bg-pink-500',
-  'bg-teal-500',
-  'bg-indigo-500',
-  'bg-zinc-400'
-];
-
-const COLOR_OPTIONS = [
-  { value: 'bg-blue-500', label: 'Blue' },
-  { value: 'bg-violet-500', label: 'Violet' },
-  { value: 'bg-emerald-500', label: 'Emerald' },
-  { value: 'bg-amber-500', label: 'Amber' },
-  { value: 'bg-rose-500', label: 'Rose' },
-  { value: 'bg-slate-500', label: 'Slate' },
-  { value: 'bg-orange-500', label: 'Orange' },
-  { value: 'bg-cyan-500', label: 'Cyan' }
-];
-
 const name = ref('');
 const description = ref('');
 const color = ref('bg-blue-500');
@@ -76,6 +52,7 @@ const keyRenames = ref<Record<string, string>>({});
 // Add stage inline
 const showAddStage = ref(false);
 const newStageName = ref('');
+const newStageColor = ref(COLOR_PALETTE[0].value);
 const addInputRef = ref<HTMLInputElement | null>(null);
 
 watch(
@@ -87,7 +64,8 @@ watch(
       color.value = props.board.color ?? 'bg-blue-500';
       // Auto-detect key/label mismatches from old bug and queue them as renames
       const renames: Record<string, string> = {};
-      stages.value = props.board.stages.map((s) => {
+      const boardStages = props.board.stages.length ? props.board.stages : DEFAULT_BOARD_STAGES;
+      stages.value = boardStages.map((s) => {
         if (s.key !== s.label) {
           renames[s.key] = s.label;
           return { ...s, key: s.label };
@@ -105,7 +83,7 @@ watch(
 
 function getNextColor(): string {
   const used = stages.value.map((s) => s.color);
-  return STAGE_COLORS.find((c) => !used.includes(c)) ?? STAGE_COLORS[0];
+  return COLOR_PALETTE.find((c) => !used.includes(c.value))?.value ?? COLOR_PALETTE[0].value;
 }
 
 function startEditLabel(i: number) {
@@ -143,6 +121,7 @@ function cancelEditLabel() {
 
 async function openAddStage() {
   showAddStage.value = true;
+  newStageColor.value = getNextColor();
   await nextTick();
   addInputRef.value?.focus();
 }
@@ -156,7 +135,7 @@ function submitAddStage() {
   const key = newStageName.value.trim();
   if (!key) return;
   if (stages.value.some((s) => s.key.toLowerCase() === key.toLowerCase())) return;
-  stages.value.push({ key, label: key, color: getNextColor() });
+  stages.value.push({ key, label: key, color: newStageColor.value });
   newStageName.value = '';
   showAddStage.value = false;
 }
@@ -202,30 +181,12 @@ function handleSave() {
       </DialogHeader>
 
       <!-- Tabs -->
-      <div class="flex border-b border-border mb-4">
-        <button
-          :class="[
-            'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
-            activeTab === 'general'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          ]"
-          @click="activeTab = 'general'"
-        >
-          General
-        </button>
-        <button
-          :class="[
-            'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
-            activeTab === 'stages'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          ]"
-          @click="activeTab = 'stages'"
-        >
-          Stages
-        </button>
-      </div>
+      <Tabs v-model="activeTab" class="mb-4">
+        <TabsList>
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="stages">Stages</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <!-- General tab -->
       <div v-if="activeTab === 'general'" class="flex flex-col gap-4">
@@ -241,7 +202,7 @@ function handleSave() {
           <Label>Board Color</Label>
           <div class="flex flex-wrap gap-2">
             <button
-              v-for="opt in COLOR_OPTIONS"
+              v-for="opt in COLOR_PALETTE"
               :key="opt.value"
               :class="[
                 'w-7 h-7 rounded-full transition-all',
@@ -270,39 +231,39 @@ function handleSave() {
             :key="stage.key"
             class="flex items-center gap-2 px-2 py-1.5 rounded-md border border-border bg-muted/30 group/stage"
           >
-            <div :class="['w-3 h-3 rounded-full flex-shrink-0', stage.color]" />
+            <StageBadge :color="stage.color" class="flex-1">
+              <!-- Inline edit input -->
+              <input
+                v-if="editingIndex === i"
+                v-model="editingLabel"
+                class="flex-1 text-sm bg-transparent border-b border-primary outline-none px-0.5 min-w-0"
+                @keyup.enter="commitEditLabel"
+                @keyup.escape="cancelEditLabel"
+                @blur="commitEditLabel"
+                autofocus
+              />
+              <!-- Display label (click to edit, unless mandatory) -->
+              <span
+                v-else
+                :class="[
+                  'flex-1 text-sm transition-colors',
+                  isMandatory(stage.key)
+                    ? 'text-muted-foreground'
+                    : 'cursor-pointer hover:text-primary'
+                ]"
+                :title="
+                  isMandatory(stage.key) ? 'Standard stage — cannot be renamed' : 'Click to rename'
+                "
+                @click="startEditLabel(i)"
+                >{{ stage.label }}</span
+              >
 
-            <!-- Inline edit input -->
-            <input
-              v-if="editingIndex === i"
-              v-model="editingLabel"
-              class="flex-1 text-sm bg-transparent border-b border-primary outline-none px-0.5 min-w-0"
-              @keyup.enter="commitEditLabel"
-              @keyup.escape="cancelEditLabel"
-              @blur="commitEditLabel"
-              autofocus
-            />
-            <!-- Display label (click to edit, unless mandatory) -->
-            <span
-              v-else
-              :class="[
-                'flex-1 text-sm transition-colors',
-                isMandatory(stage.key)
-                  ? 'text-muted-foreground'
-                  : 'cursor-pointer hover:text-primary'
-              ]"
-              :title="
-                isMandatory(stage.key) ? 'Standard stage — cannot be renamed' : 'Click to rename'
-              "
-              @click="startEditLabel(i)"
-              >{{ stage.label }}</span
-            >
-
-            <Icon
-              v-if="isMandatory(stage.key)"
-              name="Lock"
-              class="w-3 h-3 text-muted-foreground/60 flex-shrink-0"
-            />
+              <Icon
+                v-if="isMandatory(stage.key)"
+                name="Lock"
+                class="w-3 h-3 text-muted-foreground/60 flex-shrink-0"
+              />
+            </StageBadge>
 
             <!-- Reorder + remove — hidden entirely for locked stages, not just disabled -->
             <template v-if="!isMandatory(stage.key)">
@@ -348,8 +309,21 @@ function handleSave() {
           </button>
         </div>
         <div v-else class="flex flex-col gap-2 p-3 rounded-md border border-border bg-muted/20">
-          <div class="flex items-center gap-2">
-            <div :class="['w-3 h-3 rounded-full flex-shrink-0', getNextColor()]" />
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="c in COLOR_PALETTE"
+              :key="c.value"
+              type="button"
+              :class="[
+                'w-5 h-5 rounded-full flex-shrink-0 transition-all',
+                c.value,
+                newStageColor === c.value
+                  ? 'ring-2 ring-offset-2 ring-primary scale-110'
+                  : 'hover:scale-105'
+              ]"
+              :title="c.label"
+              @click="newStageColor = c.value"
+            />
           </div>
           <input
             ref="addInputRef"

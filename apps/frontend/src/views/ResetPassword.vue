@@ -269,6 +269,7 @@ async function submitNewPassword() {
             @click="submitIdentifier"
             :disabled="isLoading"
           >
+            <Loader v-if="isLoading" :size="16" class="mr-2" />
             {{ isLoading ? 'Checking...' : 'Continue' }}
           </Button>
           <Button
@@ -277,6 +278,7 @@ async function submitNewPassword() {
             @click="submitAnswer"
             :disabled="isLoading"
           >
+            <Loader v-if="isLoading" :size="16" class="mr-2" />
             {{ isLoading ? 'Verifying...' : 'Verify' }}
           </Button>
           <Button
@@ -285,6 +287,7 @@ async function submitNewPassword() {
             @click="sendOtp"
             :disabled="isLoading"
           >
+            <Loader v-if="isLoading" :size="16" class="mr-2" />
             {{ isLoading ? 'Sending...' : 'Send code' }}
           </Button>
           <Button
@@ -293,6 +296,7 @@ async function submitNewPassword() {
             @click="submitOtp"
             :disabled="isLoading"
           >
+            <Loader v-if="isLoading" :size="16" class="mr-2" />
             {{ isLoading ? 'Verifying...' : 'Verify' }}
           </Button>
           <Button
@@ -301,6 +305,7 @@ async function submitNewPassword() {
             @click="sendOtp"
             :disabled="isLoading"
           >
+            <Loader v-if="isLoading" :size="16" class="mr-2" />
             {{ isLoading ? 'Sending...' : 'Resend code' }}
           </Button>
           <Button
@@ -309,6 +314,7 @@ async function submitNewPassword() {
             @click="submitNewPassword"
             :disabled="isLoading"
           >
+            <Loader v-if="isLoading" :size="16" class="mr-2" />
             {{ isLoading ? 'Resetting...' : 'Reset Password' }}
           </Button>
           <Button v-else-if="step === 'success'" class="w-full" @click="router.push('/login')">

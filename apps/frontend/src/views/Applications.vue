@@ -76,18 +76,8 @@ const isFiltersPanelOpen = ref(false);
 const jobFilters = reactive<JobFiltersFormValues>(emptyJobFilters());
 const boardOptions = ref<{ label: string; value: string }[]>([]);
 
-const statusOptions = ref<string[]>(
-  props.stages?.map((s) => s.label) ?? DEFAULT_BOARD_STAGES.map((s) => s.label)
-);
-
-watch(
-  () => props.stages,
-  (stages) => {
-    if (stages?.length) {
-      statusOptions.value = stages.map((s) => s.label);
-    }
-  },
-  { immediate: true }
+const statusOptions = computed<string[]>(() =>
+  (props.stages?.length ? props.stages : DEFAULT_BOARD_STAGES).map((s) => s.label)
 );
 
 const LIST_FILTER_KEY_MAP = [
@@ -489,50 +479,41 @@ onMounted(async () => {
         <div
           class="bg-muted/40 px-4 py-2.5 grid grid-cols-[2rem_1fr_10rem_7rem_7rem_6rem] gap-3 border-b border-border"
         >
-          <div class="h-3 w-3 rounded bg-muted animate-pulse self-center"></div>
-          <div class="h-3 w-24 rounded bg-muted animate-pulse"></div>
-          <div class="h-3 w-16 rounded bg-muted animate-pulse"></div>
-          <div class="h-3 w-14 rounded bg-muted animate-pulse"></div>
-          <div class="h-3 w-12 rounded bg-muted animate-pulse"></div>
-          <div class="h-3 w-10 rounded bg-muted animate-pulse"></div>
+          <Skeleton class="h-3 w-3 self-center" />
+          <Skeleton class="h-3 w-24" />
+          <Skeleton class="h-3 w-16" />
+          <Skeleton class="h-3 w-14" />
+          <Skeleton class="h-3 w-12" />
+          <Skeleton class="h-3 w-10" />
         </div>
         <div
           v-for="i in 8"
           :key="i"
           class="px-4 py-3 grid grid-cols-[2rem_1fr_10rem_7rem_7rem_6rem] gap-3 border-b border-border last:border-0"
         >
-          <div class="h-4 w-4 rounded bg-muted animate-pulse self-center"></div>
+          <Skeleton class="h-4 w-4 self-center" />
           <div class="flex flex-col gap-1.5">
-            <div
-              class="h-3.5 rounded bg-muted animate-pulse"
-              :style="{ width: `${55 + ((i * 13) % 35)}%` }"
-            ></div>
-            <div class="h-2.5 w-24 rounded bg-muted/60 animate-pulse"></div>
+            <Skeleton class="h-3.5" :style="{ width: `${55 + ((i * 13) % 35)}%` }" />
+            <Skeleton class="h-2.5 w-24 bg-muted/60" />
           </div>
-          <div
-            class="h-3 rounded bg-muted animate-pulse self-center"
-            :style="{ width: `${50 + ((i * 17) % 40)}%` }"
-          ></div>
-          <div class="h-6 w-20 rounded-full bg-muted animate-pulse self-center"></div>
-          <div class="h-3 w-16 rounded bg-muted animate-pulse self-center"></div>
-          <div class="h-3 w-8 rounded bg-muted animate-pulse self-center"></div>
+          <Skeleton class="h-3 self-center" :style="{ width: `${50 + ((i * 17) % 40)}%` }" />
+          <Skeleton class="h-6 w-20 rounded-full self-center" />
+          <Skeleton class="h-3 w-16 self-center" />
+          <Skeleton class="h-3 w-8 self-center" />
         </div>
       </div>
       <!-- Board skeleton -->
       <div v-else class="flex gap-4 overflow-x-auto pb-2">
         <div v-for="col in 5" :key="col" class="flex-shrink-0 w-64 flex flex-col gap-2">
-          <div class="h-8 rounded-lg bg-muted animate-pulse"></div>
+          <Skeleton class="h-8 rounded-lg" />
           <div
             v-for="card in 3"
             :key="card"
             class="rounded-lg border border-border bg-card p-3 flex flex-col gap-2"
           >
-            <div
-              class="h-3.5 rounded bg-muted animate-pulse"
-              :style="{ width: `${60 + ((card * 19) % 35)}%` }"
-            ></div>
-            <div class="h-2.5 w-20 rounded bg-muted/60 animate-pulse"></div>
-            <div class="h-2.5 w-14 rounded bg-muted/40 animate-pulse"></div>
+            <Skeleton class="h-3.5" :style="{ width: `${60 + ((card * 19) % 35)}%` }" />
+            <Skeleton class="h-2.5 w-20 bg-muted/60" />
+            <Skeleton class="h-2.5 w-14 bg-muted/40" />
           </div>
         </div>
       </div>
