@@ -1,12 +1,12 @@
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
+from ..api.deps.pagination import PaginatedResponse, build_paginated_response, paginate_query
 from ..models.skill import Skill
 from ..schemas.skill import SkillBase, SkillBaseLean, SkillCreate, SkillFilterParams
 
-PaginatedSkillsBase = get_paginated_response_model(SkillBase)
-PaginatedSkillsBaseLean = get_paginated_response_model(SkillBaseLean)
+PaginatedSkillsBase = PaginatedResponse[SkillBase]
+PaginatedSkillsBaseLean = PaginatedResponse[SkillBaseLean]
 
 
 # Symbols that distinguish otherwise-identical skill names (C++ vs C#, F# vs F) and would

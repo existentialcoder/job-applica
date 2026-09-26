@@ -18,6 +18,7 @@ async def list_connected_accounts(
     current_user: UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    assert current_user.id is not None  # authenticated users always have an id
     return await ca_service.list_for_user(db, current_user.id)
 
 
@@ -43,5 +44,6 @@ async def disconnect_provider(
 ):
     if provider not in VALID_PROVIDERS:
         raise HTTPException(status_code=400, detail=f'Unknown provider: {provider}')
+    assert current_user.id is not None  # authenticated users always have an id
     if not await ca_service.disconnect(db, current_user.id, provider):
         raise HTTPException(status_code=404, detail='Account not connected')

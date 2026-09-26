@@ -34,7 +34,7 @@ def _check_self(user_id: int, current_user: user_schemas.UserBase):
 
 def _resume_response(r, user_id: int) -> dict:
     if settings.APP_ENV == 'local':
-        url = f'/uploads/{user_id}/resumes/{r.stored_name}'
+        url = f'/uploads/users/{user_id}/resumes/{r.stored_name}'
     else:
         url = f'{settings.CLOUDFLARE_R2_PUBLIC_URL}/{user_id}/resumes/{r.stored_name}'
     return {

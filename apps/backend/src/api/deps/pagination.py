@@ -52,9 +52,6 @@ def build_paginated_response(items: list, total: int, page: int, per_page: int):
     }
 
 
-def get_paginated_response_model(item_model: type[BaseModel]) -> type[BaseModel]:
-    class PaginatedResponse(BaseModel):
-        meta: dict[str, int]
-        results: list[item_model]
-
-    return PaginatedResponse
+class PaginatedResponse[T](BaseModel):
+    meta: dict[str, int]
+    results: list[T]

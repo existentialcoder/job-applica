@@ -1,5 +1,5 @@
-import os
-import uuid
+import io
+from collections.abc import Sequence
 
 import pdfplumber
 from docx import Document
@@ -7,14 +7,12 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.config import settings
 from ..models.resume import Resume
 from ..models.skill import Skill
 from ..models.user import User
 from ..services.llm import extract_skills_from_resume
-from ..utils.file_uploader import FileUploader
+from ..utils.file_storage import get_file_storage_factory
 
-UPLOAD_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'uploads'))
 ALLOWED_TYPES = {
     'application/pdf',
     'application/msword',
@@ -23,16 +21,16 @@ ALLOWED_TYPES = {
 MAX_SIZE_MB = 5
 
 
-def _parse_resume_text(file: UploadFile, dest: str) -> str:
-    if file.content_type == 'application/pdf':
-        with pdfplumber.open(dest) as pdf:
+def _parse_resume_text(content_type: str | None, data: bytes) -> str:
+    if content_type == 'application/pdf':
+        with pdfplumber.open(io.BytesIO(data)) as pdf:
             return '\n'.join(page.extract_text() or '' for page in pdf.pages)
 
-    doc = Document(dest)
+    doc = Document(io.BytesIO(data))
     return '\n'.join([p.text for p in doc.paragraphs])
 
 
-async def list_resumes(db: AsyncSession, user_id: int) -> list[Resume]:
+async def list_resumes(db: AsyncSession, user_id: int) -> Sequence[Resume]:
     result = await db.execute(select(Resume).where(Resume.user_id == user_id).order_by(Resume.id.desc()))
     return result.scalars().all()
 
@@ -41,30 +39,16 @@ async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Res
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail='Only PDF and Word documents are accepted')
 
-    ext = os.path.splitext(file.filename or 'resume')[1] or '.pdf'
-    stored_name = f'{uuid.uuid4().hex}{ext}'
-    user_resume_dir = os.path.join(UPLOAD_BASE, 'users', str(user_id), 'resumes')
-    dest = os.path.join(user_resume_dir, stored_name)
-    r2_key = f'{user_id}/resumes/{stored_name}'
-
-    uploader = FileUploader(destination_path=dest, file=file, max_size_mb=MAX_SIZE_MB)
-    # Always write to disk first — _parse_resume_text reads from dest
-    size = await uploader.upload_local()
-    parsed_text = _parse_resume_text(file, dest)
+    file_storage = get_file_storage_factory()(destination_path=f'{user_id}/resumes', file=file, max_size_mb=MAX_SIZE_MB)
+    key, size = await file_storage.upload()
+    await file.seek(0)
+    parsed_text = _parse_resume_text(file.content_type, await file.read())
 
     if not parsed_text.strip():
-        os.remove(dest)
+        await file_storage.delete_file(key)
         raise HTTPException(
             status_code=422,
             detail='Could not extract any text from this file — try a different export or format',
-        )
-
-    if settings.APP_ENV != 'local':
-        # Push the already-saved local file to R2; UploadFile stream is exhausted at this point
-        await uploader.upload_disk_to_cloudflare(
-            bucket=settings.CLOUDFLARE_R2_BUCKET_NAME,
-            key=r2_key,
-            content_type=file.content_type or 'application/octet-stream',
         )
 
     existing_count_result = await db.execute(select(func.count(Resume.id)).where(Resume.user_id == user_id))
@@ -72,9 +56,9 @@ async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Res
 
     resume = Resume(
         user_id=user_id,
-        original_name=file.filename or stored_name,
-        stored_name=stored_name,
-        file_path=dest,
+        original_name=file.filename or file_storage.stored_name,
+        stored_name=file_storage.stored_name,
+        file_path=key,
         file_size=size,
         parsed_text=parsed_text,
         is_default=is_first,
@@ -128,14 +112,7 @@ async def delete_resume(db: AsyncSession, user_id: int, resume_id: int) -> None:
     if not resume:
         raise HTTPException(status_code=404, detail='Resume not found')
 
-    uploader = FileUploader(destination_path=resume.file_path)
-    if settings.APP_ENV == 'local':
-        await uploader.delete_file_from_local()
-    else:
-        await uploader.delete_file_from_cloudflare(
-            bucket=settings.CLOUDFLARE_R2_BUCKET_NAME,
-            key=f'{user_id}/resumes/{resume.stored_name}',
-        )
+    await get_file_storage_factory()().delete_file(f'{user_id}/resumes/{resume.stored_name}')
     await db.delete(resume)
     await db.commit()
 

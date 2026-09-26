@@ -24,5 +24,5 @@ async def list_companies(
 
 
 @router.post('/', response_model=schemas.CompanyBase, description='Create a new company')
-async def create_company(company_data: schemas.CompanyBase, db: AsyncSession = Depends(get_db)):
+async def create_company(company_data: schemas.CompanyCreate, db: AsyncSession = Depends(get_db)):
     return await company_service.create_company(db, company_data)

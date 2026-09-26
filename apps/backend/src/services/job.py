@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
+from ..api.deps.pagination import PaginatedResponse, build_paginated_response, paginate_query
 from ..core.constants import Constants
 from ..models.company import Company
 from ..models.job import Job, JobStatusHistory
@@ -19,7 +19,7 @@ from ..services import skill as skill_service
 from ..services.board import get_default_board_id
 from ..services.company import create_company, get_company_by_id, get_company_by_name
 
-PaginatedJobs = get_paginated_response_model(JobBase)
+PaginatedJobs = PaginatedResponse[JobBase]
 
 
 def _eager(q):

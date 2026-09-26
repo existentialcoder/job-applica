@@ -175,12 +175,9 @@ async def get_or_create_oauth_user(
 
 
 def create_tokens_for_user(user: User) -> UserLoginTokenResponse:
-    token_data: TokenPayload = {
-        'sub': str(user.id),
-        'user_name': user.user_name,
-        'signup_key': user.signup_key,
-        'email': user.email,
-    }
+    token_data = TokenPayload(
+        sub=str(user.id), user_name=user.user_name, signup_key=user.signup_key, email=user.email
+    ).model_dump()
     access_token = create_token(
         token_data,
         expiry=settings.ACCESS_TOKEN_EXPIRE_MINUTES,

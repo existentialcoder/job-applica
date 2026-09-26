@@ -25,7 +25,7 @@ async def check_plan_limit(
         return None  # unlimited
 
     result = await db.execute(count_query)
-    current = result.scalar()
+    current = result.scalar() or 0
 
     if current >= limit:
         raise PlanLimitReached(resource=resource, current=current, limit=limit, plan=plan)

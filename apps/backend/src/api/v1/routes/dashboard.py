@@ -15,4 +15,5 @@ async def get_stats(
     current_user: UserBase = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    assert current_user.id is not None  # authenticated users always have an id
     return await dashboard_service.get_dashboard_stats(db, current_user.id, board_id=board_id)

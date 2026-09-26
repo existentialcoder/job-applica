@@ -6,23 +6,23 @@ BACKEND_VENV := apps/backend/api-backend-env/bin
 check: check-backend check-frontend
 
 check-backend:
-	@echo "-- Backend: ruff + mypy (check only) --"
+	@echo "-- Backend: Code quality checks"
 	$(BACKEND_VENV)/ruff check --config apps/backend/pyproject.toml apps/backend/src
 	$(BACKEND_VENV)/ruff format --check --config apps/backend/pyproject.toml apps/backend/src
 	$(BACKEND_VENV)/mypy --config-file apps/backend/pyproject.toml apps/backend/src
 
 check-frontend:
-	@echo "-- Frontend: eslint + vue-tsc (check only) --"
+	@echo "-- Frontend: Code quality checks"
 	cd apps/frontend && npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore
 	cd apps/frontend && npx vue-tsc --noEmit
 
 fix: fix-backend fix-frontend
 
 fix-backend:
-	@echo "-- Backend: ruff check --fix + ruff format --"
+	@echo "-- Backend: Code quality fixes"
 	-$(BACKEND_VENV)/ruff check --fix --config apps/backend/pyproject.toml apps/backend/src
 	$(BACKEND_VENV)/ruff format --config apps/backend/pyproject.toml apps/backend/src
 
 fix-frontend:
-	@echo "-- Frontend: eslint --fix --"
+	@echo "-- Frontend: Code quality fixes"
 	-cd apps/frontend && npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore

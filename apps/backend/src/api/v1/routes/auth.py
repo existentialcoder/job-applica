@@ -219,10 +219,10 @@ async def get_retry_mechanism(user_identifier: str, db: AsyncSession = Depends(g
     # If security_question is provided always use it
     if target_user.security_question:
         return ResetMechanismResponse(
-            mechanism='security_question', context={'security_question': target_user.security_question}
+            mechanism=ResetMechanism.security_question, context={'security_question': target_user.security_question}
         )
 
-    return ResetMechanismResponse(mechanism='otp', context={'request_for_email': is_email == False})
+    return ResetMechanismResponse(mechanism=ResetMechanism.otp, context={'request_for_email': is_email == False})
 
 
 @router.get('/request-reset-otp', description='API to send a one-time password to the email on file for password reset')
@@ -282,18 +282,17 @@ async def verify_reset_mechanism(payload: VerifyResetMechanismRequest, db: Async
         if expiry < datetime.now(UTC):
             raise HTTPException(status_code=401, detail='OTP has expired')
 
-    token_data: schemas.TokenPayload = {
-        'sub': str(target_user.id),
-        'user_name': target_user.user_name,
-        'signup_key': target_user.signup_key,
-        'email': target_user.email,
-        'purpose': 'password_reset',
-    }
+    token_data = schemas.TokenPayload(
+        sub=str(target_user.id),
+        user_name=target_user.user_name,
+        signup_key=target_user.signup_key,
+        email=target_user.email,
+        purpose='password_reset',
+    ).model_dump()
 
     if payload.mechanism == ResetMechanism.security_question:
-        is_valid = bool(target_user.hashed_security_answer) and verify_password(
-            payload.answer, target_user.hashed_security_answer
-        )
+        hashed_answer = target_user.hashed_security_answer
+        is_valid = verify_password(payload.answer, hashed_answer) if hashed_answer else False
     else:
         stored_otp_hash = target_user.settings.get('otp', {}).get('value')
         is_valid = bool(stored_otp_hash) and verify_password(payload.answer, stored_otp_hash)
