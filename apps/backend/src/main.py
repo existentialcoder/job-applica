@@ -1,7 +1,8 @@
 import os
 from contextlib import asynccontextmanager
+from enum import Enum
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -66,13 +67,13 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-PUBLIC_ROUTERS = [
+PUBLIC_ROUTERS: list[tuple[APIRouter, list[str | Enum]]] = [
     (features.router, ['Features']),
     (auth.router, ['Auth']),
     (users.public_router, ['Users']),
 ]
 
-PROTECTED_ROUTERS = [
+PROTECTED_ROUTERS: list[tuple[APIRouter, list[str | Enum]]] = [
     (jobs.router, ['Jobs']),
     (companies.router, ['Companies']),
     (locations.router, ['Locations']),
@@ -96,10 +97,10 @@ for protected_router, tags in PROTECTED_ROUTERS:
         dependencies=[Depends(get_current_user)],
     )
 
-# Serve uploaded files
-_uploads_dir = os.path.join(os.path.dirname(__file__), '..', 'uploads')
-os.makedirs(_uploads_dir, exist_ok=True)
-app.mount('/uploads', StaticFiles(directory=_uploads_dir), name='uploads')
+if settings.APP_ENV == 'local':
+    _uploads_dir = os.path.join(os.path.dirname(__file__), '..', 'uploads')
+    os.makedirs(_uploads_dir, exist_ok=True)
+    app.mount('/uploads', StaticFiles(directory=_uploads_dir), name='uploads')
 
 _email_assets_dir = os.path.join(os.path.dirname(__file__), 'templates', 'email', 'assets')
 app.mount('/email-assets', StaticFiles(directory=_email_assets_dir), name='email-assets')

@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import secrets
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
 
@@ -138,7 +139,7 @@ async def get_user_by_provider(db: AsyncSession, provider: str, provider_user_id
     return result.scalar_one_or_none()
 
 
-async def list_for_user(db: AsyncSession, user_id: int) -> list[ConnectedAccount]:
+async def list_for_user(db: AsyncSession, user_id: int) -> Sequence[ConnectedAccount]:
     result = await db.execute(select(ConnectedAccount).where(ConnectedAccount.user_id == user_id))
     return result.scalars().all()
 

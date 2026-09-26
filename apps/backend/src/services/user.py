@@ -15,9 +15,8 @@ from ..models.skill import Skill
 from ..models.user import User
 from ..schemas.settings import UserSettings
 from ..schemas.user import TokenPayload, UserBase, UserLoginTokenResponse, UserNameCheckResponse, UserSignup
-from ..utils.file_uploader import FileUploader
+from ..utils.file_storage import get_file_storage_factory
 
-UPLOAD_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'uploads'))
 ALLOWED_AVATAR_TYPES = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}
 MAX_AVATAR_MB = 2
 
@@ -159,18 +158,14 @@ async def upload_avatar(db: AsyncSession, user_id: int, file: UploadFile) -> str
         raise HTTPException(status_code=400, detail='Only JPEG, PNG, WebP and GIF images are accepted')
 
     ext = os.path.splitext(file.filename or 'avatar')[1] or '.jpg'
-    stored_name = f'avatar{ext}'
-    local_key = f'users/{user_id}/avatars/{stored_name}'
-    r2_key = f'{user_id}/avatars/{stored_name}'
-    dest = os.path.join(UPLOAD_BASE, local_key)
-
-    uploader = FileUploader(destination_path=dest, file=file, max_size_mb=MAX_AVATAR_MB)
-    if settings.APP_ENV == 'local':
-        await uploader.upload_local()
-        avatar_url = f'{settings.BACKEND_URL}/uploads/{local_key}'
-    else:
-        await uploader.upload_to_cloudflare(bucket=settings.CLOUDFLARE_R2_BUCKET_NAME, key=r2_key)
-        avatar_url = f'{settings.CLOUDFLARE_R2_PUBLIC_URL}/{r2_key}'
+    file_storage = get_file_storage_factory()(
+        destination_path=f'{user_id}/avatars', file=file, max_size_mb=MAX_AVATAR_MB, stored_name=f'avatar{ext}'
+    )
+    key, _ = await file_storage.upload()
+    base_url = (
+        f'{settings.BACKEND_URL}/uploads/users' if settings.APP_ENV == 'local' else settings.CLOUDFLARE_R2_PUBLIC_URL
+    )
+    avatar_url = f'{base_url}/{key}'
 
     user = await _get_user_or_404(db, user_id)
     user.avatar_url = avatar_url

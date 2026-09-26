@@ -3,12 +3,12 @@ from pydantic import HttpUrl
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..api.deps.pagination import build_paginated_response, get_paginated_response_model, paginate_query
+from ..api.deps.pagination import PaginatedResponse, build_paginated_response, paginate_query
 from ..models.company import Company
 from ..models.job import Job
 from ..schemas.company import CompanyBase, CompanyCreate
 
-PaginatedCompanies = get_paginated_response_model(CompanyBase)
+PaginatedCompanies = PaginatedResponse[CompanyBase]
 
 
 async def get_company_by_id(db: AsyncSession, company_id: int) -> Company | None:
@@ -34,7 +34,7 @@ async def get_companies(
         q = q.where(Company.name.ilike(f'%{search}%'))
 
     count_result = await db.execute(select(func.count()).select_from(q.subquery()))
-    total = count_result.scalar()
+    total = count_result.scalar() or 0
 
     result = await db.execute(paginate_query(q.order_by(Company.name), pagination))
     companies = [CompanyBase.model_validate(c) for c in result.scalars().all()]

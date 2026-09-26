@@ -36,7 +36,7 @@ async def calculate_ats_score(
         raise HTTPException(status_code=404, detail='Job not found')
 
     user_result = await db.execute(select(User).where(User.id == current_user.id))
-    user = user_result.scalar_one_or_none()
+    user = user_result.scalar_one()
 
     # Resolve which resume will be used so we can check the cache before calling the LLM
     resume = (
@@ -94,7 +94,7 @@ async def quick_ats_score(
     extraction limit, which already caps the total LLM cost to an acceptable level.
     """
     user_result = await db.execute(select(User).where(User.id == current_user.id))
-    user = user_result.scalar_one_or_none()
+    user = user_result.scalar_one()
 
     report = await ats_service.score_quick(
         db,
