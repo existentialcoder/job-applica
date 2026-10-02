@@ -1,7 +1,8 @@
 import enum
 from datetime import date
+from typing import Any
 
-from sqlalchemy import JSON, Column, Date, Enum, Float, ForeignKey, Integer, Table, Text, text
+from sqlalchemy import JSON, Column, Date, Enum, Float, ForeignKey, Index, Integer, String, Table, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -74,6 +75,7 @@ class Job(Base):
     ats_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     ats_resume_id: Mapped[int | None] = mapped_column(ForeignKey('resumes.id', ondelete='SET NULL'), nullable=True)
     ats_report: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    applied_resume_id: Mapped[int | None] = mapped_column(ForeignKey('resumes.id', ondelete='SET NULL'), nullable=True)
 
     user: Mapped['User'] = relationship('User')
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
@@ -101,3 +103,18 @@ class JobStatusHistory(Base):
     job_id: Mapped[int] = mapped_column(ForeignKey('jobs.id', ondelete='CASCADE'), nullable=False, index=True)
     from_status: Mapped[str | None] = mapped_column(Text, nullable=True)
     to_status: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class JobAtsScore(Base):
+    """Append-only match score history; jobs.ats_score / ats_report stay a copy of the latest run for sorting."""
+
+    __tablename__ = 'job_ats_scores'
+
+    job_id: Mapped[int] = mapped_column(ForeignKey('jobs.id', ondelete='CASCADE'), nullable=False)
+    resume_id: Mapped[int | None] = mapped_column(ForeignKey('resumes.id', ondelete='SET NULL'), nullable=True)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
+    # {matched, missing, suggestions, preference_flags}
+    report: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    __table_args__ = (Index('ix_job_ats_scores_job_id_created_at', 'job_id', 'created_at'),)
