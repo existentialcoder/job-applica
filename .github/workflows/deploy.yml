@@ -167,19 +167,29 @@ jobs:
           git push origin HEAD:${{ github.ref_name }}
           git push origin "v$VERSION" --force
 
-  # ── Backend → Railway ─────────────────────────────────────────────────────────
   deploy-backend:
-    name: Backend → Railway
+    name: Backend → Oracle VM
     needs: version
     runs-on: ubuntu-latest
     if: always() && inputs.backend
 
     steps:
-      - name: Trigger deploy
+      - name: Deploy to VM
+        env:
+          SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VM_KNOWN_HOSTS }}
+          TARGET: ${{ vars.ORACLE_VM_USER }}@${{ vars.VM_HOST }}
+          BRANCH: ${{ github.ref_name }}
         run: |
-          echo "Railway auto-deploys from GitHub on push."
-          echo "The version commit pushed by the 'version' job triggers Railway automatically."
-          echo "No additional step needed — configure 'Auto Deploy' on the Railway service."
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          echo "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+          ssh "$TARGET" "set -e; cd /opt/job-applica \
+            && git fetch --quiet origin '$BRANCH' && git checkout --quiet --detach FETCH_HEAD \
+            && echo \"Deploying \$(git rev-parse --short HEAD)\" \
+            && docker compose -f docker/docker-compose.prod.yml up -d --build --wait \
+            && docker image prune -f"
 
   # ── Frontend → Cloudflare Pages ───────────────────────────────────────────────
   deploy-frontend:
