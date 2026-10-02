@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-SQLAlchemy
+SQLAlchemy[asyncio]>=2.0.52,<2.1
 asyncpg
 aiofiles
 alembic
