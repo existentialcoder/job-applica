@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AppLogo from '@/components/core/AppLogo.vue';
 import AuthSplitLayout from '@/components/core/AuthSplitLayout.vue';
@@ -28,6 +28,9 @@ const identifier = ref('');
 const securityQuestion = ref('');
 const answer = ref('');
 const otp = ref('');
+watch(otp, (value) => {
+  otp.value = value.replace(/\D/g, '');
+});
 const newPassword = ref('');
 const confirmPassword = ref('');
 const resetToken = ref('');
@@ -227,7 +230,15 @@ async function submitNewPassword() {
             <p class="text-sm text-muted-foreground">Enter the code we sent you.</p>
             <div class="flex flex-col gap-1.5">
               <Label>Verification code</Label>
-              <Input type="text" placeholder="123456" v-model="otp" />
+              <Input
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                pattern="\d{6}"
+                maxlength="6"
+                placeholder="123456"
+                v-model="otp"
+              />
             </div>
             <p class="text-sm text-muted-foreground text-center">
               <span v-if="otpSecondsLeft > 0">Code expires in {{ otpTimeDisplay }}</span>

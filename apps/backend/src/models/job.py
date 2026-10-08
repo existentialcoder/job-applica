@@ -73,8 +73,6 @@ class Job(Base):
     applied_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     notes: Mapped[str] = mapped_column(Text, nullable=True)
     ats_score: Mapped[float | None] = mapped_column(Float, nullable=True)
-    ats_resume_id: Mapped[int | None] = mapped_column(ForeignKey('resumes.id', ondelete='SET NULL'), nullable=True)
-    ats_report: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     applied_resume_id: Mapped[int | None] = mapped_column(ForeignKey('resumes.id', ondelete='SET NULL'), nullable=True)
 
     user: Mapped['User'] = relationship('User')
@@ -106,7 +104,7 @@ class JobStatusHistory(Base):
 
 
 class JobAtsScore(Base):
-    """Append-only match score history; jobs.ats_score / ats_report stay a copy of the latest run for sorting."""
+    """Append-only match score history; jobs.ats_score stays a copy of the latest score for sorting and filtering."""
 
     __tablename__ = 'job_ats_scores'
 

@@ -88,8 +88,6 @@ export interface JobData {
   applied_date?: string;
   notes?: string;
   ats_score?: number | null;
-  ats_resume_id?: number | null;
-  ats_report?: ATSReport | null;
   created_at?: string;
   updated_at?: string;
 }

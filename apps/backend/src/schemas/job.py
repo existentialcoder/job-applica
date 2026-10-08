@@ -80,8 +80,6 @@ class JobBase(BaseSchema):
     notes: str | None = None
 
     ats_score: float | None = None
-    ats_resume_id: int | None = None
-    ats_report: dict | None = None
 
     model_config = {'from_attributes': True}
 
@@ -112,7 +110,6 @@ class JobCreate(BaseModel):
 
     ats_score: float | None = None
     ats_report: dict | None = None
-    ats_resume_id: int | None = None
 
 
 class JobUpdate(BaseModel):

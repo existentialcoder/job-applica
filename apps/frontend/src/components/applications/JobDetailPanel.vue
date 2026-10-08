@@ -53,7 +53,7 @@ const emit = defineEmits<{
   (e: 'update:open', val: boolean): void;
   (e: 'save', id: number, payload: JobCreatePayload): void;
   (e: 'tab-change', tab: 'details' | 'ats'): void;
-  (e: 'score-updated', jobId: number, update: { ats_score: number; ats_report: ATSReport }): void;
+  (e: 'score-updated', jobId: number, update: { ats_score: number }): void;
 }>();
 
 const POSITION_OPTIONS = ['Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager'];
@@ -173,8 +173,8 @@ function atsTierLabel(score: number) {
 
 async function loadResumes() {
   await resumesStore.fetch();
-  if (props.job?.ats_resume_id) {
-    selectedResumeId.value = String(props.job.ats_resume_id);
+  if (atsReport.value?.resume_id) {
+    selectedResumeId.value = String(atsReport.value.resume_id);
   } else {
     const def = resumesStore.resumes.find((r) => (r as any).is_default);
     selectedResumeId.value = def ? String(def.id) : resumesStore.resumes.length ? String(resumesStore.resumes[0].id) : '';
@@ -196,7 +196,7 @@ async function calculateScore() {
       selectedResumeId.value ? Number(selectedResumeId.value) : null
     );
     atsReport.value = report;
-    emit('score-updated', props.job.id, { ats_score: report.score, ats_report: report });
+    emit('score-updated', props.job.id, { ats_score: report.score });
     toast.success(`Match score: ${Math.round(report.score)}/100`);
   } catch (err: any) {
     toast.error(err.message ?? 'Scoring failed');
@@ -218,7 +218,7 @@ watch(activeTab, (tab) => {
 
 watch(
   () => props.open,
-  (open) => {
+  async (open) => {
     if (!open) {
       isEditingUrl.value = false;
       atsReport.value = null;
@@ -245,9 +245,10 @@ watch(
     description.value = job.description || '';
     notes.value = job.notes || '';
 
-    // Restore persisted ATS report
-    if (job.ats_report) {
-      atsReport.value = job.ats_report as ATSReport;
+    if (job.ats_score != null) {
+      const report = await dataservice.getLatestAtsScore(job.id);
+      if (!props.open || props.job?.id !== job.id) return;
+      atsReport.value = report;
     }
 
     if (activeTab.value === 'ats') {

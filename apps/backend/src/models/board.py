@@ -29,7 +29,7 @@ class Board(Base):
     stages: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
     is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text('false'))
 
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
 
     def __repr__(self) -> str:
         return f'<Board id={self.id} name={self.name}>'

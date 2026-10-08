@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from ..api.deps.pagination import PaginatedResponse, build_paginated_response, paginate_query
 from ..core.constants import Constants
 from ..models.company import Company
-from ..models.job import Job, JobStatusHistory
+from ..models.job import Job, JobAtsScore, JobStatusHistory
 from ..schemas.company import CompanyCreate
 from ..schemas.job import JobBase, JobCreate, JobFilterParams, JobUpdate
 from ..schemas.skill import SkillCreate
@@ -200,9 +200,22 @@ async def create_job(db: AsyncSession, user: UserBase, job_in: JobCreate) -> Job
     job_data = await get_transformed_job(db, job_in, user)
     if not job_data.get('company'):
         raise HTTPException(status_code=400, detail='Company is required')
+    ats_report = job_data.pop('ats_report', None)
     db_job = Job(**job_data)
     db.add(db_job)
     db.add(JobStatusHistory(job=db_job, to_status=db_job.status))
+    if ats_report and db_job.ats_score is not None:
+        await db.flush()
+        # Scored by the extension against unsaved page text, so there's no input hash to reuse as a cache key.
+        db.add(
+            JobAtsScore(
+                job_id=db_job.id,
+                resume_id=ats_report.get('resume_id'),
+                score=db_job.ats_score,
+                report=ats_report,
+                input_hash='',
+            )
+        )
     await db.commit()
     result = await db.execute(_eager(select(Job).where(Job.id == db_job.id)))
     return JobBase.model_validate(result.scalar_one())

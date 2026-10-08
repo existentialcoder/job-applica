@@ -55,7 +55,7 @@ async def plan_limit_handler(_: Request, exc: PlanLimitReached):
 
 @app.get('/health', tags=['Health'], include_in_schema=False)
 def health():
-    return {'status': 'ok'}
+    return {'status': 'ok', 'commit': settings.GIT_SHA}
 
 
 app.add_middleware(

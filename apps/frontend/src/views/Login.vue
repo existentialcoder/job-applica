@@ -12,9 +12,11 @@ import { FormControl, FormField, FormLabel, FormItem, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useAuthStore } from '@/stores/auth';
+import { useFeatureStore } from '@/stores/features';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const featureStore = useFeatureStore();
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
@@ -85,7 +87,13 @@ function loginWithLinkedIn() {
           Continue with Google
         </Button>
 
-        <Button variant="outline" class="w-full gap-2" type="button" @click="loginWithLinkedIn">
+        <Button
+          v-if="featureStore.flags.linkedin_oauth === true"
+          variant="outline"
+          class="w-full gap-2"
+          type="button"
+          @click="loginWithLinkedIn"
+        >
           <LinkedInLogo :size="16" />
           Continue with LinkedIn
         </Button>

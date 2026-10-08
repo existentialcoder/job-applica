@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16
+    image: postgres:18
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -8,36 +8,19 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  app:
-    build:
-      context: ../apps/backend
-    env_file:
-      - ../apps/backend/.env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/job_applica
-    volumes:
-      - ../apps/backend/uploads:/app/uploads
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  frontend:
-    build:
-      context: ..
-      dockerfile: apps/frontend/Dockerfile
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+  mailpit:
+    image: axllent/mailpit:latest
     ports:
-      - "8000:80"
-    depends_on:
-      - app
+      - "8025:8025"  # web UI — view caught emails at http://localhost:8025
+      - "1025:1025"  # SMTP — matches SMTP_HOST/SMTP_PORT default in apps/backend/.env
 
 volumes:
   postgres_data:
+    name: postgres_data

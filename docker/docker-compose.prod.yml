@@ -23,6 +23,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # uvicorn's --workers default; set here, not in the Dockerfile, so Railway keeps one worker until cutover
       WEB_CONCURRENCY: 2
+      GIT_SHA: ${GIT_SHA:-}
     depends_on:
       postgres:
         condition: service_healthy

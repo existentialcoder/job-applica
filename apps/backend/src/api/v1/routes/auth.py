@@ -7,13 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
+from sqlalchemy import case, func, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core.config import settings
 from ....core.constants import Constants
 from ....core.utils import create_token, hash_password, verify_password
-from ....models.user import User
+from ....models.user import AccountRecovery, User
 from ....schemas import user as schemas
 from ....services import connected_accounts as ca_service
 from ....services import oauth as oauth_service
@@ -216,10 +217,13 @@ async def get_retry_mechanism(user_identifier: str, db: AsyncSession = Depends(g
     get_user_handler = user_service.get_user_by_email if is_email else user_service.get_user_by_user_name
     target_user = await get_user_handler(db, user_identifier)
 
+    security_question = await db.scalar(
+        select(AccountRecovery.security_question).where(AccountRecovery.user_id == target_user.id)
+    )
     # If security_question is provided always use it
-    if target_user.security_question:
+    if security_question:
         return ResetMechanismResponse(
-            mechanism=ResetMechanism.security_question, context={'security_question': target_user.security_question}
+            mechanism=ResetMechanism.security_question, context={'security_question': security_question}
         )
 
     return ResetMechanismResponse(mechanism=ResetMechanism.otp, context={'request_for_email': is_email == False})
@@ -238,13 +242,12 @@ async def request_reset_otp(user_identifier: str, db: AsyncSession = Depends(get
     otp_code = f'{secrets.randbelow(1_000_000):06d}'
     expires_at = datetime.now(UTC) + timedelta(minutes=Constants.OTP_EXPIRE_MINUTES)
 
-    target_user.settings = {
-        **target_user.settings,
-        'otp': {
-            'value': hash_password(otp_code),
-            'expires_at': expires_at.isoformat(),
-        },
-    }
+    otp_values = {'otp_hash': hash_password(otp_code), 'otp_expires_at': expires_at}
+    await db.execute(
+        insert(AccountRecovery)
+        .values(user_id=target_user.id, **otp_values)
+        .on_conflict_do_update(index_elements=[AccountRecovery.user_id], set_={**otp_values, 'updated_at': func.now()})
+    )
     await db.commit()
 
     await email_service.send_template_email(
@@ -261,6 +264,36 @@ async def request_reset_otp(user_identifier: str, db: AsyncSession = Depends(get
     return {'ok': True}
 
 
+async def _reserve_reset_attempt(db: AsyncSession, user_id: int) -> bool:
+    lock_expired = AccountRecovery.reset_locked_until <= func.now()
+    stmt = (
+        insert(AccountRecovery)
+        .values(user_id=user_id, reset_attempts=1)
+        .on_conflict_do_update(
+            index_elements=[AccountRecovery.user_id],
+            set_={
+                'reset_attempts': case((lock_expired, 1), else_=AccountRecovery.reset_attempts + 1),
+                'reset_locked_until': case(
+                    (lock_expired, None),
+                    (
+                        AccountRecovery.reset_attempts + 1 >= Constants.RESET_MAX_ATTEMPTS,
+                        func.coalesce(
+                            AccountRecovery.reset_locked_until,
+                            func.now() + timedelta(minutes=Constants.RESET_LOCKOUT_MINUTES),
+                        ),
+                    ),
+                    else_=AccountRecovery.reset_locked_until,
+                ),
+                'updated_at': func.now(),
+            },
+        )
+        .returning(AccountRecovery.reset_attempts)
+    )
+    attempts = (await db.execute(stmt)).scalar_one()
+    await db.commit()
+    return attempts <= Constants.RESET_MAX_ATTEMPTS
+
+
 @router.post('/verify-reset-mechanism', description='API to verify the security question and answer to reset password')
 async def verify_reset_mechanism(payload: VerifyResetMechanismRequest, db: AsyncSession = Depends(get_db)):
     user_identifier = payload.user_identifier
@@ -270,16 +303,18 @@ async def verify_reset_mechanism(payload: VerifyResetMechanismRequest, db: Async
     get_user_handler = user_service.get_user_by_email if is_email else user_service.get_user_by_user_name
     target_user = await get_user_handler(db, user_identifier)
 
-    if payload.mechanism == ResetMechanism.security_question and target_user.security_question != payload.question:
+    if not await _reserve_reset_attempt(db, target_user.id):
+        raise HTTPException(
+            status_code=429,
+            detail=f'Too many tries. Wait {Constants.RESET_LOCKOUT_MINUTES} minutes, then try again.',
+        )
+    recovery = await db.scalar(select(AccountRecovery).where(AccountRecovery.user_id == target_user.id))
+    assert recovery  # _reserve_reset_attempt just upserted it
+
+    if payload.mechanism == ResetMechanism.security_question and recovery.security_question != payload.question:
         raise HTTPException(status_code=401, detail='Invalid security question')
     if payload.mechanism == ResetMechanism.otp:
-        otp_expires_at = target_user.settings.get('otp', {}).get('expires_at')
-        if not otp_expires_at:
-            raise HTTPException(status_code=401, detail='OTP has expired')
-        expiry = datetime.fromisoformat(otp_expires_at)
-        if expiry.tzinfo is None:
-            expiry = expiry.replace(tzinfo=UTC)
-        if expiry < datetime.now(UTC):
+        if not recovery.otp_expires_at or recovery.otp_expires_at < datetime.now(UTC):
             raise HTTPException(status_code=401, detail='OTP has expired')
 
     token_data = schemas.TokenPayload(
@@ -291,11 +326,10 @@ async def verify_reset_mechanism(payload: VerifyResetMechanismRequest, db: Async
     ).model_dump()
 
     if payload.mechanism == ResetMechanism.security_question:
-        hashed_answer = target_user.hashed_security_answer
+        hashed_answer = recovery.hashed_security_answer
         is_valid = verify_password(payload.answer, hashed_answer) if hashed_answer else False
     else:
-        stored_otp_hash = target_user.settings.get('otp', {}).get('value')
-        is_valid = bool(stored_otp_hash) and verify_password(payload.answer, stored_otp_hash)
+        is_valid = recovery.otp_hash is not None and verify_password(payload.answer, recovery.otp_hash)
 
     token = (
         create_token(
@@ -309,8 +343,11 @@ async def verify_reset_mechanism(payload: VerifyResetMechanismRequest, db: Async
         else None
     )
 
-    if payload.mechanism == ResetMechanism.otp and is_valid:
-        target_user.settings = {**target_user.settings, 'otp': {}}
+    if is_valid:
+        recovery.reset_attempts = 0
+        recovery.reset_locked_until = None
+        recovery.otp_hash = None
+        recovery.otp_expires_at = None
         await db.commit()
 
     return VerifyResetMechanismResponse(is_valid=is_valid, token=token)

@@ -10,6 +10,7 @@ from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision: str = 'b2c4e8f1a390'
 down_revision: str | Sequence[str] | None = 'ea3fb2d04124'
@@ -54,7 +55,9 @@ def upgrade() -> None:
     # 5. Add new typed status column from temp
     op.add_column(
         'jobs',
-        sa.Column('status', sa.Enum(*APPLICATION_STATUSES, name='applicationstatus', create_type=False), nullable=True),
+        sa.Column(
+            'status', postgresql.ENUM(*APPLICATION_STATUSES, name='applicationstatus', create_type=False), nullable=True
+        ),
     )
     op.execute("UPDATE jobs SET status = status_temp::applicationstatus")
     op.alter_column('jobs', 'status', nullable=False)
@@ -64,7 +67,9 @@ def upgrade() -> None:
     op.add_column(
         'jobs',
         sa.Column(
-            'source_platform', sa.Enum(*SOURCE_PLATFORMS, name='sourceplatform', create_type=False), nullable=True
+            'source_platform',
+            postgresql.ENUM(*SOURCE_PLATFORMS, name='sourceplatform', create_type=False),
+            nullable=True,
         ),
     )
     op.drop_column('jobs', 'source_platform_temp')
@@ -90,7 +95,9 @@ def downgrade() -> None:
     op.drop_column('jobs', 'status')
     op.add_column(
         'jobs',
-        sa.Column('status', sa.Enum('Open', 'Closed', 'Pending', name='jobstatus', create_type=False), nullable=True),
+        sa.Column(
+            'status', postgresql.ENUM('Open', 'Closed', 'Pending', name='jobstatus', create_type=False), nullable=True
+        ),
     )
     op.execute("UPDATE jobs SET status = status_temp::jobstatus")
     op.alter_column('jobs', 'status', nullable=False)
