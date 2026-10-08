@@ -7,3 +7,5 @@ class Constants:
     EMAIL_REGEX: str = r'^[^@\s]+@[^@\s]+\.[^@\s]+$'
     RESET_TOKEN_EXPIRE_MINUTES: int = 5
     OTP_EXPIRE_MINUTES: int = 2
+    RESET_MAX_ATTEMPTS: int = 5
+    RESET_LOCKOUT_MINUTES: int = 15

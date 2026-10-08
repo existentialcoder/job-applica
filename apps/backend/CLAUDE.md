@@ -6,7 +6,7 @@ Python 3.12+, FastAPI, SQLAlchemy 2.x async ORM, Pydantic v2, Alembic for migrat
 
 `apps/backend/api-backend-env` is the only venv that should ever exist. Never hand-create a second one (e.g. `api-backend-venv`); if lint tooling seems missing from the venv, fix `make build` / reinstall into the canonical one rather than creating a new one. `make build` installs **both** `requirements.txt` and `requirements-dev.txt` (the dev file carries `ruff`/`mypy`) — if a fresh venv is missing those tools, that's the target to check first.
 
-Run the backend locally: `make run-local` (starts Postgres in Docker, builds the venv, runs migrations, starts uvicorn with `--reload`).
+Run the backend locally: `yarn dev:backend` from the root (= `make dev` here: starts Postgres + Mailpit via `docker/docker-compose.yml`, installs the venv if requirements changed, runs migrations, starts uvicorn with `--reload`). Run the frontend alongside with `yarn dev:frontend`. App code always runs natively; Docker is only for services.
 
 ## Linting & typing
 

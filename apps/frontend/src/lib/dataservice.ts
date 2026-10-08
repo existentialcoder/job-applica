@@ -448,6 +448,13 @@ const resumes = {
     });
   },
 
+  async getLatestAtsScore(jobId: number): Promise<ATSReport | null> {
+    const response = await apiFetch(`${API_BASE}/jobs/${jobId}/ats-score`, {
+      headers: { ...authHeaders() }
+    });
+    return response.ok ? response.json() : null;
+  },
+
   async calculateAtsScore(jobId: number, resumeId?: number | null): Promise<ATSReport> {
     const response = await apiFetch(`${API_BASE}/jobs/${jobId}/ats-score`, {
       method: 'POST',

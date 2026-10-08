@@ -1,8 +1,11 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....models.job import Job
+from ....models.user import UsageCounter
 from ....schemas import job as schemas
 from ....schemas.user import UserBase
 from ....services import job as job_service
@@ -11,7 +14,9 @@ from ....services import plan as plan_service
 from ...deps.auth import get_current_user
 from ...deps.db import get_db
 from ...deps.pagination import pagination_params
-from ...deps.plan import extraction_gate, plan_gate
+from ...deps.plan import plan_gate
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix='/jobs')
 
@@ -72,7 +77,20 @@ async def delete_job(job_id: int, user: UserBase = Depends(get_current_user), db
     return {'detail': 'Job deleted'}
 
 
-@router.post('/extract-from-page', response_model=schemas.JobExtractResult, dependencies=[extraction_gate()])
+@router.post(
+    '/extract-from-page',
+    response_model=schemas.JobExtractResult,
+    dependencies=[
+        plan_gate(
+            'max_monthly_extractions',
+            lambda uid: select(UsageCounter.count).where(
+                UsageCounter.user_id == uid,
+                UsageCounter.resource == plan_service.EXTRACTION_RESOURCE,
+                UsageCounter.period == plan_service.current_month(),
+            ),
+        )
+    ],
+)
 async def extract_job_from_page(
     payload: schemas.PageExtractRequest,
     current_user: UserBase = Depends(get_current_user),
@@ -82,6 +100,7 @@ async def extract_job_from_page(
         data = await llm_service.extract_job_from_page(payload.page_text, payload.url)
         result = schemas.JobExtractResult(**data)
     except Exception:
+        logger.exception('Job extraction failed for %s', payload.url)
         return schemas.JobExtractResult(is_job_page=False)
 
     if result.is_job_page:

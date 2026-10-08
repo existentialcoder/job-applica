@@ -1,0 +1,115 @@
+name: Release Extension
+
+# release-please keeps a release PR open for apps/browser-extension (version + changelog from
+# conventional commits touching that path). Merging it tags extension-vX.Y.Z and publishes below.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.rp.outputs['apps/browser-extension--release_created'] }}
+      version: ${{ steps.rp.outputs['apps/browser-extension--version'] }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: rp
+
+  chrome:
+    name: Extension → Chrome Web Store
+    needs: release-please
+    if: needs.release-please.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Prepare manifest
+        run: node apps/browser-extension/scripts/prepare-release.mjs
+        env:
+          VERSION: ${{ needs.release-please.outputs.version }}
+          FRONTEND_URL: https://app.jobapplica.io
+          BACKEND_URL: https://api.jobapplica.io
+
+      - name: Build
+        run: yarn workspace jobapplica--extension build:prod
+
+      - name: Package
+        run: cd apps/browser-extension/dist && zip -r ../extension-chrome.zip .
+
+      - name: Publish
+        run: |
+          npx chrome-webstore-upload-cli@4 upload \
+            --source apps/browser-extension/extension-chrome.zip \
+            --extension-id ${{ secrets.CHROME_EXTENSION_ID }} \
+            --auto-publish
+        env:
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-chrome-v${{ needs.release-please.outputs.version }}
+          path: apps/browser-extension/extension-chrome.zip
+          retention-days: 30
+
+  firefox:
+    name: Extension → Firefox AMO
+    needs: release-please
+    if: needs.release-please.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Prepare manifest
+        run: node apps/browser-extension/scripts/prepare-release.mjs --firefox
+        env:
+          VERSION: ${{ needs.release-please.outputs.version }}
+          FRONTEND_URL: https://app.jobapplica.io
+          BACKEND_URL: https://api.jobapplica.io
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+
+      - name: Build
+        run: yarn workspace jobapplica--extension build:prod
+
+      # web-ext no longer accepts --id; it reads browser_specific_settings.gecko.id from the
+      # manifest, which "Prepare manifest" injects from FIREFOX_EXTENSION_ID.
+      - name: Publish
+        run: |
+          npx web-ext sign \
+            --source-dir apps/browser-extension/dist \
+            --channel listed \
+            --api-key ${{ secrets.FIREFOX_API_KEY }} \
+            --api-secret ${{ secrets.FIREFOX_API_SECRET }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-firefox-v${{ needs.release-please.outputs.version }}
+          path: apps/browser-extension/dist/
+          retention-days: 30

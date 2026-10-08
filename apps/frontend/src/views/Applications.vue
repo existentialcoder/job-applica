@@ -35,7 +35,7 @@ import { ATS_SCORE_TIERS, DEFAULT_BOARD_STAGES } from '@/lib/constants';
 import dataservice, { type JobFilters } from '@/lib/dataservice';
 import { emptyJobFilters, type JobFiltersFormValues } from '@/lib/jobFilters';
 import { toast } from '@/lib/toast';
-import type { JobData, JobCreatePayload, StageData, ATSReport } from '@/lib/types';
+import type { JobData, JobCreatePayload, StageData } from '@/lib/types';
 import { useBoardsStore } from '@/stores/boards';
 import { useCompaniesStore } from '@/stores/companies';
 import { useSettingsStore } from '@/stores/settings';
@@ -242,7 +242,7 @@ async function handleSaveEdit(jobId: number, payload: JobCreatePayload) {
   }
 }
 
-function handleScoreUpdated(jobId: number, update: { ats_score: number; ats_report: ATSReport }) {
+function handleScoreUpdated(jobId: number, update: { ats_score: number }) {
   if (editingJob.value?.id === jobId) {
     editingJob.value = { ...editingJob.value, ...update };
   }

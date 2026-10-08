@@ -27,7 +27,6 @@ class UserBase(BaseSchema):
     email: EmailStr | None = None
     signup_key: UserSignupKey
     has_password: bool = False
-    security_question: str | None = None
     avatar_url: str | None = None
     plan: str = 'free'
 

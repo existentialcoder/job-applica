@@ -1,50 +1,19 @@
 SHELL := /bin/bash
-.ONESHELL:
-.PHONY: build run-local run-db activate-env
-
-DB_CONTAINER := some-postgres
-DB_VOLUME    := postgres_data
+.PHONY: build services dev
 
 VENV_DIR := api-backend-env
-PYTHON := python3
-PIP := $(VENV_DIR)/bin/pip
+COMPOSE  := docker compose -f ../../docker/docker-compose.yml
 
-activate-env:
-	@echo "🔹 Activating virtual environment..."
-	if [ ! -d "$(VENV_DIR)" ]; then
-		echo "Creating virtual environment..."
-		$(PYTHON) -m venv $(VENV_DIR)
-	fi
-	source $(VENV_DIR)/bin/activate
-	echo "✅ Virtual environment activated."
+build: $(VENV_DIR)/.installed
+$(VENV_DIR)/.installed: requirements.txt requirements-dev.txt
+	test -d $(VENV_DIR) || python3 -m venv $(VENV_DIR)
+	$(VENV_DIR)/bin/pip install -r requirements.txt -r requirements-dev.txt
+	touch $@
 
-build: activate-env
-	@echo "🔹 Installing dependencies..."
-	$(PIP) install -r requirements.txt -r requirements-dev.txt
-	@echo "✅ Dependencies installed."
+services:
+	$(COMPOSE) up -d --wait
+	@echo "📬 Caught emails: http://localhost:8025"
 
-run-db:
-	@echo "🔹 Starting PostgreSQL..."
-	if docker ps -q -f name=$(DB_CONTAINER) | grep -q .; then \
-		echo "✅ PostgreSQL already running."; \
-	elif docker ps -aq -f name=$(DB_CONTAINER) | grep -q .; then \
-		docker start $(DB_CONTAINER); \
-		echo "✅ PostgreSQL container restarted."; \
-	else \
-		docker volume create $(DB_VOLUME); \
-		docker run \
-			--name $(DB_CONTAINER) \
-			-e POSTGRES_PASSWORD=password \
-			-e POSTGRES_DB=job_applica \
-			-p 5432:5432 \
-			-v $(DB_VOLUME):/var/lib/postgresql/data \
-			-d postgres:16; \
-		echo "✅ PostgreSQL container created with persistent volume '$(DB_VOLUME)'."; \
-	fi
-
-run-local: run-db build
-	@echo "🔹 Running the project locally..."
-	chmod +x ./run.sh
+dev: services build
 	$(VENV_DIR)/bin/alembic upgrade head
 	$(VENV_DIR)/bin/python -m uvicorn src.main:app --reload
-

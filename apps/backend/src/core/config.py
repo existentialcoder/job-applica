@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     AUTH_SECRET: str
     BACKEND_CORS_ORIGINS: list[str] = ['http://localhost:5173', 'http://localhost:8000']
     LOG_LEVEL: str = 'INFO'
+    GIT_SHA: str = ''
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 

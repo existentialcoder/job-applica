@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "2fba9b82b134e0e6bdc6ed25df2f9d9a0a6abbae",
+  "packages": {
+    "apps/browser-extension": {
+      "release-type": "node",
+      "component": "extension",
+      "extra-files": [{ "type": "json", "path": "public/manifest.json", "jsonpath": "$.version" }]
+    }
+  }
+}

@@ -1,12 +1,16 @@
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 
+from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import settings
 from ..core.exceptions import PlanLimitReached
+from ..models.user import UsageCounter
 
 WARN_THRESHOLD = 0.8
+EXTRACTION_RESOURCE = 'monthly_extractions'
 
 
 def _get_limit(plan: str, resource: str) -> int:
@@ -43,39 +47,20 @@ def warning_header(warning: dict | None) -> dict:
     return {'X-Plan-Warning': json.dumps(warning)}
 
 
-def _current_month() -> str:
-    return datetime.utcnow().strftime('%Y-%m')
-
-
-def _extraction_count(user_settings: dict) -> int:
-    """Return this month's extraction count from user.settings, resetting if month changed."""
-    data = user_settings.get('ext_extractions', {})
-    if data.get('month') != _current_month():
-        return 0
-    return data.get('count', 0)
-
-
-def check_extraction_limit(plan: str, user_settings: dict) -> None:
-    """Raise PlanLimitReached if the user has exhausted their monthly extraction quota."""
-    limit = _get_limit(plan, 'max_monthly_extractions')
-    if limit == -1:
-        return
-    current = _extraction_count(user_settings)
-    if current >= limit:
-        raise PlanLimitReached(
-            resource='monthly_extractions',
-            current=current,
-            limit=limit,
-            plan=plan,
-        )
+def current_month() -> str:
+    return datetime.now(UTC).strftime('%Y-%m')
 
 
 async def increment_extraction_count(db: AsyncSession, user) -> None:
     """Increment the monthly extraction counter for a confirmed job-page scan."""
-    limit = _get_limit(user.plan, 'max_monthly_extractions')
-    if limit == -1:
+    if _get_limit(user.plan, 'max_monthly_extractions') == -1:
         return
-    month = _current_month()
-    count = _extraction_count(user.settings)
-    user.settings = {**user.settings, 'ext_extractions': {'month': month, 'count': count + 1}}
+    await db.execute(
+        insert(UsageCounter)
+        .values(user_id=user.id, resource=EXTRACTION_RESOURCE, period=current_month(), count=1)
+        .on_conflict_do_update(
+            constraint='uq_usage_counters_user_resource_period',
+            set_={'count': UsageCounter.count + 1, 'updated_at': func.now()},
+        )
+    )
     await db.commit()

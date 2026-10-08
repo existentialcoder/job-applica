@@ -5,23 +5,22 @@ Revises: None
 Create Date: 2025-11-01 00:00:00.000000
 
 """
-from typing import Sequence, Union
 
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy import inspect
-
+from sqlalchemy.dialects import postgresql
 
 revision: str = '0000000000'
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _existing_types(conn) -> set:
-    return {r[0] for r in conn.execute(
-        sa.text("SELECT typname FROM pg_type WHERE typtype = 'e'")
-    ).fetchall()}
+    return {r[0] for r in conn.execute(sa.text("SELECT typname FROM pg_type WHERE typtype = 'e'")).fetchall()}
 
 
 def upgrade() -> None:
@@ -101,17 +100,33 @@ def upgrade() -> None:
         op.create_index('ix_locations_state', 'locations', ['state'])
         op.create_index('ix_locations_country', 'locations', ['country'])
 
-    op.execute("DO $$ BEGIN CREATE TYPE jobstatus AS ENUM ('Open', 'Closed', 'Pending'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;")
-    op.execute("DO $$ BEGIN CREATE TYPE jobposition AS ENUM ('Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;")
-    op.execute("DO $$ BEGIN CREATE TYPE jobworkmodel AS ENUM ('On-site', 'Remote', 'Hybrid'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;")
+    op.execute(
+        "DO $$ BEGIN CREATE TYPE jobstatus AS ENUM ('Open', 'Closed', 'Pending'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;"
+    )
+    op.execute(
+        "DO $$ BEGIN CREATE TYPE jobposition AS ENUM ('Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;"
+    )
+    op.execute(
+        "DO $$ BEGIN CREATE TYPE jobworkmodel AS ENUM ('On-site', 'Remote', 'Hybrid'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;"
+    )
 
     if 'jobs' not in tables:
         op.create_table(
             'jobs',
             sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
             sa.Column('title', sa.String(255), nullable=False),
-            sa.Column('status', sa.Enum('Open', 'Closed', 'Pending', name='jobstatus', create_type=False), nullable=False),
-            sa.Column('position', sa.Enum('Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager', name='jobposition', create_type=False), nullable=True),
+            sa.Column(
+                'status',
+                postgresql.ENUM('Open', 'Closed', 'Pending', name='jobstatus', create_type=False),
+                nullable=False,
+            ),
+            sa.Column(
+                'position',
+                postgresql.ENUM(
+                    'Intern', 'Junior', 'Mid', 'Senior', 'Lead', 'Manager', name='jobposition', create_type=False
+                ),
+                nullable=True,
+            ),
             sa.Column('category', sa.String(100), nullable=True),
             sa.Column('salary_range', sa.String(100), nullable=True),
             sa.Column('description', sa.String(500), nullable=True),
@@ -119,7 +134,11 @@ def upgrade() -> None:
             sa.Column('source_url', sa.String(500), nullable=True),
             sa.Column('user_id', sa.Integer(), nullable=False),
             sa.Column('company_id', sa.Integer(), nullable=True),
-            sa.Column('work_model', sa.Enum('On-site', 'Remote', 'Hybrid', name='jobworkmodel', create_type=False), nullable=False),
+            sa.Column(
+                'work_model',
+                postgresql.ENUM('On-site', 'Remote', 'Hybrid', name='jobworkmodel', create_type=False),
+                nullable=False,
+            ),
             sa.Column('location_id', sa.Integer(), nullable=True),
             sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
             sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),

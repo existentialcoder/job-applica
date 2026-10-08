@@ -20,21 +20,20 @@ apps/
   website/            Nuxt marketing site
 packages/
   ui/                 @job-applica/ui — shared shadcn-vue-style component library
-scripts/pre-commit.sh  husky pre-commit hook (backend + frontend checks)
+scripts/pre-commit.sh  husky pre-commit hook (runs `make check`)
 Makefile               root-level check/fix targets (see below)
 ```
 
 ## Root-level tooling
 
-- `Makefile` (repo root): `make check` / `make check-backend` / `make check-frontend` (read-only, CI-style) and `make fix` / `make fix-backend` / `make fix-frontend` (autofix). These should always mirror what `scripts/pre-commit.sh` does — if you change one, check the other.
-- `scripts/pre-commit.sh` (husky pre-commit hook): runs ruff+mypy on staged backend `.py` files, eslint on staged frontend files. mypy and `vue-tsc` type-check the *whole* project graph (they need full context to resolve imports) but only fail the commit on errors whose file is actually staged — a slow pre-commit isn't necessarily about how much you personally changed.
+- `Makefile` (repo root): `make check` / `make check-backend` / `make check-frontend` (read-only, CI-style) and `make fix` / `make fix-backend` / `make fix-frontend` (autofix). The Makefile is the single source of truth for lint/type rules.
+- `scripts/pre-commit.sh` (husky pre-commit hook): just runs `make check` across the whole repo, whatever is staged — if `make fix` then `make check` pass, the commit passes. Add or change checks in the Makefile, never in the hook.
 - Don't add `prettier --write` back into either the Makefile or the pre-commit script — see the frontend `CLAUDE.md`'s "No Prettier" section for why.
 
 ## Versioning
 
-- `apps/frontend`, `apps/backend`, and the root `package.json` version fields are currently unused (nothing reads them) — they're not the versioning mechanism for this repo, deploys are continuous.
-- `apps/browser-extension` is the one component genuinely versioned (`yarn release:extension` / `:minor` / `:major`), because the Chrome Web Store requires a strictly incrementing manifest version on every submission. Keep it independent of everything else's release cadence.
-- If real cross-app versioning is ever wanted, the root `package.json`'s version field is the natural single source of truth (ask before assuming this has been implemented — it hasn't, as of this writing).
+- Backend, frontend and website are not versioned — they deploy continuously (`.github/workflows/deploy.yml`, manual dispatch) and a deploy is identified by its commit (`GET /health` returns `commit`). `apps/frontend`/`apps/website` keep `"version": "0.0.0"` only because yarn 1 ignores workspaces without one; never bump it.
+- `apps/browser-extension` is the one versioned component (the stores require a strictly increasing version). release-please (`release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-extension.yml`) keeps a release PR open on `main` built from conventional commits touching that path; merging it bumps `package.json` + `public/manifest.json`, tags `extension-vX.Y.Z` and publishes to Chrome + Firefox. Don't bump the extension version by hand.
 
 ## General conventions
 

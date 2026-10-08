@@ -3,12 +3,6 @@ name: Deploy
 on:
   workflow_dispatch:
     inputs:
-      bump:
-        description: 'Version bump (auto = derive from commits)'
-        required: true
-        type: choice
-        options: [auto, patch, minor, major, none]
-        default: auto
       backend:
         description: 'Backend'
         type: boolean
@@ -21,164 +15,22 @@ on:
         description: 'Website'
         type: boolean
         default: false
-      extension:
-        description: 'Extension — Chrome'
-        type: boolean
-        default: false
-      extension_firefox:
-        description: 'Extension — Firefox'
-        type: boolean
-        default: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  # ── Version bump ─────────────────────────────────────────────────────────────
-  version:
-    name: Bump Versions
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.bump.outputs.version }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Resolve bump type from commits
-        id: resolve
-        run: |
-          INPUT="${{ inputs.bump }}"
-
-          if [[ "$INPUT" != "auto" ]]; then
-            echo "bump=$INPUT" >> $GITHUB_OUTPUT
-            echo "Bump override: $INPUT"
-            exit 0
-          fi
-
-          # Find commits since last tag
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [[ -z "$LAST_TAG" ]]; then
-            RANGE="HEAD"
-          else
-            RANGE="$LAST_TAG..HEAD"
-          fi
-
-          COMMITS=$(git log "$RANGE" --pretty=format:"%s")
-          echo "Analysing commits since ${LAST_TAG:-beginning}:"
-          echo "$COMMITS"
-
-          BUMP="patch"
-          while IFS= read -r msg; do
-            # Breaking change: feat!: or fix!: or BREAKING CHANGE in body
-            if echo "$msg" | grep -qE '^[a-z]+(\([^)]+\))?!:' || echo "$msg" | grep -qi "BREAKING CHANGE"; then
-              BUMP="major"
-              break
-            fi
-            # New feature
-            if echo "$msg" | grep -qE '^feat(\([^)]+\))?:'; then
-              BUMP="minor"
-            fi
-          done <<< "$COMMITS"
-
-          echo "bump=$BUMP" >> $GITHUB_OUTPUT
-          echo "Auto-resolved bump: $BUMP"
-
-      - name: Bump versions
-        id: bump
-        run: |
-          bump_semver() {
-            local v=$1 type=$2
-            IFS='.' read -r maj min pat <<< "$v"
-            case "$type" in
-              major) echo "$((maj+1)).0.0" ;;
-              minor) echo "$maj.$((min+1)).0" ;;
-              patch) echo "$maj.$min.$((pat+1))" ;;
-            esac
-          }
-
-          set_pkg_version() {
-            local dir=$1 ver=$2
-            node -e "
-              const fs = require('fs');
-              const p = JSON.parse(fs.readFileSync('$dir/package.json'));
-              p.version = '$ver';
-              fs.writeFileSync('$dir/package.json', JSON.stringify(p, null, 2) + '\n');
-            "
-          }
-
-          BUMP="${{ steps.resolve.outputs.bump }}"
-
-          # Derive new version from backend __version__.py (backend/frontend/website)
-          CURRENT=$(grep -oP '(?<=__version__ = ")[^"]+' apps/backend/src/__version__.py)
-          NEW=$(bump_semver "$CURRENT" "$BUMP")
-          echo "version=$NEW" >> $GITHUB_OUTPUT
-          echo "Release: $CURRENT → $NEW ($BUMP)"
-
-          # Extension version is tracked independently in manifest.json
-          EXT_CURRENT=$(node -p "require('./apps/browser-extension/public/manifest.json').version")
-          EXT_NEW=$(bump_semver "$EXT_CURRENT" "$BUMP")
-          echo "ext_version=$EXT_NEW" >> $GITHUB_OUTPUT
-          echo "Extension: $EXT_CURRENT → $EXT_NEW ($BUMP)"
-
-          if [[ "$BUMP" != "none" ]]; then
-            [[ "${{ inputs.backend }}"   == "true" ]] && \
-              sed -i "s/__version__ = \".*\"/__version__ = \"$NEW\"/" apps/backend/src/__version__.py
-            [[ "${{ inputs.frontend }}"  == "true" ]] && set_pkg_version apps/frontend "$NEW"
-            [[ "${{ inputs.website }}"   == "true" ]] && set_pkg_version apps/website "$NEW"
-
-            if [[ "${{ inputs.extension }}" == "true" ]] || [[ "${{ inputs.extension_firefox }}" == "true" ]]; then
-              set_pkg_version apps/browser-extension "$EXT_NEW"
-              # Bump manifest.json so the version commit reflects the real extension version
-              node -e "
-                const fs = require('fs');
-                const m = JSON.parse(fs.readFileSync('apps/browser-extension/public/manifest.json'));
-                m.version = '$EXT_NEW';
-                fs.writeFileSync('apps/browser-extension/public/manifest.json', JSON.stringify(m, null, 2) + '\n');
-              "
-            fi
-          fi
-
-      - name: Commit & tag
-        if: inputs.bump != 'none'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git diff --staged --quiet && echo "Nothing to commit" && exit 0
-
-          APPS=""
-          [[ "${{ inputs.backend }}"   == "true" ]] && APPS="$APPS backend"
-          [[ "${{ inputs.frontend }}"  == "true" ]] && APPS="$APPS frontend"
-          [[ "${{ inputs.website }}"   == "true" ]] && APPS="$APPS website"
-          [[ "${{ inputs.extension }}"         == "true" ]] && APPS="$APPS extension-chrome"
-          [[ "${{ inputs.extension_firefox }}" == "true" ]] && APPS="$APPS extension-firefox"
-
-          VERSION="${{ steps.bump.outputs.version }}"
-          git commit -m "chore: release v$VERSION [${{ steps.resolve.outputs.bump }}] —$APPS"
-          # Force-update the tag locally; rebase onto remote before pushing
-          git tag -f "v$VERSION"
-          git pull --rebase origin ${{ github.ref_name }}
-          git push origin HEAD:${{ github.ref_name }}
-          git push origin "v$VERSION" --force
-
   deploy-backend:
-    name: Backend → Oracle VM
-    needs: version
+    name: Backend → VM
     runs-on: ubuntu-latest
-    if: always() && inputs.backend
+    if: inputs.backend
 
     steps:
       - name: Deploy to VM
         env:
           SSH_KEY: ${{ secrets.VM_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.VM_KNOWN_HOSTS }}
-          TARGET: ${{ vars.ORACLE_VM_USER }}@${{ vars.VM_HOST }}
+          TARGET: ${{ vars.VM_USER }}@${{ vars.VM_HOST }}
           BRANCH: ${{ github.ref_name }}
         run: |
           mkdir -p ~/.ssh
@@ -188,15 +40,14 @@ jobs:
           ssh "$TARGET" "set -e; cd /opt/job-applica \
             && git fetch --quiet origin '$BRANCH' && git checkout --quiet --detach FETCH_HEAD \
             && echo \"Deploying \$(git rev-parse --short HEAD)\" \
-            && docker compose -f docker/docker-compose.prod.yml up -d --build --wait \
+            && GIT_SHA=\$(git rev-parse --short HEAD) docker compose -f docker/docker-compose.prod.yml up -d --build --wait \
             && docker image prune -f"
 
   # ── Frontend → Cloudflare Pages ───────────────────────────────────────────────
   deploy-frontend:
     name: Frontend → CF Pages
-    needs: version
     runs-on: ubuntu-latest
-    if: always() && inputs.frontend
+    if: inputs.frontend
     permissions:
       contents: read
       deployments: write
@@ -232,9 +83,8 @@ jobs:
   # ── Website → Cloudflare Pages ────────────────────────────────────────────────
   deploy-website:
     name: Website → CF Pages
-    needs: version
     runs-on: ubuntu-latest
-    if: always() && inputs.website
+    if: inputs.website
     permissions:
       contents: read
       deployments: write
@@ -264,131 +114,3 @@ jobs:
           directory: apps/website/.output/public
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.ref_name }}
-
-  # ── Extension → Chrome Web Store + Firefox AMO ───────────────────────────────
-  build-extension:
-    name: Extension
-    needs: version
-    runs-on: ubuntu-latest
-    if: always() && inputs.extension
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: yarn
-
-      - name: Install
-        run: yarn install --frozen-lockfile
-
-      # ── Detect if extension source changed since last tag ───────────────────
-      - name: Check extension source changed
-        id: ext_changed
-        run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [[ -z "$LAST_TAG" ]]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "No previous tag — treating as changed"
-          else
-            CHANGED=$(git diff --name-only "$LAST_TAG"..HEAD -- apps/browser-extension/ | grep -v '^$' | wc -l)
-            if [[ "$CHANGED" -gt 0 ]]; then
-              echo "changed=true" >> $GITHUB_OUTPUT
-              echo "$CHANGED file(s) changed in apps/browser-extension/ since $LAST_TAG"
-            else
-              echo "changed=false" >> $GITHUB_OUTPUT
-              echo "No extension source changes since $LAST_TAG — skipping Chrome publish"
-            fi
-          fi
-
-      # ── Chrome build ────────────────────────────────────────────────────────
-      - name: Prepare manifest (Chrome)
-        if: steps.ext_changed.outputs.changed == 'true'
-        run: node apps/browser-extension/scripts/prepare-release.mjs
-        env:
-          VERSION: ${{ needs.version.outputs.ext_version }}
-          FRONTEND_URL: https://app.jobapplica.io
-          BACKEND_URL: https://api.jobapplica.io
-
-      - name: Build (Chrome)
-        if: steps.ext_changed.outputs.changed == 'true'
-        run: yarn workspace jobapplica--extension build:prod
-
-      - name: Package (Chrome)
-        if: steps.ext_changed.outputs.changed == 'true'
-        run: cd apps/browser-extension/dist && zip -r ../extension-chrome.zip .
-
-      - name: Publish → Chrome Web Store
-        if: steps.ext_changed.outputs.changed == 'true'
-        run: |
-          npx chrome-webstore-upload-cli@4 upload \
-            --source apps/browser-extension/extension-chrome.zip \
-            --extension-id ${{ secrets.CHROME_EXTENSION_ID }} \
-            --auto-publish
-        env:
-          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
-          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-          PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
-
-      # ── Save Chrome artifact ────────────────────────────────────────────────
-      - name: Upload Chrome artifact
-        if: steps.ext_changed.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: extension-chrome-v${{ needs.version.outputs.ext_version }}
-          path: apps/browser-extension/extension-chrome.zip
-          retention-days: 30
-
-  # ── Extension → Firefox AMO ───────────────────────────────────────────────────
-  build-extension-firefox:
-    name: Extension → Firefox AMO
-    needs: version
-    runs-on: ubuntu-latest
-    if: always() && inputs.extension_firefox
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: yarn
-
-      - name: Install
-        run: yarn install --frozen-lockfile
-
-      - name: Prepare manifest (Firefox)
-        run: node apps/browser-extension/scripts/prepare-release.mjs --firefox
-        env:
-          VERSION: ${{ needs.version.outputs.ext_version }}
-          FRONTEND_URL: https://app.jobapplica.io
-          BACKEND_URL: https://api.jobapplica.io
-          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
-
-      - name: Build (Firefox)
-        run: yarn workspace jobapplica--extension build:prod
-
-      # web-ext no longer accepts --id (see its own --help output) — the extension
-      # ID is instead read from browser_specific_settings.gecko.id in manifest.json,
-      # which "Prepare manifest (Firefox)" above already injects from
-      # FIREFOX_EXTENSION_ID.
-      - name: Publish → Firefox AMO
-        run: |
-          npx web-ext sign \
-            --source-dir apps/browser-extension/dist \
-            --channel listed \
-            --api-key ${{ secrets.FIREFOX_API_KEY }} \
-            --api-secret ${{ secrets.FIREFOX_API_SECRET }}
-
-      - name: Upload Firefox artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: extension-firefox-v${{ needs.version.outputs.ext_version }}
-          path: apps/browser-extension/dist/
-          retention-days: 30

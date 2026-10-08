@@ -12,7 +12,7 @@ from ..core.config import settings
 from ..core.constants import Constants
 from ..core.utils import create_token, hash_password, verify_password
 from ..models.skill import Skill
-from ..models.user import User
+from ..models.user import AccountRecovery, User
 from ..schemas.settings import UserSettings
 from ..schemas.user import TokenPayload, UserBase, UserLoginTokenResponse, UserNameCheckResponse, UserSignup
 from ..utils.file_storage import get_file_storage_factory
@@ -42,16 +42,25 @@ async def create_user(db: AsyncSession, user_data: UserSignup) -> UserBase:
     if result.scalars().first():
         raise HTTPException(status_code=409, detail=f'User already exists with user_name: ${user_data.user_name}')
 
-    user_name = user_data.email or user_data.user_name
+    user_name = user_data.user_name or user_data.email
     assert user_name is not None  # signup_user route already rejects payloads with neither
-    user_obj = User(**user_data.model_dump(exclude={'password', 'security_answer'}, exclude_unset=True))
+    user_obj = User(
+        **user_data.model_dump(exclude={'password', 'security_question', 'security_answer'}, exclude_unset=True)
+    )
     user_obj.hashed_password = hash_password(user_data.password)
     user_obj.user_name = user_name
-    if user_data.security_answer:
-        user_obj.hashed_security_answer = hash_password(user_data.security_answer)
     user_obj.settings = UserSettings().model_dump()
 
     db.add(user_obj)
+    if user_data.security_question and user_data.security_answer:
+        await db.flush()
+        db.add(
+            AccountRecovery(
+                user_id=user_obj.id,
+                security_question=user_data.security_question,
+                hashed_security_answer=hash_password(user_data.security_answer),
+            )
+        )
     await db.commit()
     await db.refresh(user_obj)
     return UserBase.model_validate(user_obj)

@@ -42,8 +42,6 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(Text, nullable=True, unique=True, index=True)
     signup_key: Mapped[str] = mapped_column(Text, nullable=False)
     hashed_password: Mapped[str | None] = mapped_column(Text, nullable=True)
-    security_question: Mapped[str | None] = mapped_column(Text, nullable=True)
-    hashed_security_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     plan: Mapped[str] = mapped_column(String(50), nullable=False, default='free')
     settings: Mapped[dict[str, Any]] = mapped_column(
@@ -87,7 +85,8 @@ class AccountRecovery(Base):
     hashed_security_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     otp_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     otp_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    otp_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
+    reset_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
+    reset_locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class UsageCounter(Base):
