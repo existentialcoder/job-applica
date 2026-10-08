@@ -47,9 +47,9 @@ manifest.host_permissions = [
 if (manifest.content_scripts) {
   manifest.content_scripts = manifest.content_scripts.map(cs => ({
     ...cs,
-    matches: cs.matches.map(m =>
+    matches: [...new Set(cs.matches.map(m =>
       m.includes('localhost') ? `${FRONTEND_URL}/*` : m
-    ),
+    ))],
   }));
 }
 
