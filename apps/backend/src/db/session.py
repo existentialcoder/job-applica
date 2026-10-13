@@ -8,9 +8,6 @@ if _url.startswith('postgresql://') or _url.startswith('postgres://'):
     _url = _url.replace('://', '+asyncpg://', 1)
 DATABASE_URL = _url
 
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=settings.LOG_LEVEL == 'debug',
-)
+engine = create_async_engine(DATABASE_URL)
 
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

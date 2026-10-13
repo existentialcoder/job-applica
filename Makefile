@@ -1,4 +1,4 @@
-.PHONY: check check-backend check-frontend fix fix-backend fix-frontend
+.PHONY: check check-backend check-frontend fix fix-backend fix-frontend test test-backend
 
 BACKEND_VENV := apps/backend/api-backend-env/bin
 
@@ -15,6 +15,12 @@ check-frontend:
 	@echo "-- Frontend: Code quality checks"
 	cd apps/frontend && npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore
 	cd apps/frontend && npx vue-tsc --noEmit
+
+test: test-backend
+
+test-backend:
+	@echo "-- Backend: Tests"
+	cd apps/backend && api-backend-env/bin/python -m pytest -q tests
 
 fix: fix-backend fix-frontend
 

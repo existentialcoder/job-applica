@@ -11,7 +11,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p uploads/resumes uploads/avatars
+# uid 1000 so files written to a bind-mounted uploads/ (APP_ENV=local) stay owned by the host user.
+RUN useradd --uid 1000 --create-home app \
+    && mkdir -p uploads/users && chown -R app:app uploads
+USER app
 
 EXPOSE 8000
 

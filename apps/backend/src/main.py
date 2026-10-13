@@ -24,8 +24,12 @@ from .api.v1.routes import (
 from .core.config import settings
 from .core.constants import Constants
 from .core.exceptions import PlanLimitReached
+from .core.logger import configure_logging
 from .db.base_class import Base
 from .db.session import engine
+from .services.redaction import RedactionLeak
+
+configure_logging(settings.LOG_LEVEL)
 
 
 @asynccontextmanager
@@ -51,6 +55,11 @@ async def plan_limit_handler(_: Request, exc: PlanLimitReached):
             'plan': exc.plan,
         },
     )
+
+
+@app.exception_handler(RedactionLeak)
+async def redaction_leak_handler(_: Request, __: RedactionLeak):
+    return JSONResponse(status_code=422, content={'code': 'CV_UNREADABLE'})
 
 
 @app.get('/health', tags=['Health'], include_in_schema=False)

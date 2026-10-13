@@ -11,6 +11,7 @@ from ..models.resume import Resume
 from ..models.skill import Skill
 from ..models.user import User
 from ..services.llm import extract_skills_from_resume
+from ..services.redaction import redact
 from ..utils.file_storage import get_file_storage_factory
 
 ALLOWED_TYPES = {
@@ -77,13 +78,13 @@ async def _sync_extracted_skills(db: AsyncSession, user_id: int, resume_text: st
     to the same row. The first-seen casing wins (stored as-is from Claude output,
     which produces canonical names like 'Python', 'FastAPI', 'PostgreSQL').
     """
-    extracted = await extract_skills_from_resume(resume_text)
-    if not extracted:
-        return
-
     user_row = await db.execute(select(User).where(User.id == user_id))
     user = user_row.scalar_one_or_none()
     if not user:
+        return
+
+    extracted = await extract_skills_from_resume(redact(resume_text, (user.first_name, user.last_name)).text)
+    if not extracted:
         return
 
     existing_ids = {s.id for s in user.skills}

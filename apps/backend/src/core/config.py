@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ''
     DEEPSEEK_API_KEY: str = ''
     GEMINI_API_KEY: str = ''
+    OLLAMA_BASE_URL: str = 'http://localhost:11434/v1'
 
     # Cloudflare R2
     CLOUDFLARE_ACCOUNT_ID: str = ''
