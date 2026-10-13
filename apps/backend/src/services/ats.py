@@ -6,6 +6,7 @@ from ..models.resume import Resume
 from ..models.user import User
 from ..schemas.ats import ATSReport
 from .llm import ats_score_report
+from .redaction import redact
 
 
 async def get_resume(db: AsyncSession, user_id: int, resume_id: int) -> Resume | None:
@@ -26,8 +27,9 @@ async def calculate_score(
     resume_text: str,
     job_description: str,
     required_skills: list[str],
+    names: tuple[str, ...] = (),
 ) -> ATSReport:
-    return await ats_score_report(resume_text, job_description, required_skills)
+    return await ats_score_report(redact(resume_text, names).text, redact(job_description).text, required_skills)
 
 
 async def score_job(
@@ -45,6 +47,7 @@ async def score_job(
         resume.parsed_text,
         job.description,
         required_skills,
+        (user.first_name, user.last_name),
     )
     report.resume_id = resume.id
     return report
@@ -61,6 +64,8 @@ async def score_quick(
     if not resume or not resume.parsed_text:
         return None
 
-    report = await calculate_score(resume.parsed_text, job_description, required_skills or [])
+    report = await calculate_score(
+        resume.parsed_text, job_description, required_skills or [], (user.first_name, user.last_name)
+    )
     report.resume_id = resume.id
     return report

@@ -1,7 +1,7 @@
 """
 All LLM calls centralised here.
 
-New providers: subclass LLMProvider, implement complete(), add to _REGISTRY.
+New providers: subclass LLMProvider, implement _call(), add to _REGISTRY.
 Provider selection per-operation is driven entirely by config — no code changes needed.
 
 Config keys (all optional, fall back to LLM_PROVIDER / LLM_MODEL):
@@ -21,6 +21,7 @@ import re
 from abc import ABC, abstractmethod
 
 from ..schemas.ats import ATSReport
+from .redaction import assert_clean
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +172,7 @@ STEP 2 — If is_job_page is true, extract every field below. All strings must b
   Example - {{
     "name": "Acme Corp",
     "website": "https://www.acme.com",
-    "email": "careers@acme.com",
+    "email": "[EMAIL]",
     "size": 100,
     "industry": "Information Technology",
     "description": "Acme Corp is a leading provider of innovative solutions in the tech industry."
@@ -236,14 +237,20 @@ Return only a JSON array, e.g. ["Python", "FastAPI", "PostgreSQL"]."""
 
 class LLMProvider(ABC):
     """
-    Subclasses implement complete() only.
+    Subclasses implement _call() only.
     All prompt logic and response parsing lives here in the base class.
     """
 
     @abstractmethod
-    async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
-        """Call the model and return raw text."""
+    async def _call(self, system: str, user: str, max_tokens: int) -> tuple[str, int]:
+        """Call the model; return raw text and the prompt token count."""
         ...
+
+    async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
+        assert_clean(system, user)
+        text, prompt_tokens = await self._call(system, user, max_tokens)
+        logger.info('LLM call %s: %d prompt tokens', type(self).__name__, prompt_tokens)
+        return text
 
     async def translate_to_english(self, text: str) -> str:
         """Translate text to English; returns it unchanged if already English."""
@@ -307,7 +314,7 @@ class AnthropicProvider(LLMProvider):
     def __init__(self, model: str = DEFAULT_MODEL):
         self.model = model
 
-    async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
+    async def _call(self, system: str, user: str, max_tokens: int) -> tuple[str, int]:
         import anthropic
         from anthropic.types import TextBlock
 
@@ -320,7 +327,7 @@ class AnthropicProvider(LLMProvider):
         )
         block = msg.content[0]
         assert isinstance(block, TextBlock)  # no tool use / thinking is requested above
-        return block.text
+        return block.text, msg.usage.input_tokens
 
 
 # ── DeepSeek ──────────────────────────────────────────────────────────────────
@@ -338,7 +345,7 @@ class DeepSeekProvider(LLMProvider):
         # when you don't need it).
         self.use_cache = use_cache
 
-    async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
+    async def _call(self, system: str, user: str, max_tokens: int) -> tuple[str, int]:
         from openai import AsyncOpenAI
         from openai.types.chat import ChatCompletionMessageParam
 
@@ -355,7 +362,7 @@ class DeepSeekProvider(LLMProvider):
             messages=messages,
             max_tokens=max_tokens,
         )
-        return response.choices[0].message.content or ''
+        return response.choices[0].message.content or '', response.usage.prompt_tokens if response.usage else 0
 
 
 # ── Gemini ────────────────────────────────────────────────────────────────────
@@ -368,13 +375,17 @@ class GeminiProvider(LLMProvider):
     def __init__(self, model: str = DEFAULT_MODEL):
         self.model = model
 
-    async def complete(self, system: str, user: str, max_tokens: int = 1024) -> str:
+    def _client(self):
         from openai import AsyncOpenAI
-        from openai.types.chat import ChatCompletionMessageParam
 
         from ..core.config import settings
 
-        client = AsyncOpenAI(api_key=settings.GEMINI_API_KEY, base_url=self._BASE_URL)
+        return AsyncOpenAI(api_key=settings.GEMINI_API_KEY, base_url=self._BASE_URL)
+
+    async def _call(self, system: str, user: str, max_tokens: int) -> tuple[str, int]:
+        from openai.types.chat import ChatCompletionMessageParam
+
+        client = self._client()
         messages: list[ChatCompletionMessageParam] = []
         if system:
             messages.append({'role': 'system', 'content': system})
@@ -385,7 +396,19 @@ class GeminiProvider(LLMProvider):
             messages=messages,
             max_tokens=max_tokens,
         )
-        return response.choices[0].message.content or ''
+        return response.choices[0].message.content or '', response.usage.prompt_tokens if response.usage else 0
+
+
+class OllamaProvider(GeminiProvider):
+    # Context length is set in the Ollama model itself (Modelfile num_ctx); its OpenAI API can't change it.
+    DEFAULT_MODEL = 'qwen3-4b-12k'
+
+    def _client(self):
+        from openai import AsyncOpenAI
+
+        from ..core.config import settings
+
+        return AsyncOpenAI(api_key='ollama', base_url=settings.OLLAMA_BASE_URL)
 
 
 # ── Registry & factory ─────────────────────────────────────────────────────────
@@ -394,6 +417,7 @@ _REGISTRY: dict[str, type[LLMProvider]] = {
     'anthropic': AnthropicProvider,
     'deepseek': DeepSeekProvider,
     'gemini': GeminiProvider,
+    'ollama': OllamaProvider,
 }
 
 
@@ -416,8 +440,8 @@ def get_provider(purpose: str = '') -> LLMProvider:
 
     if cls is DeepSeekProvider:
         return DeepSeekProvider(model=model or DeepSeekProvider.DEFAULT_MODEL, use_cache=use_cache)
-    if cls is GeminiProvider:
-        return GeminiProvider(model=model or GeminiProvider.DEFAULT_MODEL)
+    if cls in (GeminiProvider, OllamaProvider):
+        return cls(model=model or cls.DEFAULT_MODEL)
     return AnthropicProvider(model=model or AnthropicProvider.DEFAULT_MODEL)
 
 

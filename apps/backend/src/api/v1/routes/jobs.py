@@ -11,6 +11,7 @@ from ....schemas.user import UserBase
 from ....services import job as job_service
 from ....services import llm as llm_service
 from ....services import plan as plan_service
+from ....services.redaction import redact, url_placeholder
 from ...deps.auth import get_current_user
 from ...deps.db import get_db
 from ...deps.pagination import pagination_params
@@ -97,7 +98,14 @@ async def extract_job_from_page(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        data = await llm_service.extract_job_from_page(payload.page_text, payload.url)
+        # Job sites show the signed-in user's name in their chrome (e.g. LinkedIn's Premium upsell).
+        page = redact(payload.page_text, (current_user.first_name, current_user.last_name))
+        data = await llm_service.extract_job_from_page(page.text, payload.url)
+        company = data.get('company') or {}
+        if company.get('email') == '[EMAIL]':
+            company['email'] = page.emails[0] if page.emails else None
+        if company.get('website') == '[WEBSITE]':
+            company['website'] = next((u for u in page.urls if url_placeholder(u) == '[WEBSITE]'), None)
         result = schemas.JobExtractResult(**data)
     except Exception:
         logger.exception('Job extraction failed for %s', payload.url)
