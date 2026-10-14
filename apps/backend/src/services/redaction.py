@@ -4,6 +4,7 @@ import logging
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from urllib.parse import urlparse
 
 import phonenumbers
 
@@ -104,6 +105,37 @@ def url_placeholder(url: str) -> str:
         if host == site or host.endswith('.' + site):
             return placeholder
     return '[WEBSITE]'
+
+
+def contacts_from(found: Redacted, account_email: str | None) -> dict[str, str]:
+    """Map what redact() pulled out of a CV onto profile_contacts columns; the account email stays primary.
+
+    CVs link employers, projects and repos too, so a link only counts as the person's own when it looks like it.
+    """
+    emails = list(dict.fromkeys(found.emails))
+    primary = account_email or (emails[0] if emails else None)
+    urls = list(dict.fromkeys(found.urls))
+
+    def path(url: str) -> list[str]:
+        return [p for p in urlparse(url if '://' in url else f'https://{url}').path.split('/') if p]
+
+    def host(url: str) -> str:
+        return urlparse(url if '://' in url else f'https://{url}').hostname or ''
+
+    linkedin = [u for u in urls if url_placeholder(u) == '[LINKEDIN]']
+    github = [u for u in urls if url_placeholder(u) == '[GITHUB]']
+    sites = [u for u in urls if url_placeholder(u) == '[WEBSITE]' and host(u) not in ('localhost', '127.0.0.1')]
+    fields = {
+        'email': primary,
+        'secondary_email': next((e for e in emails if e.lower() != (primary or '').lower()), None),
+        'phone': found.phones[0] if found.phones else None,
+        'linkedin_url': next((u for u in linkedin if path(u)[:1] == ['in']), linkedin[0] if linkedin else None),
+        # github.com/<user> is the profile; github.com/<user>/<repo> is a project.
+        'github_url': next((u for u in github if len(path(u)) == 1), None),
+        # Only one site linked: likely their own. Several: employers and projects, so don't guess.
+        'portfolio_url': sites[0] if len({host(u) for u in sites}) == 1 else None,
+    }
+    return {k: v for k, v in fields.items() if v}
 
 
 def redact(text: str, names: Iterable[str] = ()) -> Redacted:

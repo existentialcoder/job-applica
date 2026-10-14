@@ -1,4 +1,5 @@
 import enum
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, EmailStr, model_validator
@@ -44,6 +45,27 @@ class UserBase(BaseSchema):
 
 class UserSettingsRequest(BaseModel):
     settings: UserSettings
+
+
+class OnboardingStep(enum.StrEnum):
+    WELCOME = 'welcome'
+    UPLOAD = 'upload'
+    PROFILE = 'profile'
+    PREFERENCES = 'preferences'
+
+
+class OnboardingResponse(BaseModel):
+    step: OnboardingStep
+    skipped_steps: list[OnboardingStep]
+    completed_at: datetime | None
+
+    model_config = {'from_attributes': True}
+
+
+class OnboardingUpdate(BaseModel):
+    step: OnboardingStep
+    skipped: bool = False  # the user skipped this step
+    complete: bool = False  # setup is finished
 
 
 class UserSignup(BaseModel):

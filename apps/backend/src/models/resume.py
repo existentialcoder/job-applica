@@ -20,6 +20,8 @@ class Resume(Base):
     parsed_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text('1'))
     replaces_resume_id: Mapped[int | None] = mapped_column(ForeignKey('resumes.id', ondelete='SET NULL'), nullable=True)
+    # 'pending' | 'filling' | 'done' | 'failed' | 'limit_reached'; NULL for CVs uploaded before extraction existed
+    extraction_status: Mapped[str | None] = mapped_column(String(16), nullable=True)
 
     def __repr__(self) -> str:
         return f'<Resume id={self.id} user={self.user_id} name={self.original_name}>'
@@ -43,7 +45,16 @@ class ResumeSnapshot(Base):
     education: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
     )
+    languages: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+    )
+    certifications: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+    )
+    awards: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+    )
     skills: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list, server_default=text("'{}'"))
-    # sha256 of the file's text; an unchanged re-upload reuses the existing snapshot
+    # sha256 of extraction version + the file's text; an unchanged re-upload reuses the existing snapshot
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     extracted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

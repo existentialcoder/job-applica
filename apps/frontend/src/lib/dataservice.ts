@@ -1,3 +1,4 @@
+import type { ContactDetails, JobPreferences, Profile, ProfileFields } from '@/lib/profile';
 import { normalizeBoard, normalizeBoards } from '@/lib/stages';
 import { toast } from '@/lib/toast';
 import router from '@/router';
@@ -83,6 +84,20 @@ async function apiFetch(url: string, options: RequestInit = {}): Promise<Respons
   return response;
 }
 
+// List endpoints return {meta, results} a page at a time; walk every page.
+async function fetchAllPages<T>(url: string, query: Record<string, string> = {}): Promise<T[]> {
+  const params = new URLSearchParams({ ...query, per_page: '100' });
+  const all: T[] = [];
+  for (let page = 1; ; page++) {
+    params.set('page', String(page));
+    const response = await apiFetch(`${url}?${params}`, { headers: { ...authHeaders() } });
+    if (!response.ok) return all;
+    const data = await response.json();
+    all.push(...data.results);
+    if (!data.meta.has_next) return all;
+  }
+}
+
 export interface JobFilters {
   query?: string;
   title?: string;
@@ -140,6 +155,89 @@ const features = {
     if (!response.ok) {
       return {};
     }
+    return response.json();
+  }
+};
+
+/** A city or country with its main currency, from the visitor's location or a city search. */
+export interface Place {
+  country: string | null
+  city: string | null
+  currency: string | null
+}
+
+export interface Onboarding {
+  step: 'welcome' | 'upload' | 'profile' | 'preferences'
+  skipped_steps: string[]
+  completed_at: string | null
+}
+
+const onboarding = {
+  async getOnboarding(): Promise<Onboarding | null> {
+    const response = await apiFetch(`${API_BASE}/users/${userId()}/onboarding`, {
+      headers: { ...authHeaders() }
+    });
+    if (!response.ok) return null;
+    return (await response.json()).onboarding;
+  },
+
+  async getProfile(): Promise<Profile | null> {
+    const response = await apiFetch(`${API_BASE}/users/${userId()}/profile`, {
+      headers: { ...authHeaders() }
+    });
+    if (!response.ok) throw new Error('Failed to load profile');
+    return (await response.json()).profile;
+  },
+
+  async saveProfile(profile: ProfileFields & { contacts: ContactDetails; confirm: boolean }): Promise<Profile> {
+    const response = await apiFetch(`${API_BASE}/users/${userId()}/profile`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(profile)
+    });
+    if (!response.ok) throw new Error('Failed to save profile');
+    return response.json();
+  },
+
+  async updateOnboardingStep(
+    step: Onboarding['step'],
+    opts: { skipped?: boolean; complete?: boolean } = {}
+  ): Promise<void> {
+    await apiFetch(`${API_BASE}/users/${userId()}/onboarding`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ step, ...opts })
+    });
+  },
+
+  async detectLocale(coords?: { lat: number; lng: number }): Promise<Place> {
+    const query = coords ? `?lat=${coords.lat}&lng=${coords.lng}` : '';
+    const response = await apiFetch(`${API_BASE}/geo/locale${query}`, { headers: { ...authHeaders() } });
+    if (!response.ok) throw new Error('Failed to detect location');
+    return response.json();
+  },
+
+  async searchCities(q: string): Promise<Place[]> {
+    const response = await apiFetch(`${API_BASE}/geo/cities?q=${encodeURIComponent(q)}`, { headers: { ...authHeaders() } });
+    if (!response.ok) throw new Error('Failed to search cities');
+    return response.json();
+  },
+
+  async getPreferences(): Promise<JobPreferences | null> {
+    const response = await apiFetch(`${API_BASE}/users/${userId()}/preferences`, {
+      headers: { ...authHeaders() }
+    });
+    if (!response.ok) throw new Error('Failed to load preferences');
+    return (await response.json()).preferences;
+  },
+
+  async savePreferences(prefs: JobPreferences): Promise<JobPreferences> {
+    const response = await apiFetch(`${API_BASE}/users/${userId()}/preferences`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(prefs)
+    });
+    if (!response.ok) throw new Error('Failed to save preferences');
     return response.json();
   }
 };
@@ -378,12 +476,20 @@ const settings = {
 
 const skills = {
   async getSkills(): Promise<SkillData[]> {
-    const response = await apiFetch(`${API_BASE}/skills`, { headers: { ...authHeaders() } });
-    if (!response.ok) return [];
-    return response.json();
+    return fetchAllPages<SkillData>(`${API_BASE}/skills`);
   },
 
   // ── User skills ────────────────────────────────────────────────────────────
+  async createSkill(name: string): Promise<SkillData> {
+    const response = await apiFetch(`${API_BASE}/skills/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ label: name })
+    });
+    if (!response.ok) throw new Error('Failed to add skill');
+    return response.json();
+  },
+
   async getUserSkills(): Promise<SkillData[]> {
     const uid = userId();
     const response = await apiFetch(`${API_BASE}/users/${uid}/skills`, {
@@ -415,6 +521,14 @@ const skills = {
 };
 
 const resumes = {
+  async getResume(resumeId: number): Promise<ResumeData> {
+    const response = await apiFetch(`${API_BASE}/users/${userId()}/resumes/${resumeId}`, {
+      headers: { ...authHeaders() }
+    });
+    if (!response.ok) throw new Error('Failed to load CV');
+    return response.json();
+  },
+
   async getResumes(): Promise<ResumeData[]> {
     const uid = userId();
     const response = await apiFetch(`${API_BASE}/users/${uid}/resumes`, {
@@ -429,6 +543,21 @@ const resumes = {
     const form = new FormData();
     form.append('file', file);
     const response = await apiFetch(`${API_BASE}/users/${uid}/resumes`, {
+      method: 'POST',
+      headers: { ...authHeaders() },
+      body: form
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || 'Upload failed');
+    }
+    return response.json();
+  },
+
+  async replaceResume(resumeId: number, file: File): Promise<ResumeData> {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await apiFetch(`${API_BASE}/users/${userId()}/resumes/${resumeId}/replace`, {
       method: 'POST',
       headers: { ...authHeaders() },
       body: form
@@ -504,36 +633,13 @@ const connectedAccounts = {
   },
 
   async getCompanies(search?: string): Promise<CompanyResponse[]> {
-    const params = new URLSearchParams({ per_page: '100' });
-
-    if (search) {
-      params.set('search', search);
-    }
-    let shouldContinue = true;
-    let page = 1;
-    let allCompanies: CompanyResponse[] = [];
-
-    while (shouldContinue) {
-      params.set('page', String(page));
-      const response = await apiFetch(`${API_BASE}/companies?${params}`, {
-        headers: { ...authHeaders() }
-      });
-      if (!response.ok) {
-        return [];
-      }
-      const data = await response.json();
-      allCompanies = [...allCompanies, ...data.results];
-
-      shouldContinue = data.meta.has_next;
-      page += 1;
-    }
-
-    return allCompanies;
+    return fetchAllPages<CompanyResponse>(`${API_BASE}/companies`, search ? { search } : {});
   }
 };
 
 export default {
   ...features,
+  ...onboarding,
   ...jobs,
   ...boards,
   ...profile,

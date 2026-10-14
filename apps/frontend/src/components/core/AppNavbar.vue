@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { LogOut, User, Bell, Sun, MoonStar, Monitor, Menu, Github } from 'lucide-vue-next';
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Breadcrumb from '@/components/ui/Breadcrumb.vue';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
+import { useOnboardingStore } from '@/stores/onboarding';
 import { useSettingsStore } from '@/stores/settings';
 
 const store = useAppStore();
@@ -27,6 +28,9 @@ const initials = computed(() => {
   if (!u) return '?';
   return `${u.first_name?.[0] ?? ''}${u.last_name?.[0] ?? ''}`.toUpperCase();
 });
+
+const onboardingStore = useOnboardingStore();
+onMounted(() => onboardingStore.fetch());
 
 async function handleLogout() {
   await authStore.logout();
@@ -53,6 +57,9 @@ async function handleLogout() {
     </Button>
 
     <div class="flex items-center">
+      <Button v-if="onboardingStore.setupPath" size="sm" class="h-8 mr-2" as-child>
+        <RouterLink :to="onboardingStore.setupPath">Finish setup</RouterLink>
+      </Button>
       <a
         href="https://github.com/existentialcoder/job-applica"
         target="_blank"

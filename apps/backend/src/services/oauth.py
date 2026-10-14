@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.config import settings
 from ..core.constants import Constants
 from ..core.utils import create_token
-from ..models.user import User
+from ..models.user import User, UserOnboarding
 from ..schemas.user import TokenPayload, UserLoginTokenResponse
 from . import connected_accounts as ca_service
 
@@ -147,6 +147,9 @@ async def get_or_create_oauth_user(
             avatar_url=avatar_url,
         )
         db.add(user)
+        if settings.FEATURE_ONBOARDING:
+            await db.flush()
+            db.add(UserOnboarding(user_id=user.id))
         await db.commit()
         await db.refresh(user)
     else:

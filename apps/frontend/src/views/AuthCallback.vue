@@ -2,10 +2,12 @@
 import { onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { useOnboardingStore } from '@/stores/onboarding';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const onboardingStore = useOnboardingStore();
 
 onMounted(async () => {
   const accessToken = route.query.access_token as string | undefined;
@@ -21,7 +23,7 @@ onMounted(async () => {
 
   // Only navigate if fetchMe didn't already redirect to /login
   if (authStore.isAuthenticated) {
-    router.replace('/home');
+    router.replace(await onboardingStore.landingPath('/home'));
   }
 });
 </script>

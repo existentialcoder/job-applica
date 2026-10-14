@@ -22,7 +22,7 @@ ignore = ["E712"]
 # LLM prompt templates are hand-aligned natural-language text where wording/whitespace
 # precision matters — not mechanically rewrappable without risking a silent prompt change.
 [tool.ruff.lint.per-file-ignores]
-"**/services/llm.py" = ["E501"]
+"**/services/prompts.py" = ["E501"]  # prompt prose reads better unwrapped
 
 [tool.ruff.format]
 quote-style = "preserve"

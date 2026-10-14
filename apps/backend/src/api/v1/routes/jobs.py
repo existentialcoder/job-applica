@@ -5,7 +5,6 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....models.job import Job
-from ....models.user import UsageCounter
 from ....schemas import job as schemas
 from ....schemas.user import UserBase
 from ....services import job as job_service
@@ -81,16 +80,7 @@ async def delete_job(job_id: int, user: UserBase = Depends(get_current_user), db
 @router.post(
     '/extract-from-page',
     response_model=schemas.JobExtractResult,
-    dependencies=[
-        plan_gate(
-            'max_monthly_extractions',
-            lambda uid: select(UsageCounter.count).where(
-                UsageCounter.user_id == uid,
-                UsageCounter.resource == plan_service.EXTRACTION_RESOURCE,
-                UsageCounter.period == plan_service.current_month(),
-            ),
-        )
-    ],
+    dependencies=[plan_gate('max_monthly_extractions', plan_service.extraction_count)],
 )
 async def extract_job_from_page(
     payload: schemas.PageExtractRequest,

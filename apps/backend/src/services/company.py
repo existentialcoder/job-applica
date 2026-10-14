@@ -1,9 +1,13 @@
+from urllib.parse import urlparse
+
+import httpx
 from fastapi import HTTPException
 from pydantic import HttpUrl
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..api.deps.pagination import PaginatedResponse, build_paginated_response, paginate_query
+from ..core.constants import Constants
 from ..models.company import Company
 from ..models.job import Job
 from ..schemas.company import CompanyBase, CompanyCreate
@@ -58,3 +62,32 @@ async def create_company(db: AsyncSession, company_data: CompanyCreate) -> Compa
     await db.commit()
     await db.refresh(company_obj)
     return company_obj
+
+
+async def derive_logo_url(website: str | HttpUrl | None) -> str | None:
+    if not website:
+        return None
+    domain = urlparse(str(website)).netloc.lstrip('www.')
+    if not domain:
+        return None
+    url = Constants.LOGO_URL_TEMPLATE.format(domain=domain)
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            r = await client.head(url)
+            return url if r.status_code == 200 else None
+    except Exception:
+        return None
+
+
+async def get_or_create_company(db: AsyncSession, name: str, website: str | None = None) -> Company:
+    """The tracker's company row for a name, created (with a logo when the website is known) if missing."""
+    company = await get_company_by_name(db, name)
+    if company is None:
+        if website and '://' not in website:
+            website = f'https://{website}'
+        company = Company(name=name, website=website, logo_url=await derive_logo_url(website))
+        db.add(company)
+        await db.flush()
+    elif website and not company.logo_url:
+        company.logo_url = await derive_logo_url(website if '://' in website else f'https://{website}')
+    return company
