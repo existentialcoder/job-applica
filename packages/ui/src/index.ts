@@ -2,6 +2,7 @@
 export * from './lib/utils'
 
 // Components
+export * from './components/ui/autocomplete'
 export * from './components/ui/avatar'
 export * from './components/ui/badge'
 export * from './components/ui/button'

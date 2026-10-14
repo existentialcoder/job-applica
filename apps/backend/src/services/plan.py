@@ -1,7 +1,7 @@
 import json
 from datetime import UTC, datetime
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,6 +49,14 @@ def warning_header(warning: dict | None) -> dict:
 
 def current_month() -> str:
     return datetime.now(UTC).strftime('%Y-%m')
+
+
+def extraction_count(user_id: int):
+    return select(UsageCounter.count).where(
+        UsageCounter.user_id == user_id,
+        UsageCounter.resource == EXTRACTION_RESOURCE,
+        UsageCounter.period == current_month(),
+    )
 
 
 async def increment_extraction_count(db: AsyncSession, user) -> None:

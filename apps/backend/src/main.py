@@ -1,3 +1,4 @@
+import asyncio
 import os
 from contextlib import asynccontextmanager
 from enum import Enum
@@ -16,6 +17,7 @@ from .api.v1.routes import (
     connected_accounts,
     dashboard,
     features,
+    geo,
     jobs,
     locations,
     skills,
@@ -27,6 +29,7 @@ from .core.exceptions import PlanLimitReached
 from .core.logger import configure_logging
 from .db.base_class import Base
 from .db.session import engine
+from .jobs import extract_resume as extract_resume_job
 from .services.redaction import RedactionLeak
 
 configure_logging(settings.LOG_LEVEL)
@@ -36,6 +39,8 @@ configure_logging(settings.LOG_LEVEL)
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # Held on app.state so the task isn't garbage-collected mid-run.
+    app.state.resume_interrupted = asyncio.create_task(extract_resume_job.resume_interrupted())
     yield
     await engine.dispose()
 
@@ -93,6 +98,7 @@ PROTECTED_ROUTERS: list[tuple[APIRouter, list[str | Enum]]] = [
     (ats.router, ['ATS']),
     (ats.quick_router, ['ATS']),
     (users.router, ['Users']),
+    (geo.router, ['Geo']),
 ]
 
 for public_router, tags in PUBLIC_ROUTERS:
