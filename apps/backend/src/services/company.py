@@ -67,7 +67,7 @@ async def create_company(db: AsyncSession, company_data: CompanyCreate) -> Compa
 async def derive_logo_url(website: str | HttpUrl | None) -> str | None:
     if not website:
         return None
-    domain = urlparse(str(website)).netloc.lstrip('www.')
+    domain = urlparse(str(website)).netloc.removeprefix('www.')
     if not domain:
         return None
     url = Constants.LOGO_URL_TEMPLATE.format(domain=domain)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Check, ChevronDown, Plus } from 'lucide-vue-next'
+import { Check, ChevronDown, Plus, X } from 'lucide-vue-next'
 
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -14,11 +14,13 @@ const props = withDefaults(
     modelValue: string
     placeholder?: string
     creatable?: boolean
+    clearable?: boolean
     class?: string
   }>(),
   {
     placeholder: 'Select…',
-    creatable: false
+    creatable: false,
+    clearable: false
   }
 )
 
@@ -68,7 +70,22 @@ function createNew() {
         :class="cn('w-full justify-between font-normal', !modelValue && 'text-muted-foreground', props.class)"
       >
         <span class="truncate">{{ modelValue ? selectedLabel : placeholder }}</span>
-        <ChevronDown class="w-4 h-4 ml-2 flex-shrink-0 opacity-50" />
+        <span class="flex shrink-0 items-center ml-auto">
+          <!-- A span, not a button: it sits inside the trigger button, and stopping pointerdown keeps the list closed. -->
+          <span
+            v-if="clearable && modelValue"
+            role="button"
+            tabindex="0"
+            aria-label="Clear"
+            class="ml-2 rounded-sm opacity-50 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            @pointerdown.stop.prevent
+            @click.stop="select('')"
+            @keydown.enter.stop.prevent="select('')"
+          >
+            <X class="w-4 h-4" />
+          </span>
+          <ChevronDown class="w-4 h-4 ml-2 flex-shrink-0 opacity-50" />
+        </span>
       </Button>
     </PopoverTrigger>
 

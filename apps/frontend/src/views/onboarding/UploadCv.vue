@@ -74,7 +74,7 @@ async function onContinue() {
           <label class="cursor-pointer focus-within:ring-2 focus-within:ring-ring">
             <input
               type="file"
-              accept=".pdf,.doc,.docx"
+              accept=".pdf,.docx"
               class="sr-only"
               @change="pick(($event.target as HTMLInputElement).files)"
             />
@@ -95,7 +95,7 @@ async function onContinue() {
         >
           <input
             type="file"
-            accept=".pdf,.doc,.docx"
+            accept=".pdf,.docx"
             class="sr-only"
             @change="pick(($event.target as HTMLInputElement).files)"
           />

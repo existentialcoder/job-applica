@@ -58,6 +58,7 @@ const newCity = ref('');
 const newCountry = ref('');
 const salary = ref('');
 const currency = ref('');
+const currencyPicked = ref(false);
 const notice = ref('');
 const locating = ref(false);
 const locateFailed = ref(false);
@@ -65,13 +66,21 @@ const loading = ref(true);
 const saving = ref(false);
 const error = ref('');
 const salaryAmount = computed(() => Number(salary.value.replace(/[^\d]/g, '')) || null);
+const currencyMissing = computed(() => !!salaryAmount.value && !currency.value);
+const salaryMissing = computed(() => currencyPicked.value && !salaryAmount.value);
 const complete = computed(
   () =>
     prefs.value.target_titles.length > 0 &&
     prefs.value.locations.length > 0 &&
-    (!salaryAmount.value || !!currency.value) &&
+    !currencyMissing.value &&
+    !salaryMissing.value &&
     notice.value !== ''
 );
+
+function pickCurrency(value: string) {
+  currency.value = value;
+  currencyPicked.value = !!value;
+}
 
 onMounted(async () => {
   const [saved, profile] = await Promise.all([
@@ -86,6 +95,7 @@ onMounted(async () => {
     prefs.value = saved;
     salary.value = saved.salary_min === null ? '' : String(saved.salary_min);
     currency.value = saved.salary_currency ?? '';
+    currencyPicked.value = !!saved.salary_currency;
     notice.value = saved.notice_period_days === null ? '' : String(saved.notice_period_days);
   }
   if (notice.value === '') notice.value = '30';
@@ -304,12 +314,33 @@ async function finish() {
         <h2 id="salary" class="section-title">Salary and notice period</h2>
         <div class="grid gap-4 md:grid-cols-3">
           <div class="field">
-            <Label for="pref-salary">Minimum yearly salary</Label>
-            <Input id="pref-salary" v-model="salary" inputmode="numeric" placeholder="e.g. 65000" />
+            <Label for="pref-salary">
+              Minimum yearly salary <span v-if="currencyPicked" class="text-destructive">*</span>
+            </Label>
+            <Input
+              id="pref-salary"
+              v-model="salary"
+              inputmode="numeric"
+              placeholder="e.g. 65000"
+              :aria-invalid="salaryMissing"
+              :aria-describedby="salaryMissing ? 'salary-hint' : undefined"
+            />
+            <p v-if="salaryMissing" id="salary-hint" class="text-[13px] text-destructive">
+              Add the salary for this currency
+            </p>
           </div>
           <div class="field">
-            <Label>Currency</Label>
-            <Combobox v-model="currency" :options="CURRENCIES" placeholder="Select a currency" class="h-10" />
+            <Label>Currency <span v-if="salaryAmount" class="text-destructive">*</span></Label>
+            <Combobox
+              :model-value="currency"
+              :options="CURRENCIES"
+              placeholder="Select a currency"
+              clearable
+              class="h-10"
+              :class="{ 'border-destructive': currencyMissing }"
+              @update:model-value="pickCurrency"
+            />
+            <p v-if="currencyMissing" class="text-[13px] text-destructive">Choose the currency for your salary</p>
           </div>
           <div class="field">
             <Label>Notice period <span class="text-destructive">*</span></Label>

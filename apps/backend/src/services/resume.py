@@ -12,7 +12,6 @@ from .cv_text import cv_text
 
 ALLOWED_TYPES = {
     'application/pdf',
-    'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 }
 MAX_SIZE_MB = 5
@@ -37,7 +36,10 @@ async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Res
     file_storage = get_file_storage_factory()(destination_path=f'{user_id}/resumes', file=file, max_size_mb=MAX_SIZE_MB)
     key, size = await file_storage.upload()
     await file.seek(0)
-    parsed_text = cv_text(file.content_type, await file.read())
+    try:
+        parsed_text = cv_text(file.content_type, await file.read())
+    except Exception:
+        parsed_text = ''
 
     if not parsed_text.strip():
         await file_storage.delete_file(key)
