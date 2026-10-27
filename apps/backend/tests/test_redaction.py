@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from src.services import llm
+from src.services import llm, prompts
 from src.services.redaction import RedactionLeak, assert_clean, redact
 
 
@@ -109,15 +109,9 @@ def test_ids_in_urls_are_not_phones():
 
 
 def test_prompt_templates_pass_leak_check():
-    for template in (
-        llm._ATS_SYSTEM,
-        llm._ATS_USER,
-        llm._SKILL_SYSTEM,
-        llm._SKILL_USER,
-        llm._JOB_EXTRACT_SYSTEM,
-        llm._JOB_EXTRACT_USER,
-        llm._TRANSLATE_SYSTEM,
-    ):
+    templates = [v for k, v in vars(prompts).items() if k.isupper() and isinstance(v, str)]
+    assert len(templates) >= 7
+    for template in templates:
         assert_clean(template)
 
 

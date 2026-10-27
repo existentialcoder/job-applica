@@ -1,14 +1,9 @@
-from urllib.parse import urlparse
-
-import httpx
 from fastapi import HTTPException
-from pydantic import HttpUrl
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..api.deps.pagination import PaginatedResponse, build_paginated_response, paginate_query
-from ..core.constants import Constants
 from ..models.company import Company
 from ..models.job import Job, JobAtsScore, JobStatusHistory
 from ..schemas.company import CompanyCreate
@@ -17,7 +12,7 @@ from ..schemas.skill import SkillCreate
 from ..schemas.user import UserBase
 from ..services import skill as skill_service
 from ..services.board import get_default_board_id
-from ..services.company import create_company, get_company_by_id, get_company_by_name
+from ..services.company import create_company, derive_logo_url, get_company_by_id, get_company_by_name
 
 PaginatedJobs = PaginatedResponse[JobBase]
 
@@ -27,21 +22,6 @@ def _eager(q):
         selectinload(Job.required_skills),
         selectinload(Job.company),
     )
-
-
-async def _derive_logo_url(website: str | HttpUrl | None) -> str | None:
-    if not website:
-        return None
-    domain = urlparse(str(website)).netloc.lstrip('www.')
-    if not domain:
-        return None
-    url = Constants.LOGO_URL_TEMPLATE.format(domain=domain)
-    try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            r = await client.head(url)
-            return url if r.status_code == 200 else None
-    except Exception:
-        return None
 
 
 async def get_job_with_id(db: AsyncSession, user: UserBase, job_id: int):
@@ -82,7 +62,7 @@ async def _retrieve_company_in_request(db: AsyncSession, data: dict) -> Company 
         company = await get_company_by_name(db, company_data.name)
         if not company:
             if not company_data.logo_url:
-                company_data.logo_url = await _derive_logo_url(company_data.website)
+                company_data.logo_url = await derive_logo_url(company_data.website)
 
             company = await create_company(db, company_data)
         return company

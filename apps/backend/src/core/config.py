@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     LLM_CONFIG: dict = {
         'default': {'provider': 'deepseek', 'model': 'deepseek-chat'},
         'ats': {'provider': 'deepseek', 'model': 'deepseek-chat'},
-        'skills': {'provider': 'deepseek', 'model': 'deepseek-chat'},
+        'profile': {'provider': 'deepseek', 'model': 'deepseek-chat'},
         'extract': {'provider': 'deepseek', 'model': 'deepseek-chat'},
         'deepseek_cache': True,
     }
@@ -70,6 +70,8 @@ class Settings(BaseSettings):
     FEATURE_GOOGLE_OAUTH: bool = True
     FEATURE_LINKEDIN_OAUTH: bool = False
     FEATURE_BROWSER_EXTENSION: bool = True
+    # Off until every setup step ships; while off, new signups get no onboarding row and stay on today's flow.
+    FEATURE_ONBOARDING: bool = False
 
     PLAN_LIMITS: dict = {
         'free': {
@@ -104,4 +106,5 @@ def get_feature_flags() -> dict[str, bool]:
         'google_oauth': settings.FEATURE_GOOGLE_OAUTH,
         'linkedin_oauth': settings.FEATURE_LINKEDIN_OAUTH,
         'browser_extension': settings.FEATURE_BROWSER_EXTENSION,
+        'onboarding': settings.FEATURE_ONBOARDING,
     }

@@ -1,4 +1,5 @@
 import os
+import shutil
 import uuid
 
 import aiobotocore.session
@@ -51,6 +52,9 @@ class FileStorage:
     async def delete_file(self, key: str) -> None:
         raise NotImplementedError
 
+    async def delete_prefix(self, prefix: str) -> None:
+        raise NotImplementedError
+
 
 class LocalFileStorage(FileStorage):
     async def upload(self) -> tuple[str, int]:
@@ -66,6 +70,9 @@ class LocalFileStorage(FileStorage):
         path = os.path.join(LOCAL_BASE, key)
         if os.path.exists(path):
             os.remove(path)
+
+    async def delete_prefix(self, prefix: str) -> None:
+        shutil.rmtree(os.path.join(LOCAL_BASE, prefix), ignore_errors=True)
 
 
 class R2FileStorage(FileStorage):
@@ -94,6 +101,13 @@ class R2FileStorage(FileStorage):
     async def delete_file(self, key: str) -> None:
         async with self._client() as client:
             await client.delete_object(Bucket=settings.CLOUDFLARE_R2_BUCKET_NAME, Key=key)
+
+    async def delete_prefix(self, prefix: str) -> None:
+        async with self._client() as client:
+            paginator = client.get_paginator('list_objects_v2')
+            async for page in paginator.paginate(Bucket=settings.CLOUDFLARE_R2_BUCKET_NAME, Prefix=prefix):
+                if objects := [{'Key': o['Key']} for o in page.get('Contents', [])]:
+                    await client.delete_objects(Bucket=settings.CLOUDFLARE_R2_BUCKET_NAME, Delete={'Objects': objects})
 
 
 def get_file_storage_factory() -> type[FileStorage]:

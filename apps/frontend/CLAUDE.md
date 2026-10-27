@@ -2,68 +2,52 @@
 
 Vue 3 `<script setup lang="ts">`, Composition API, Pinia stores, Vite, Vue Router. See the root [`CLAUDE.md`](../../CLAUDE.md) for repo-wide conventions.
 
-- TypeScript is pinned in `package.json` — currently `~5.4.0` (bumped from `~5.3.0` because Vue's `.d.ts` files use `NoInfer`, a TS 5.4+ utility type; keep the pin at least at whatever the installed Vue version's type defs require).
+- Keep the TypeScript pin in `package.json` at or above whatever the installed Vue version's `.d.ts` files require (e.g. Vue's types use `NoInfer`, which needs TS 5.4+).
+
+## Data flow — views → stores → dataservice
+
+Views and components always go through Pinia stores (`src/stores/`). If no store covers the data yet, add one (or an action to an existing one) instead of calling the API from the component. Call `@/lib/dataservice` directly from a component only when a store genuinely adds nothing: a one-off call whose result no other component reads and that has no cached or shared state.
 
 ## No Prettier — ESLint owns all formatting
 
-Prettier was deliberately removed from this project. `.eslintrc.cjs` no longer extends `@vue/eslint-config-prettier/skip-formatting`, and instead sets these rules directly:
+Prettier was removed deliberately; don't reintroduce it (or `@vue/eslint-config-prettier`) without a deliberate decision. `.eslintrc.cjs` enforces formatting directly:
 
-- `semi: ['error', 'always']` — statements always end in `;`.
-- `quotes: ['error', 'single']`
-- `brace-style: ['error', '1tbs', { allowSingleLine: false }]` — opening brace stays on the same line as `if`/`function`/`for`/etc (K&R style); this applies uniformly to all blocks, ESLint has no way to scope it to `if` only.
-- `indent: ['error', 2, { SwitchCase: 1 }]`
-- `comma-dangle: ['error', 'never']`
-- `import/order` (via `eslint-plugin-import`) — groups imports as `builtin → external → internal (@/**) → parent → sibling → index`, alphabetized case-insensitively within each group, no forced blank lines between groups.
+- `semi: always`, `quotes: single`, `comma-dangle: never`, `indent: 2` (`SwitchCase: 1`)
+- `brace-style: 1tbs`, no single-line blocks — applies to every block, not just `if`
+- `import/order`: `builtin → external → internal (@/**) → parent → sibling → index`, alphabetized case-insensitively, no blank lines between groups
 
-Known gap from dropping Prettier: there's no auto-fixable line-wrapping equivalent to Prettier's `printWidth`. ESLint's `max-len` can only flag an overlong line, not reflow it — long lines get fixed by hand.
+ESLint can't reflow long lines (no `printWidth` equivalent) — wrap them by hand. Apply everything else with `make fix-frontend`.
 
-Run `eslint --fix` (via `npm run lint`, or `make fix-frontend` / `make fix` from root) to apply all of the above. `apps/frontend/.prettierrc.json` and the `prettier`/`@vue/eslint-config-prettier` deps are gone — don't reintroduce them without a deliberate decision to revisit this.
-
-## Path aliases — must be defined in two places, not one
+## Path aliases — defined in two places
 
 - `@/*` → `apps/frontend/src/*`
-- `@/components/ui/*` and `@job-applica/ui/*` → the shared `packages/ui/src` workspace package.
+- `@/components/ui/*` and `@job-applica/ui/*` → `packages/ui/src`
 
-Both the Vite bundler (`vite.config.ts`'s `resolve.alias`) **and** TypeScript (`tsconfig.app.json`/`tsconfig.json`'s `compilerOptions.paths`, plus the matching glob in `include`) need this mapping independently. The bundler alias existing alone means the app runs fine but TypeScript/the IDE can't resolve the import (`TS2307`) — this bit us when adding the pagination component and had gone unnoticed for every other `@/components/ui/*` import already in the codebase.
+Every alias must exist in **both** `vite.config.ts` (`resolve.alias`) and the tsconfig `compilerOptions.paths` (plus a matching `include` glob). They drift independently: a bundler-only alias runs fine but fails type-checking with `TS2307`.
 
 ## `noEmit` / composite project references
 
-`tsconfig.app.json` and `tsconfig.node.json` both explicitly set `"noEmit": false`. This overrides a default `"noEmit": true` baked into `@vue/tsconfig`'s base config, which conflicts with `composite: true` + project references (a known, documented upstream issue in `@vue/tsconfig`). Without this override, `vue-tsc --noEmit` fails immediately with `TS6310` on the referenced projects and **never actually type-checks anything** — silently. If `vue-tsc` output looks suspiciously empty/too-clean, verify this override is still in place before trusting a "no errors" result.
+`tsconfig.app.json` and `tsconfig.node.json` set `"noEmit": false` to override `@vue/tsconfig`'s default, which conflicts with `composite: true` + project references. Without it `vue-tsc` fails with `TS6310` and silently type-checks nothing — if its output looks suspiciously clean, check this override first.
 
-## Shared UI package (`packages/ui`)
+## Design system — `packages/ui`
 
-All shadcn-vue-style primitives (button, select, dialog, dropdown-menu, pagination, etc.) live in `packages/ui/src/components/ui/*`, not locally under `apps/frontend/src/components/ui`. That local directory doesn't exist — don't recreate it; add new primitives to `packages/ui` instead. See [`packages/ui/CLAUDE.md`](../../packages/ui/CLAUDE.md).
+Every new UI feature follows the design system in `@job-applica/ui`:
 
-## User settings persistence pattern
+- **Use what exists first.** Build screens from the existing components in `packages/ui/src/components/ui/` (button, card, dialog, sheet, form, input, select, multi-select, combobox, data-table, tabs, badge, tooltip, PageHeader, Skeleton, Loader, etc.) and the theme tokens in `packages/ui/src/theme`. Don't use raw colors or one-off styles where a token or variant exists.
+- **If a component is missing, add it to `packages/ui`**, in the same shadcn-vue/radix-vue style as its neighbours, then use it from the app.
+- **Never reinvent a component outside the package**: no hand-rolled buttons, modals, dropdowns, inputs and so on in `apps/*`, and no copied-and-tweaked versions of a package component. Extend the package component (a new variant or prop) instead. App-level components in `apps/frontend/src/components/` should compose package primitives, not replace them.
+- There is no `apps/frontend/src/components/ui` — don't create one.
+- Importable entry points are whatever `packages/ui/package.json`'s `exports` map lists.
+- Its peer dependencies (`vue`, `radix-vue`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-vue-next`) aren't bundled — the consuming app must install them.
+- A new import path into the package needs the tsconfig alias check above.
 
-Arbitrary per-user preferences (view mode, page size, theme, etc.) are stored in the `users.settings` JSONB column and follow one consistent read/write pattern — mirror it for any new preference rather than inventing a new mechanism:
+## User preferences
 
-```ts
-// read on mount
-onMounted(async () => {
-  const settings = await dataservice.getSettings();
-  if (/* validate shape */) myRef.value = settings.my_key;
-});
+Per-user preferences live in the `users.settings` JSONB column and go through `useSettingsStore` (`stores/settings.ts`). To add one: add a typed field to `Settings`, its snake_case key to `WIRE_KEYS`, and a setter that calls `updateSettings`. The backend shallow-merges the patch, so new keys need no backend change.
 
-// write on change
-watch(myRef, (val) => {
-  dataservice.updateSettings({ my_key: val });
-});
-```
+## Lists and pagination
 
-`dataservice.updateSettings()` PATCHes `/users/{id}/settings`, and the backend does a shallow merge into the JSONB column — no backend changes needed to add a new key. See `Applications.vue`'s `pageSize`/`selectedLayout` for two live examples.
-
-## Pagination patterns
-
-Two distinct pagination models exist in `Applications.vue` / `BoardApplications.vue` — don't conflate them when extending either:
-
-**Table view (`TableApplications`)** — classic page-based pagination via the shared `Pagination` component (`@/components/ui/pagination`, wraps radix-vue's `PaginationRoot`). `Applications.vue` owns `currentPage`/`pageSize` refs and calls `dataservice.getJobs({ ...filters, page, per_page })` through `loadJobs()`. `pageSize` is persisted via the settings pattern above, with options `[10, 20, 50, 100]`.
-
-**Board/kanban view (`BoardApplications`)** — each stage column paginates *independently* via infinite scroll, not a single shared page number:
-
-- `BoardApplications` does **not** receive a flat `jobs` array. It receives a `base-filters` prop (all the shared filters *except* `status` — the filter panel's status multi-select has no effect in board view, since each column already scopes itself to exactly one status) and fetches its own data per column.
-- Each column tracks `{ jobs, page, total, loading }` in a `reactive<Record<string, ColumnState>>`. On mount, every column independently loads page 1 at 10 items (`PAGE_SIZE` const in `BoardApplications.vue`).
-- A `@scroll` handler on each column's card container fetches the next page when scrolled within `SCROLL_THRESHOLD_PX` of the bottom, gated on `!loading && hasMore`.
-- Drag-and-drop status changes and deletes mutate the relevant column(s)' local arrays directly (optimistic UI) *in addition to* emitting the existing `status-change`/`delete` events up to `Applications.vue`, which still does the actual API persistence. Don't remove the local mutation and rely on a full reload — that was the previous (now-removed) `jobsByStatus` computed-from-flat-`jobs` model, and reintroducing it would break per-column independent pagination.
-- Quick-add-card: `BoardApplications` exposes `refreshColumn(status)` via `defineExpose`; `Applications.vue` holds a template ref (`boardRef`) and calls it after the create API call succeeds, to pull in the new card without touching other columns.
-- `Applications.vue`'s `buildBaseFilters()` is the single source of the shared filter-building logic — both `loadJobs()` (table) and the `boardBaseFilters` computed (board) derive from it. Extend that one function when adding a new filter field, rather than duplicating filter-construction logic in a second place.
+- Page-based lists use the shared `Pagination` component; the view owns `page`/`per_page` and loads through its store.
+- Kanban-style boards paginate each column independently (infinite scroll, own `{ items, page, total, loading }` state per column). The board receives shared filters minus the column-scoping field and fetches per column, not a flat pre-filtered array.
+- Mutations on a board (drag between columns, delete) update the affected columns' local state optimistically **and** emit up so the parent persists. Don't replace this with a full reload — it would reset every column's scroll position and page.
+- Build filters in one function per view and derive every fetch from it; extend that function when adding a filter instead of building filters in a second place.

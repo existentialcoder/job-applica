@@ -13,9 +13,11 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useAuthStore } from '@/stores/auth';
 import { useFeatureStore } from '@/stores/features';
+import { useOnboardingStore } from '@/stores/onboarding';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const onboardingStore = useOnboardingStore();
 const featureStore = useFeatureStore();
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
@@ -39,7 +41,7 @@ const onSubmit = form.handleSubmit(async (values) => {
   isLoading.value = false;
 
   if (result.ok) {
-    router.push('/home');
+    router.push(await onboardingStore.landingPath('/home'));
   } else {
     loginError.value = result.error || 'Login failed. Please check your credentials.';
   }

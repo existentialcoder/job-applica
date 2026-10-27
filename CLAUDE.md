@@ -5,8 +5,7 @@ Job applications tracking app. Monorepo (yarn workspaces) with a FastAPI backend
 Stack-specific conventions live in nested `CLAUDE.md` files — read the one for whatever you're touching:
 
 - [`apps/backend/CLAUDE.md`](apps/backend/CLAUDE.md) — Python/FastAPI/SQLAlchemy/Alembic conventions.
-- [`apps/frontend/CLAUDE.md`](apps/frontend/CLAUDE.md) — Vue/TypeScript/ESLint conventions, pagination patterns.
-- [`packages/ui/CLAUDE.md`](packages/ui/CLAUDE.md) — shared component library.
+- [`apps/frontend/CLAUDE.md`](apps/frontend/CLAUDE.md) — Vue/TypeScript/ESLint conventions, data flow, pagination; also covers `packages/ui`.
 
 This file covers only what's genuinely cross-cutting.
 
@@ -37,6 +36,8 @@ Makefile               root-level check/fix targets (see below)
 
 ## General conventions
 
+- Follow the existing standards and checks; don't invent new ones. Before writing code, read the lint/type config for the area you're touching (`Makefile`, `.eslintrc.cjs`, `pyproject.toml`) and match the surrounding code. Before calling a change done, run `make fix` then `make check` and make sure both pass.
+- UI in any Vue app (`apps/frontend`, `apps/browser-extension`) is built from `@job-applica/ui` components and theme tokens. If a component is missing, add it to `packages/ui`; never reinvent one inside an app. Details are in the frontend `CLAUDE.md`'s "Design system" section.
 - No comments explaining *what* code does; only for non-obvious *why* (a workaround, a hidden constraint, a subtle invariant).
 - Don't add error handling / validation for states that can't actually occur given the surrounding guarantees (prefer `assert` + a type-narrowing comment over a defensive `if`/`raise` for those).
-- Prefer fixing the actual config/type mismatch over loosening a type to make an error go away — several fixes made in this codebase (TypedDict for filter params, `-> dict` instead of a dynamic model alias, tsconfig `paths`) were about making the types honestly describe what the code already does, not suppressing the checker.
+- Prefer fixing the actual config/type mismatch over loosening a type to make an error go away: make the types honestly describe what the code does (e.g. a `TypedDict` for a subscripted dict, `-> dict` when a function returns a dict) instead of suppressing the checker.

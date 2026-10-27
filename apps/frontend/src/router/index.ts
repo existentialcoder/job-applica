@@ -3,6 +3,7 @@ import AppLayoutVue from '@/layouts/app.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useFeatureStore } from '@/stores/features';
 import type { FeatureFlags } from '@/stores/features';
+import { useOnboardingStore } from '@/stores/onboarding';
 
 interface IRouteMeta {
   title: string
@@ -106,6 +107,16 @@ const router = createRouter({
           } as RouteMeta & IRouteMeta
         }
       ]
+    },
+    {
+      path: '/onboarding',
+      name: 'onboarding',
+      component: () => import('@/layouts/onboarding.vue'),
+      beforeEnter: async () => {
+        const path = await useOnboardingStore().landingPath('/home');
+        return path === '/onboarding' || path;
+      },
+      meta: { title: 'JobApplica | Set up your profile' } as RouteMeta & IRouteMeta
     },
     {
       path: '/:pathMatch(.*)',
