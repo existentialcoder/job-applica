@@ -1,18 +1,14 @@
-import io
 from collections.abc import Sequence
 
-import pdfplumber
-from docx import Document
 from fastapi import HTTPException, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..models.profile import ProfileContact, UserProfile
 from ..models.resume import Resume
-from ..models.skill import Skill
-from ..models.user import User
-from ..services.llm import extract_skills_from_resume
-from ..services.redaction import redact
+from ..models.user import user_skill_table
 from ..utils.file_storage import get_file_storage_factory
+from .cv_text import cv_text
 
 ALLOWED_TYPES = {
     'application/pdf',
@@ -22,18 +18,16 @@ ALLOWED_TYPES = {
 MAX_SIZE_MB = 5
 
 
-def _parse_resume_text(content_type: str | None, data: bytes) -> str:
-    if content_type == 'application/pdf':
-        with pdfplumber.open(io.BytesIO(data)) as pdf:
-            return '\n'.join(page.extract_text() or '' for page in pdf.pages)
-
-    doc = Document(io.BytesIO(data))
-    return '\n'.join([p.text for p in doc.paragraphs])
-
-
 async def list_resumes(db: AsyncSession, user_id: int) -> Sequence[Resume]:
     result = await db.execute(select(Resume).where(Resume.user_id == user_id).order_by(Resume.id.desc()))
     return result.scalars().all()
+
+
+async def get_resume(db: AsyncSession, user_id: int, resume_id: int) -> Resume:
+    resume = await db.scalar(select(Resume).where(Resume.id == resume_id, Resume.user_id == user_id))
+    if not resume:
+        raise HTTPException(status_code=404, detail='Resume not found')
+    return resume
 
 
 async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Resume:
@@ -43,7 +37,7 @@ async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Res
     file_storage = get_file_storage_factory()(destination_path=f'{user_id}/resumes', file=file, max_size_mb=MAX_SIZE_MB)
     key, size = await file_storage.upload()
     await file.seek(0)
-    parsed_text = _parse_resume_text(file.content_type, await file.read())
+    parsed_text = cv_text(file.content_type, await file.read())
 
     if not parsed_text.strip():
         await file_storage.delete_file(key)
@@ -63,6 +57,7 @@ async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Res
         file_size=size,
         parsed_text=parsed_text,
         is_default=is_first,
+        extraction_status='pending',
     )
     db.add(resume)
     await db.commit()
@@ -71,40 +66,29 @@ async def upload_resume(db: AsyncSession, user_id: int, file: UploadFile) -> Res
     return resume
 
 
-async def _sync_extracted_skills(db: AsyncSession, user_id: int, resume_text: str) -> None:
-    """Extract skills from resume text, create any that don't exist yet, and link to user profile.
+async def replace_resume(db: AsyncSession, user_id: int, resume_id: int, file: UploadFile) -> Resume:
+    """Swap a CV for a new file and drop everything built from the old one, so extraction starts the profile afresh.
 
-    Normalisation: lookup is case-insensitive so 'python' and 'Python' resolve
-    to the same row. The first-seen casing wins (stored as-is from Claude output,
-    which produces canonical names like 'Python', 'FastAPI', 'PostgreSQL').
+    The new file is stored first: if it's rejected, the old CV and profile are untouched. Skills the user added
+    by hand stay; only those taken from the old CV go.
     """
-    user_row = await db.execute(select(User).where(User.id == user_id))
-    user = user_row.scalar_one_or_none()
-    if not user:
-        return
+    old = await get_resume(db, user_id, resume_id)
+    was_default = old.is_default
+    new = await upload_resume(db, user_id, file)
 
-    extracted = await extract_skills_from_resume(redact(resume_text, (user.first_name, user.last_name)).text)
-    if not extracted:
-        return
-
-    existing_ids = {s.id for s in user.skills}
-
-    for name in extracted:
-        # Case-insensitive lookup — avoids duplicates like 'python' vs 'Python'
-        result = await db.execute(select(Skill).where(func.lower(Skill.name) == name.lower()))
-        skill = result.scalar_one_or_none()
-
-        if skill is None:
-            # First time this skill appears — create it from the extracted name
-            skill = Skill(name=name, label=name)
-            db.add(skill)
-            await db.flush()  # get skill.id without committing
-
-        if skill.id not in existing_ids:
-            user.skills.append(skill)
-            existing_ids.add(skill.id)
-
-    await db.commit()
+    await db.execute(
+        delete(user_skill_table).where(
+            user_skill_table.c.user_id == user_id,
+            user_skill_table.c.resume_id == old.id,
+            user_skill_table.c.source == 'cv',
+        )
+    )
+    await db.execute(delete(UserProfile).where(UserProfile.user_id == user_id))
+    await db.execute(delete(ProfileContact).where(ProfileContact.user_id == user_id))
+    new.is_default = was_default or new.is_default
+    await delete_resume(db, user_id, old.id)  # commits the lot
+    await db.refresh(new)
+    return new
 
 
 async def delete_resume(db: AsyncSession, user_id: int, resume_id: int) -> None:
@@ -116,14 +100,6 @@ async def delete_resume(db: AsyncSession, user_id: int, resume_id: int) -> None:
     await get_file_storage_factory()().delete_file(f'{user_id}/resumes/{resume.stored_name}')
     await db.delete(resume)
     await db.commit()
-
-
-async def sync_skills_background(user_id: int, resume_text: str) -> None:
-    """Run after upload in a background task — creates its own DB session."""
-    from ..db.session import AsyncSessionLocal
-
-    async with AsyncSessionLocal() as db:
-        await _sync_extracted_skills(db, user_id, resume_text)
 
 
 async def set_default_resume(db: AsyncSession, user_id: int, resume_id: int) -> Resume:

@@ -21,9 +21,11 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useAuthStore } from '@/stores/auth';
 import { useFeatureStore } from '@/stores/features';
+import { useOnboardingStore } from '@/stores/onboarding';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const onboardingStore = useOnboardingStore();
 const featureStore = useFeatureStore();
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
@@ -125,7 +127,7 @@ const onSubmit = form.handleSubmit(async (values) => {
     // Auto-login after signup
     const loginResult = await authStore.login(values.user_name, values.password);
     if (loginResult.ok) {
-      router.push('/applications');
+      router.push(await onboardingStore.landingPath('/applications'));
     } else {
       router.push('/login');
     }

@@ -30,8 +30,8 @@ Run the backend locally: `yarn dev:backend` from the root (= `make dev` here: st
 - Keep `server_default` in the migration's `op.add_column`/`op.alter_column` in sync with the SQLAlchemy model's `mapped_column(..., server_default=...)` — they drift independently and only one of them actually affects the DB.
 - Before a migration that transforms/moves data (e.g. denormalizing a FK relationship into JSONB), sanity-check for orphaned references that would silently become `NULL`/dropped data.
 
-## Job filtering & pagination
+## Filtering & pagination
 
-- `GET /jobs` (`api/v1/routes/jobs.py`) already supports simultaneous `status` + `board_id` + `page`/`per_page` filtering — `JobFilterParams.status`/`.board_id` are `list[str]`, and `parse_field_as_required` (`schemas/job.py`) splits a single comma-free string into a one-item list, so a single-status query works the same way as a multi-status one. No backend changes were needed to support the frontend's per-kanban-column pagination (see the frontend `CLAUDE.md`).
-- `build_paginated_response` (`api/deps/pagination.py`) returns `{meta: {total, page, per_page, total_pages, has_next, has_prev}, results}` — a plain `dict`, not a pydantic model instance (see the `PaginatedJobs` typing note above).
-- User preferences are stored in `users.settings` (JSONB). `PATCH /users/{id}/settings` (`services/user.py`) does a **shallow merge** (`{**old, **patch}`), not an overwrite — adding a new preference key needs no backend change, just a new key in the PATCH payload from the frontend.
+- Multi-value filters are `list[str]` fields on the filter schema; normalize a single value into a one-item list in a validator (see `parse_field_as_required` in `schemas/job.py`) so single- and multi-value queries share one code path.
+- `build_paginated_response` (`api/deps/pagination.py`) returns `{meta: {total, page, per_page, total_pages, has_next, has_prev}, results}` as a plain `dict` (see the `-> dict` typing note above).
+- `users.settings` (JSONB) is updated by **shallow merge** (`{**old, **patch}`), so a new preference key needs no backend change.

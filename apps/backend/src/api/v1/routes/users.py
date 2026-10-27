@@ -4,8 +4,13 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....core.config import settings
+from ....jobs.extract_resume import extract_resume
 from ....models.resume import Resume
 from ....schemas import user as user_schemas
+from ....schemas.preferences import JobPreferences
+from ....schemas.profile import ProfileResponse, ProfileUpdate
+from ....services import preferences as preferences_service
+from ....services import profile as profile_service
 from ....services import resume as resume_service
 from ....services import user as user_service
 from ...deps.auth import get_current_user
@@ -43,6 +48,7 @@ def _resume_response(r, user_id: int) -> dict:
         'file_size': r.file_size,
         'is_default': r.is_default,
         'url': url,
+        'extraction': r.extraction_status,
         'created_at': r.created_at.isoformat() if r.created_at else None,
     }
 
@@ -132,6 +138,71 @@ async def update_settings(
     return {'settings': await user_service.update_settings(db, user_id, settings_patch)}
 
 
+@router.get('/{user_id}/onboarding')
+async def get_onboarding(
+    user_id: int,
+    current_user: user_schemas.UserBase = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _check_self(user_id, current_user)
+    # Accounts created before onboarding existed have no row; they are never sent through setup.
+    onboarding = await user_service.get_onboarding(db, user_id)
+    return {'onboarding': user_schemas.OnboardingResponse.model_validate(onboarding) if onboarding else None}
+
+
+@router.patch('/{user_id}/onboarding', response_model=user_schemas.OnboardingResponse)
+async def update_onboarding(
+    user_id: int,
+    payload: user_schemas.OnboardingUpdate,
+    current_user: user_schemas.UserBase = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _check_self(user_id, current_user)
+    return await user_service.update_onboarding(db, user_id, payload)
+
+
+@router.get('/{user_id}/profile')
+async def get_profile(
+    user_id: int,
+    current_user: user_schemas.UserBase = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _check_self(user_id, current_user)
+    return {'profile': await profile_service.get_profile(db, user_id)}
+
+
+@router.put('/{user_id}/profile', response_model=ProfileResponse)
+async def save_profile(
+    user_id: int,
+    payload: ProfileUpdate,
+    current_user: user_schemas.UserBase = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _check_self(user_id, current_user)
+    return await profile_service.save_profile(db, user_id, payload)
+
+
+@router.get('/{user_id}/preferences')
+async def get_preferences(
+    user_id: int,
+    current_user: user_schemas.UserBase = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _check_self(user_id, current_user)
+    return {'preferences': await preferences_service.get_preferences(db, user_id)}
+
+
+@router.put('/{user_id}/preferences', response_model=JobPreferences)
+async def save_preferences(
+    user_id: int,
+    payload: JobPreferences,
+    current_user: user_schemas.UserBase = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _check_self(user_id, current_user)
+    return await preferences_service.save_preferences(db, user_id, payload)
+
+
 @router.get('/{user_id}/skills')
 async def get_user_skills(
     user_id: int,
@@ -177,6 +248,7 @@ async def list_resumes(
 
 @router.post(
     '/{user_id}/resumes',
+    status_code=202,
     dependencies=[plan_gate('max_resumes', lambda uid: select(func.count(Resume.id)).where(Resume.user_id == uid))],
 )
 async def upload_resume(
@@ -188,8 +260,34 @@ async def upload_resume(
 ):
     _check_self(user_id, current_user)
     resume = await resume_service.upload_resume(db, user_id, file)
-    if resume.parsed_text:
-        background_tasks.add_task(resume_service.sync_skills_background, user_id, resume.parsed_text)
+    background_tasks.add_task(extract_resume, resume.id)
+    return _resume_response(resume, user_id)
+
+
+@router.get('/{user_id}/resumes/{resume_id}')
+async def get_resume(
+    user_id: int,
+    resume_id: int,
+    current_user: user_schemas.UserBase = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _check_self(user_id, current_user)
+    return _resume_response(await resume_service.get_resume(db, user_id, resume_id), user_id)
+
+
+@router.post('/{user_id}/resumes/{resume_id}/replace', status_code=202)
+async def replace_resume(
+    user_id: int,
+    resume_id: int,
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    current_user: user_schemas.UserBase = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Setup's Replace: the new CV takes the old one's place and builds a fresh profile."""
+    _check_self(user_id, current_user)
+    resume = await resume_service.replace_resume(db, user_id, resume_id, file)
+    background_tasks.add_task(extract_resume, resume.id)
     return _resume_response(resume, user_id)
 
 

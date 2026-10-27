@@ -26,6 +26,9 @@ const emit = defineEmits<{
   (e: 'update:modelValue', val: string): void
 }>()
 
+// Leaves every item visible to radix; filteredOptions below does the filtering.
+const keepAll = <T,>(list: T): T => list
+
 const isOpen = ref(false)
 const search = ref('')
 
@@ -70,8 +73,10 @@ function createNew() {
     </PopoverTrigger>
 
     <PopoverContent class="w-[280px] p-0">
-      <Command>
-        <CommandInput v-model="search" placeholder="Search..." />
+      <!-- The search text lives on the root (CommandInput's v-model never reaches `search`), and filteredOptions does the
+           filtering: radix's own filter would also hide the "Add …" item, whose value never matches the search. -->
+      <Command v-model:search-term="search" :filter-function="keepAll">
+        <CommandInput placeholder="Search..." />
         <CommandList>
           <CommandEmpty v-if="!creatable">No results found.</CommandEmpty>
 

@@ -28,6 +28,7 @@ export interface ResumeData {
   url: string;
   is_default: boolean;
   created_at: string;
+  extraction: 'pending' | 'filling' | 'done' | 'failed' | 'limit_reached' | null;
 }
 
 export interface CompanyData {

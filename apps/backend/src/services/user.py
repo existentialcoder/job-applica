@@ -1,4 +1,5 @@
 import os
+from datetime import UTC, datetime
 
 import jwt
 from fastapi import HTTPException, UploadFile
@@ -12,9 +13,16 @@ from ..core.config import settings
 from ..core.constants import Constants
 from ..core.utils import create_token, hash_password, verify_password
 from ..models.skill import Skill
-from ..models.user import AccountRecovery, User
+from ..models.user import AccountRecovery, User, UserOnboarding
 from ..schemas.settings import UserSettings
-from ..schemas.user import TokenPayload, UserBase, UserLoginTokenResponse, UserNameCheckResponse, UserSignup
+from ..schemas.user import (
+    OnboardingUpdate,
+    TokenPayload,
+    UserBase,
+    UserLoginTokenResponse,
+    UserNameCheckResponse,
+    UserSignup,
+)
 from ..utils.file_storage import get_file_storage_factory
 
 ALLOWED_AVATAR_TYPES = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}
@@ -52,8 +60,10 @@ async def create_user(db: AsyncSession, user_data: UserSignup) -> UserBase:
     user_obj.settings = UserSettings().model_dump()
 
     db.add(user_obj)
+    await db.flush()
+    if settings.FEATURE_ONBOARDING:
+        db.add(UserOnboarding(user_id=user_obj.id))
     if user_data.security_question and user_data.security_answer:
-        await db.flush()
         db.add(
             AccountRecovery(
                 user_id=user_obj.id,
@@ -203,6 +213,25 @@ async def update_settings(db: AsyncSession, user_id: int, settings_patch: dict) 
     await db.commit()
     await db.refresh(user)
     return user.settings
+
+
+async def get_onboarding(db: AsyncSession, user_id: int) -> UserOnboarding | None:
+    result = await db.execute(select(UserOnboarding).where(UserOnboarding.user_id == user_id))
+    return result.scalar_one_or_none()
+
+
+async def update_onboarding(db: AsyncSession, user_id: int, update: OnboardingUpdate) -> UserOnboarding:
+    onboarding = await get_onboarding(db, user_id)
+    if not onboarding:
+        raise HTTPException(status_code=404, detail='Onboarding not found')
+    onboarding.step = update.step
+    if update.skipped and update.step not in onboarding.skipped_steps:
+        onboarding.skipped_steps = [*onboarding.skipped_steps, update.step]
+    if update.complete and onboarding.completed_at is None:
+        onboarding.completed_at = datetime.now(UTC)
+    await db.commit()
+    await db.refresh(onboarding)
+    return onboarding
 
 
 async def get_skills(db: AsyncSession, user_id: int) -> list[Skill]:

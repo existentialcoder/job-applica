@@ -76,7 +76,7 @@ class Job(Base):
     applied_resume_id: Mapped[int | None] = mapped_column(ForeignKey('resumes.id', ondelete='SET NULL'), nullable=True)
 
     user: Mapped['User'] = relationship('User')
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
 
     company: Mapped['Company'] = relationship('Company')
     company_id: Mapped[int] = mapped_column(ForeignKey('companies.id'), nullable=True)
