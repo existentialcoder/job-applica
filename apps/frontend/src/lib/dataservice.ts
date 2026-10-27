@@ -203,11 +203,12 @@ const onboarding = {
     step: Onboarding['step'],
     opts: { skipped?: boolean; complete?: boolean } = {}
   ): Promise<void> {
-    await apiFetch(`${API_BASE}/users/${userId()}/onboarding`, {
+    const response = await apiFetch(`${API_BASE}/users/${userId()}/onboarding`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ step, ...opts })
     });
+    if (!response.ok) throw new Error('Failed to save your progress');
   },
 
   async detectLocale(coords?: { lat: number; lng: number }): Promise<Place> {

@@ -110,7 +110,7 @@ function formatDate(iso: string | null) {
           <input
             type="file"
             class="sr-only"
-            accept=".pdf,.doc,.docx"
+            accept=".pdf,.docx"
             :disabled="resumesStore.newResumeUpload"
             @change="handleFileChange"
           />
